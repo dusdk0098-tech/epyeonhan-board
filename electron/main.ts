@@ -1,6 +1,7 @@
-import { app, BrowserWindow, Menu, dialog, ipcMain, shell, type WebContents } from 'electron';
+import { app, BrowserWindow, Menu, clipboard, dialog, ipcMain, nativeImage, shell, type WebContents } from 'electron';
 import * as fs from 'fs/promises';
 import { constants as fsConstants } from 'fs';
+import { spawn } from 'child_process';
 import { createHash } from 'crypto';
 import path from 'path';
 import os from 'os';
@@ -12,6 +13,8 @@ import * as XLSX from 'xlsx';
 import type {
   BoardField,
   BoardSettings,
+  CopyImageResult,
+  CopyPreviewImagePayload,
   DateTimeMap,
   DateTimeValue,
   DialogPhotoResult,
@@ -46,6 +49,16 @@ let updateInstallInProgress = false;
 let mainWindow: BrowserWindow | null = null;
 let pendingOAuthCallbackUrl: string | null = null;
 const gotSingleInstanceLock = app.requestSingleInstanceLock();
+
+type UpdateStatusPayload = {
+  phase: 'checking' | 'available' | 'downloading' | 'verifying' | 'installing' | 'failed';
+  version?: string;
+  percent?: number;
+  downloadedBytes?: number;
+  totalBytes?: number;
+  message?: string;
+  error?: string;
+};
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -176,6 +189,12 @@ async function checkForUpdates(win: BrowserWindow) {
     }
 
     updateInstallInProgress = true;
+    sendUpdateStatus(win, {
+      phase: 'available',
+      version: validation.manifest.version,
+      percent: 0,
+      message: `새 버전 ${validation.manifest.version} 업데이트를 준비합니다.`
+    });
     await downloadAndInstallUpdate(win, validation.manifest);
   } catch {
     // Update checks should never interrupt normal app startup.
@@ -188,16 +207,32 @@ async function downloadAndInstallUpdate(win: BrowserWindow, manifest: UpdateMani
       throw new Error('허용되지 않은 업데이트 다운로드 주소입니다.');
     }
 
+    sendUpdateStatus(win, {
+      phase: 'downloading',
+      version: manifest.version,
+      percent: 0,
+      downloadedBytes: 0,
+      totalBytes: manifest.size_bytes,
+      message: '업데이트 파일 다운로드 중'
+    });
     const response = await fetchWithTimeout(manifest.download_url, updateRequestTimeoutMs * 4);
     if (!response.ok) {
       throw new Error(`업데이트 파일을 다운로드할 수 없습니다. (${response.status})`);
     }
 
-    const buffer = Buffer.from(await response.arrayBuffer());
+    const buffer = await readUpdateResponseBuffer(response, manifest, win);
     if (buffer.byteLength !== manifest.size_bytes) {
       throw new Error('다운로드한 파일 크기가 업데이트 정보와 일치하지 않습니다.');
     }
 
+    sendUpdateStatus(win, {
+      phase: 'verifying',
+      version: manifest.version,
+      percent: 100,
+      downloadedBytes: buffer.byteLength,
+      totalBytes: manifest.size_bytes,
+      message: '업데이트 파일 검증 중'
+    });
     const actualSha256 = createHash('sha256').update(buffer).digest('hex').toLowerCase();
     if (actualSha256 !== manifest.sha256.toLowerCase()) {
       throw new Error('업데이트 파일 검증에 실패했습니다.');
@@ -208,13 +243,31 @@ async function downloadAndInstallUpdate(win: BrowserWindow, manifest: UpdateMani
     const installerPath = path.join(updateDir, sanitizeFileName(manifest.file_name) || 'epyeonhan-board-setup.exe');
     await fs.writeFile(installerPath, buffer);
 
-    const openError = await shell.openPath(installerPath);
-    if (openError) {
-      throw new Error(openError);
-    }
+    sendUpdateStatus(win, {
+      phase: 'installing',
+      version: manifest.version,
+      percent: 100,
+      downloadedBytes: buffer.byteLength,
+      totalBytes: manifest.size_bytes,
+      message: '업데이트 설치를 시작합니다.'
+    });
+
+    const installerProcess = spawn(installerPath, ['/S', '--updated'], {
+      detached: true,
+      stdio: 'ignore',
+      windowsHide: true
+    });
+    installerProcess.on('error', () => undefined);
+    installerProcess.unref();
 
     setTimeout(() => app.quit(), 1000);
   } catch (error) {
+    sendUpdateStatus(win, {
+      phase: 'failed',
+      version: manifest.version,
+      message: '업데이트 설치를 완료하지 못했습니다.',
+      error: toErrorMessage(error)
+    });
     await dialog.showMessageBox(win, {
       type: 'error',
       title: '업데이트 설치 실패',
@@ -225,6 +278,59 @@ async function downloadAndInstallUpdate(win: BrowserWindow, manifest: UpdateMani
     });
     updateInstallInProgress = false;
   }
+}
+
+async function readUpdateResponseBuffer(response: Response, manifest: UpdateManifest, win: BrowserWindow) {
+  if (!response.body) {
+    const buffer = Buffer.from(await response.arrayBuffer());
+    sendUpdateStatus(win, {
+      phase: 'downloading',
+      version: manifest.version,
+      percent: 100,
+      downloadedBytes: buffer.byteLength,
+      totalBytes: manifest.size_bytes,
+      message: '업데이트 파일 다운로드 중'
+    });
+    return buffer;
+  }
+
+  const reader = response.body.getReader();
+  const chunks: Buffer[] = [];
+  let downloadedBytes = 0;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) {
+      break;
+    }
+    if (!value) {
+      continue;
+    }
+
+    const chunk = Buffer.from(value);
+    chunks.push(chunk);
+    downloadedBytes += chunk.byteLength;
+    const percent = manifest.size_bytes > 0
+      ? Math.min(100, Math.round((downloadedBytes / manifest.size_bytes) * 100))
+      : 0;
+    sendUpdateStatus(win, {
+      phase: 'downloading',
+      version: manifest.version,
+      percent,
+      downloadedBytes,
+      totalBytes: manifest.size_bytes,
+      message: '업데이트 파일 다운로드 중'
+    });
+  }
+
+  return Buffer.concat(chunks);
+}
+
+function sendUpdateStatus(win: BrowserWindow, status: UpdateStatusPayload) {
+  if (win.isDestroyed()) {
+    return;
+  }
+  win.webContents.send('update:status', status);
 }
 
 async function fetchWithTimeout(url: string, timeoutMs = updateRequestTimeoutMs) {
@@ -245,12 +351,14 @@ async function fetchWithTimeout(url: string, timeoutMs = updateRequestTimeoutMs)
 function registerIpcHandlers() {
   ipcMain.handle('photos:select', selectPhotos);
   ipcMain.handle('photos:select-folder', selectPhotoFolder);
+  ipcMain.handle('photos:resolve-dropped', (_event, paths: string[]) => resolveDroppedPhotos(paths));
   ipcMain.handle('folder:select-save', selectSaveFolder);
   ipcMain.handle('folder:open', (_event, folderPath: string) => openFolder(folderPath));
   ipcMain.handle('image:data-url', (_event, photoPath: string) => getImageDataUrl(photoPath));
   ipcMain.handle('photos:read-date-times', (_event, photoPaths: string[]) => readPhotoDateTimes(photoPaths));
   ipcMain.handle('sheet:import-date-times', importDateTimeSheet);
   ipcMain.handle('images:process', (_event, payload: ProcessImagesPayload) => processImages(payload));
+  ipcMain.handle('images:copy-preview', (_event, payload: CopyPreviewImagePayload) => copyPreviewImage(payload));
   ipcMain.handle('window:resize', (event, size: { width: number; height: number }) => resizeWindow(event.sender, size));
   ipcMain.handle('auth:get-device-fingerprint', getDeviceIdentity);
   ipcMain.handle('auth:get-app-version', () => app.getVersion());
@@ -398,6 +506,41 @@ async function selectPhotoFolder(): Promise<DialogPhotoResult> {
   return { canceled: false, photos };
 }
 
+async function resolveDroppedPhotos(paths: string[]): Promise<DialogPhotoResult> {
+  if (!Array.isArray(paths) || paths.length === 0) {
+    return { canceled: true, photos: [] };
+  }
+
+  const filePaths: string[] = [];
+  for (const rawPath of paths) {
+    if (!rawPath || typeof rawPath !== 'string') {
+      continue;
+    }
+
+    try {
+      const stat = await fs.stat(rawPath);
+      if (stat.isFile() && isSupportedImage(rawPath)) {
+        filePaths.push(rawPath);
+      } else if (stat.isDirectory()) {
+        const entries = await fs.readdir(rawPath, { withFileTypes: true });
+        entries
+          .filter((entry) => entry.isFile())
+          .map((entry) => path.join(rawPath, entry.name))
+          .filter(isSupportedImage)
+          .forEach((filePath) => filePaths.push(filePath));
+      }
+    } catch {
+      // Dropped paths can include shell shortcuts or inaccessible files. Ignore them.
+    }
+  }
+
+  const uniquePaths = Array.from(new Set(filePaths)).sort((a, b) => path.basename(a).localeCompare(path.basename(b), 'ko'));
+  return {
+    canceled: false,
+    photos: uniquePaths.map(toPhotoItem)
+  };
+}
+
 async function selectSaveFolder(): Promise<FolderResult> {
   const result = await dialog.showOpenDialog({
     title: '저장 경로 지정',
@@ -523,6 +666,25 @@ async function processImages(payload: ProcessImagesPayload): Promise<ProcessImag
   }
 }
 
+async function copyPreviewImage(payload: CopyPreviewImagePayload): Promise<CopyImageResult> {
+  try {
+    if (!payload.photo?.path) {
+      return { ok: false, error: '복사할 사진을 먼저 선택하세요.' };
+    }
+
+    const buffer = await renderBoardCompositeBuffer(payload.photo, payload.fields, payload.settings);
+    const image = nativeImage.createFromBuffer(buffer);
+    if (image.isEmpty()) {
+      return { ok: false, error: '미리보기 이미지를 생성하지 못했습니다.' };
+    }
+
+    clipboard.writeImage(image);
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: toErrorMessage(error) };
+  }
+}
+
 function selectPhotosForProcessing(payload: ProcessImagesPayload): PhotoItem[] {
   if (payload.mode === 'selected') {
     return payload.photos.filter((photo) => photo.path === payload.selectedPhotoPath);
@@ -536,6 +698,13 @@ function selectPhotosForProcessing(payload: ProcessImagesPayload): PhotoItem[] {
 }
 
 async function renderBoardImage(photo: PhotoItem, outputPath: string, fields: BoardField[], settings: BoardSettings) {
+  const compositeBuffer = await renderBoardCompositeBuffer(photo, fields, settings);
+  await sharp(compositeBuffer)
+    .jpeg({ quality: clamp(Math.round(settings.jpgQuality), 1, 100), mozjpeg: true })
+    .toFile(outputPath);
+}
+
+async function renderBoardCompositeBuffer(photo: PhotoItem, fields: BoardField[], settings: BoardSettings) {
   let imagePipeline = sharp(photo.path).rotate();
   const maxLongEdge = normalizeOutputMaxLongEdge(settings.outputMaxLongEdge);
   if (maxLongEdge > 0) {
@@ -566,11 +735,11 @@ async function renderBoardImage(photo: PhotoItem, outputPath: string, fields: Bo
       .toBuffer();
   }
 
-  await sharp(photoBuffer)
+  return sharp(photoBuffer)
     .composite([{ input: Buffer.from(board.svg, 'utf8'), left: position.left, top: position.top }])
     .flatten({ background: '#ffffff' })
-    .jpeg({ quality: clamp(Math.round(settings.jpgQuality), 1, 100), mozjpeg: true })
-    .toFile(outputPath);
+    .png()
+    .toBuffer();
 }
 
 async function applyOutsideGrayscale(buffer: Buffer, width: number, height: number, highlight: PhotoHighlight) {

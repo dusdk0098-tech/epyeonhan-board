@@ -1,7 +1,13 @@
 import type { BoardField, BoardSettings, BoardTextColor } from './types';
 import {
   BOARD_LABEL_WIDTH_RATIO,
+  DEFAULT_LABEL_COLUMN_WIDTH_RATIO,
   DEFAULT_BOARD_WIDTH_RATIO,
+  DEFAULT_VALUE_COLUMN_WIDTH_RATIO,
+  MAX_LABEL_COLUMN_WIDTH_RATIO,
+  MAX_VALUE_COLUMN_WIDTH_RATIO,
+  MIN_LABEL_COLUMN_WIDTH_RATIO,
+  MIN_VALUE_COLUMN_WIDTH_RATIO,
   boardSizeToWidthRatio,
   clampBoardWidthRatio
 } from './boardConstants';
@@ -18,11 +24,16 @@ export interface BoardPositionResult {
 }
 
 export function buildBoardSvg(imageWidth: number, imageHeight: number, fields: BoardField[], settings: BoardSettings): BoardSvgResult {
-  const ratio = clampBoardWidthRatio(settings.widthRatio, boardSizeToWidthRatio(settings.boardSize));
+  if (settings.boardLayoutMode === 'bottom-strip') {
+    return buildBottomStripBoardSvg(imageWidth, imageHeight, fields, settings);
+  }
+
+  const columnLayout = resolveColumnLayout(settings);
+  const ratio = columnLayout.totalRatio;
   const baseBoardWidth = Math.max(1, Math.round(imageWidth * DEFAULT_BOARD_WIDTH_RATIO));
   const requestedBoardWidth = Math.max(1, Math.round(imageWidth * ratio));
   const requestedBoardScale = requestedBoardWidth / baseBoardWidth;
-  const labelWidth = Math.round(baseBoardWidth * BOARD_LABEL_WIDTH_RATIO);
+  const labelWidth = Math.round(baseBoardWidth * columnLayout.labelShare);
   const borderBase = settings.borderWeight === 'bold' ? 2 : 1;
   const borderWidth = Math.max(1, Math.round((baseBoardWidth / 1300) * borderBase));
   const fontWeight = settings.fontWeight === 'bold' ? 700 : 400;
@@ -104,6 +115,13 @@ export function calculateBoardPosition(
   boardHeight: number,
   settings: BoardSettings
 ): BoardPositionResult {
+  if (settings.boardLayoutMode === 'bottom-strip') {
+    return {
+      left: 0,
+      top: clamp(imageHeight - boardHeight, 0, Math.max(0, imageHeight - boardHeight))
+    };
+  }
+
   const left = settings.position.endsWith('right') ? imageWidth - boardWidth : 0;
   const top = settings.position.startsWith('bottom') ? imageHeight - boardHeight : 0;
 
@@ -111,6 +129,73 @@ export function calculateBoardPosition(
     left: clamp(left, 0, Math.max(0, imageWidth - boardWidth)),
     top: clamp(top, 0, Math.max(0, imageHeight - boardHeight))
   };
+}
+
+function buildBottomStripBoardSvg(imageWidth: number, imageHeight: number, fields: BoardField[], settings: BoardSettings): BoardSvgResult {
+  const rows = fields.length > 0 ? fields : [{ id: 'empty', label: '항목', value: '' }];
+  const boardWidth = Math.max(1, Math.round(imageWidth));
+  const baseBoardWidth = Math.max(1, Math.round(imageWidth * DEFAULT_BOARD_WIDTH_RATIO));
+  const borderBase = settings.borderWeight === 'bold' ? 2 : 1;
+  const borderWidth = Math.max(1, Math.round((baseBoardWidth / 1300) * borderBase));
+  const fontWeight = settings.fontWeight === 'bold' ? 700 : 400;
+  const fontFamily = settings.fontFamily || 'Malgun Gothic Semilight';
+  const backgroundOpacity = normalizeOpacity(settings.boardBackgroundOpacity);
+  const labelTextColor = resolveBoardTextColor(settings.labelTextColor);
+  const valueTextColor = resolveBoardTextColor(settings.valueTextColor);
+  const baseFontSize = Math.max(8, Math.round(baseBoardWidth * (settings.fontSize / 640)));
+  const padding = calculateBoardTextPadding(baseFontSize);
+  const preferredBoardHeight = Math.max(
+    Math.round(baseFontSize * 2.4),
+    Math.round(settings.rowHeight * (baseBoardWidth / 720))
+  );
+  const boardHeight = Math.max(1, Math.min(preferredBoardHeight, Math.max(1, imageHeight)));
+  const cellWidth = boardWidth / rows.length;
+  const parts: string[] = [];
+
+  parts.push(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${boardWidth}" height="${boardHeight}" viewBox="0 0 ${boardWidth} ${boardHeight}" preserveAspectRatio="none" shape-rendering="crispEdges" text-rendering="geometricPrecision">`
+  );
+  parts.push('<defs>');
+  rows.forEach((_field, index) => {
+    const x = Math.round(index * cellWidth);
+    const nextX = index === rows.length - 1 ? boardWidth : Math.round((index + 1) * cellWidth);
+    const width = Math.max(1, nextX - x);
+    parts.push(`<clipPath id="strip-cell-${index}"><rect x="${x}" y="0" width="${width}" height="${boardHeight}"/></clipPath>`);
+  });
+  parts.push('</defs>');
+  parts.push(`<rect x="0" y="0" width="${boardWidth}" height="${boardHeight}" fill="#ffffff" fill-opacity="${backgroundOpacity}"/>`);
+
+  rows.forEach((field, index) => {
+    const x = Math.round(index * cellWidth);
+    const nextX = index === rows.length - 1 ? boardWidth : Math.round((index + 1) * cellWidth);
+    const width = Math.max(1, nextX - x);
+    if (index > 0) {
+      parts.push(`<line x1="${x}" y1="0" x2="${x}" y2="${boardHeight}" stroke="#1f2937" stroke-width="${borderWidth}"/>`);
+    }
+    parts.push(
+      `<g clip-path="url(#strip-cell-${index})">`,
+      renderStripText(
+        field.label || ' ',
+        field.value || ' ',
+        x,
+        0,
+        width,
+        boardHeight,
+        baseFontSize,
+        padding,
+        fontFamily,
+        fontWeight,
+        labelTextColor,
+        valueTextColor
+      ),
+      '</g>'
+    );
+  });
+
+  parts.push(`<rect x="${borderWidth / 2}" y="${borderWidth / 2}" width="${boardWidth - borderWidth}" height="${boardHeight - borderWidth}" fill="none" stroke="#1f2937" stroke-width="${borderWidth}"/>`);
+  parts.push('</svg>');
+
+  return { svg: parts.join(''), width: boardWidth, height: boardHeight };
 }
 
 function createBoardLayout(
@@ -175,6 +260,41 @@ function renderTextLines(
   return `<text x="${textX}" y="${startY}" font-family="${escapedFamily}, Malgun Gothic, Arial, sans-serif" font-size="${fontSize}" font-weight="${fontWeight}" fill="${color}" text-anchor="${anchor}">${tspans}</text>`;
 }
 
+function renderStripText(
+  label: string,
+  value: string,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  fontSize: number,
+  padding: number,
+  fontFamily: string,
+  valueFontWeight: number,
+  labelColor: string,
+  valueColor: string
+) {
+  const escapedFamily = escapeXml(fontFamily);
+  const maxTextWidth = Math.max(4, width - padding * 2);
+  const labelText = `${label.trim()} `;
+  const valueText = value.trim();
+  const estimatedWidth = measureTextWidth(labelText, fontSize, false) + measureTextWidth(valueText, fontSize, false);
+  const adjustedFontSize = Math.max(6, Math.min(fontSize, Math.floor(fontSize * (maxTextWidth / Math.max(1, estimatedWidth)))));
+  const adjustedPadding = calculateBoardTextPadding(adjustedFontSize);
+  const textY = y + height / 2 + adjustedFontSize * 0.36;
+  const textX = x + adjustedPadding;
+  const valueX = textX + measureTextWidth(labelText, adjustedFontSize, false);
+
+  return [
+    `<text x="${textX}" y="${textY}" font-family="${escapedFamily}, Malgun Gothic, Arial, sans-serif" font-size="${adjustedFontSize}" font-weight="700" fill="${labelColor}" text-anchor="start">`,
+    `<tspan>${escapeXml(labelText)}</tspan>`,
+    `</text>`,
+    `<text x="${valueX}" y="${textY}" font-family="${escapedFamily}, Malgun Gothic, Arial, sans-serif" font-size="${adjustedFontSize}" font-weight="${valueFontWeight}" fill="${valueColor}" text-anchor="start">`,
+    `<tspan>${escapeXml(valueText)}</tspan>`,
+    `</text>`
+  ].join('');
+}
+
 function normalizeOpacity(value: number | undefined) {
   const numeric = Number.isFinite(value) ? Number(value) : 100;
   return clamp(numeric, 0, 100) / 100;
@@ -192,6 +312,47 @@ function resolveBoardTextColor(color: BoardTextColor | undefined) {
     default:
       return '#111827';
   }
+}
+
+function resolveColumnLayout(settings: BoardSettings) {
+  const fallbackTotalRatio = clampBoardWidthRatio(settings.widthRatio, boardSizeToWidthRatio(settings.boardSize));
+  const hasConfiguredColumns =
+    Number.isFinite(settings.labelColumnWidthRatio) && Number.isFinite(settings.valueColumnWidthRatio);
+  if (!hasConfiguredColumns) {
+    return {
+      totalRatio: fallbackTotalRatio,
+      labelShare: BOARD_LABEL_WIDTH_RATIO
+    };
+  }
+
+  const configuredLabel = Number.isFinite(settings.labelColumnWidthRatio)
+    ? Number(settings.labelColumnWidthRatio)
+    : DEFAULT_LABEL_COLUMN_WIDTH_RATIO;
+  const configuredValue = Number.isFinite(settings.valueColumnWidthRatio)
+    ? Number(settings.valueColumnWidthRatio)
+    : DEFAULT_VALUE_COLUMN_WIDTH_RATIO;
+  let labelRatio = clamp(configuredLabel, MIN_LABEL_COLUMN_WIDTH_RATIO, MAX_LABEL_COLUMN_WIDTH_RATIO);
+  let valueRatio = clamp(configuredValue, MIN_VALUE_COLUMN_WIDTH_RATIO, MAX_VALUE_COLUMN_WIDTH_RATIO);
+  let totalRatio = labelRatio + valueRatio;
+
+  if (!Number.isFinite(totalRatio) || totalRatio <= 0) {
+    totalRatio = fallbackTotalRatio;
+    labelRatio = totalRatio * BOARD_LABEL_WIDTH_RATIO;
+    valueRatio = totalRatio - labelRatio;
+  }
+
+  const clampedTotal = clampBoardWidthRatio(totalRatio, fallbackTotalRatio);
+  if (clampedTotal !== totalRatio) {
+    const scale = clampedTotal / totalRatio;
+    labelRatio *= scale;
+    valueRatio *= scale;
+    totalRatio = clampedTotal;
+  }
+
+  return {
+    totalRatio,
+    labelShare: labelRatio / totalRatio
+  };
 }
 
 function calculateBoardTextPadding(fontSize: number) {

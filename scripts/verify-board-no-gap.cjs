@@ -12,10 +12,13 @@ const fields = [
 ];
 
 const baseSettings = {
+  boardLayoutMode: 'table',
   position: 'bottom-right',
   widthRatio: 0.675,
   margin: 0,
   boardSize: 135,
+  labelColumnWidthRatio: 0.176,
+  valueColumnWidthRatio: 0.499,
   fontFamily: 'Malgun Gothic Semilight',
   fontSize: 16,
   itemAlign: 'center',
@@ -58,12 +61,15 @@ function countSentinelInBoard(raw, imageWidth, channels, boardRect) {
   return count;
 }
 
-async function verifyCase(testCase, position) {
+async function verifyCase(testCase, position, boardLayoutMode = 'table') {
   const settings = {
     ...baseSettings,
+    boardLayoutMode,
     position,
     widthRatio: testCase.widthRatio,
-    boardSize: Math.round(testCase.widthRatio * 200)
+    boardSize: Math.round(testCase.widthRatio * 200),
+    labelColumnWidthRatio: Number((testCase.widthRatio * 0.26).toFixed(3)),
+    valueColumnWidthRatio: Number((testCase.widthRatio * 0.74).toFixed(3))
   };
   const board = buildBoardSvg(testCase.width, testCase.height, fields, settings);
   const boardPosition = calculateBoardPosition(testCase.width, testCase.height, board.width, board.height, settings);
@@ -78,20 +84,32 @@ async function verifyCase(testCase, position) {
     failures.push(`SVG viewBox must match final board pixels: ${expectedViewBox}`);
   }
 
-  if (position.endsWith('right') && boardPosition.left + board.width !== testCase.width) {
-    failures.push(`right edge mismatch: ${boardPosition.left + board.width} !== ${testCase.width}`);
-  }
+  if (boardLayoutMode === 'bottom-strip') {
+    if (board.width !== testCase.width) {
+      failures.push(`bottom strip width mismatch: ${board.width} !== ${testCase.width}`);
+    }
+    if (boardPosition.left !== 0) {
+      failures.push(`bottom strip left edge mismatch: ${boardPosition.left} !== 0`);
+    }
+    if (boardPosition.top + board.height !== testCase.height) {
+      failures.push(`bottom strip bottom edge mismatch: ${boardPosition.top + board.height} !== ${testCase.height}`);
+    }
+  } else {
+    if (position.endsWith('right') && boardPosition.left + board.width !== testCase.width) {
+      failures.push(`right edge mismatch: ${boardPosition.left + board.width} !== ${testCase.width}`);
+    }
 
-  if (position.endsWith('left') && boardPosition.left !== 0) {
-    failures.push(`left edge mismatch: ${boardPosition.left} !== 0`);
-  }
+    if (position.endsWith('left') && boardPosition.left !== 0) {
+      failures.push(`left edge mismatch: ${boardPosition.left} !== 0`);
+    }
 
-  if (position.startsWith('bottom') && boardPosition.top + board.height !== testCase.height) {
-    failures.push(`bottom edge mismatch: ${boardPosition.top + board.height} !== ${testCase.height}`);
-  }
+    if (position.startsWith('bottom') && boardPosition.top + board.height !== testCase.height) {
+      failures.push(`bottom edge mismatch: ${boardPosition.top + board.height} !== ${testCase.height}`);
+    }
 
-  if (position.startsWith('top') && boardPosition.top !== 0) {
-    failures.push(`top edge mismatch: ${boardPosition.top} !== 0`);
+    if (position.startsWith('top') && boardPosition.top !== 0) {
+      failures.push(`top edge mismatch: ${boardPosition.top} !== 0`);
+    }
   }
 
   const rendered = await sharp({
@@ -118,7 +136,7 @@ async function verifyCase(testCase, position) {
   }
 
   return {
-    case: `${testCase.width}x${testCase.height}@${testCase.widthRatio}:${position}`,
+    case: `${boardLayoutMode}:${testCase.width}x${testCase.height}@${testCase.widthRatio}:${position}`,
     board: { width: board.width, height: board.height },
     position: boardPosition,
     failures
@@ -131,6 +149,7 @@ async function main() {
     for (const position of positions) {
       results.push(await verifyCase(testCase, position));
     }
+    results.push(await verifyCase(testCase, 'bottom-right', 'bottom-strip'));
   }
 
   const failures = results.filter((result) => result.failures.length > 0);

@@ -163,6 +163,23 @@ input[type="radio"] {
   background: var(--app-bg);
 }
 
+.app.drag-active::after {
+  content: "사진 또는 폴더를 놓으면 현재 탭에 추가됩니다";
+  position: fixed;
+  inset: 78px 16px 16px;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed var(--primary);
+  border-radius: 8px;
+  background: rgba(236, 244, 255, 0.78);
+  color: var(--primary);
+  font-size: 18px;
+  font-weight: 900;
+  pointer-events: none;
+}
+
 .top-nav {
   height: 65px;
   flex: 0 0 auto;
@@ -342,6 +359,16 @@ input[type="radio"] {
 .social-auth-button.naver span {
   color: #ffffff;
   background: #03c75a;
+}
+
+.auth-provider-note {
+  padding: 9px 10px;
+  border: 1px solid #d8e3f3;
+  border-radius: 6px;
+  background: #f5f8fc;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.45;
 }
 
 .auth-divider {
@@ -1209,16 +1236,25 @@ input[type="radio"] {
   font-size: 11px;
 }
 
+.preview-card-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .advanced-settings-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 300px;
+  grid-template-columns: minmax(0, 1fr);
   gap: 20px;
   align-items: stretch;
 }
 
-.integrated-settings-card,
-.advanced-action-card {
+.integrated-settings-card {
   min-height: 306px;
+}
+
+.advanced-action-card {
+  min-height: 0;
 }
 
 .settings-tabs {
@@ -1858,6 +1894,12 @@ input[type="radio"] {
   overflow: auto;
 }
 
+.modal-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 10px;
+}
+
 .modal.wide .preview-stage {
   height: calc(100vh - 190px);
   min-height: 420px;
@@ -2213,7 +2255,7 @@ body {
 }
 
 .advanced-left .card:last-child {
-  flex: 1 1 auto;
+  flex: 0 0 auto;
 }
 
 .advanced-field-card {
@@ -2354,15 +2396,18 @@ body {
 }
 
 .advanced-settings-grid {
-  grid-template-columns: minmax(0, 1fr) 250px;
+  grid-template-columns: minmax(0, 1fr);
   gap: 12px;
   align-items: stretch;
   flex: 0 0 301px;
 }
 
-.integrated-settings-card,
-.advanced-action-card {
+.integrated-settings-card {
   min-height: 301px;
+}
+
+.advanced-action-card {
+  min-height: 0;
 }
 
 .settings-tabs {
@@ -2566,6 +2611,230 @@ body {
 .color-option {
   min-height: 28px;
   padding: 4px 6px;
+}
+
+.preview-panel .preview-stage {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 210px;
+  max-height: none;
+}
+
+.preview-panel .action-footer {
+  flex-wrap: wrap;
+  align-items: stretch;
+}
+
+.preview-panel .action-footer .button-row {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.preview-panel .action-footer > .btn,
+.preview-panel .action-footer > button {
+  flex: 0 0 auto;
+}
+
+.field-panel {
+  flex-basis: 214px;
+}
+
+.advanced-grid {
+  grid-template-columns: 330px minmax(0, 1fr);
+  gap: 10px;
+}
+
+.advanced-left,
+.advanced-right {
+  gap: 7px;
+}
+
+.advanced-field-card {
+  flex: 1 1 auto;
+}
+
+.advanced-action-card {
+  flex: 0 0 auto;
+}
+
+.advanced-action-stack {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+
+.advanced-preview-card {
+  min-height: 0;
+}
+
+.advanced-preview-card .card-header {
+  gap: 8px;
+}
+
+.preview-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.advanced-preview-card .preview-stage {
+  min-height: 310px;
+}
+
+.advanced-settings-grid {
+  flex: 0 0 286px;
+}
+
+.integrated-settings-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.integrated-settings-card .settings-tab-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.output-grid {
+  grid-template-columns: 218px minmax(0, 1fr) 262px;
+}
+
+.output-preview-card,
+.output-settings-card,
+.output-photo-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.output-preview-card .preview-stage,
+.output-photo-card .photo-list {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 320px;
+}
+
+.highlight-controls,
+.output-help-text,
+.output-photo-actions {
+  flex: 0 0 auto;
+}
+
+.output-settings-stack {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.update-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(7, 24, 48, 0.36);
+  backdrop-filter: blur(3px);
+}
+
+.update-dialog {
+  width: min(430px, calc(100vw - 40px));
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 12px 14px;
+  padding: 22px;
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28);
+}
+
+.update-icon {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #e8f1ff;
+  color: var(--primary);
+}
+
+.update-icon svg {
+  animation: update-spin 1s linear infinite;
+}
+
+.update-icon.failed {
+  background: #fee2e2;
+  color: var(--danger);
+}
+
+.update-icon.failed svg {
+  animation: none;
+}
+
+.update-copy h2 {
+  margin: 0 0 6px;
+  color: var(--text);
+  font-size: 18px;
+}
+
+.update-copy p {
+  margin: 0;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.update-copy small {
+  display: block;
+  margin-top: 6px;
+  color: var(--text-muted);
+  font-size: 12px;
+  word-break: break-word;
+}
+
+.update-progress {
+  grid-column: 1 / -1;
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e5edf7;
+}
+
+.update-progress span {
+  display: block;
+  width: var(--progress);
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--primary), #13a383);
+  transition: width 180ms ease;
+}
+
+.update-progress-label {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.update-progress-label strong {
+  color: var(--primary);
+}
+
+@keyframes update-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .contact-card {

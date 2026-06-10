@@ -82,6 +82,9 @@ async function verifySha256() {
 
 async function verifyMainProcessAutoUpdateSource() {
   const mainSource = await fs.readFile(path.join(__dirname, '..', 'electron', 'main.ts'), 'utf8');
+  const preloadSource = await fs.readFile(path.join(__dirname, '..', 'electron', 'preload.ts'), 'utf8');
+  const apiTypes = await fs.readFile(path.join(__dirname, '..', 'src', 'electron-api.d.ts'), 'utf8');
+  const appSource = await fs.readFile(path.join(__dirname, '..', 'src', 'App.tsx'), 'utf8');
   assert(!mainSource.includes('업데이트 알림'), 'update confirmation alert must not be shown');
   assert(!mainSource.includes('다운로드 및 설치'), 'update confirmation button must not remain');
   assert(!mainSource.includes('나중에'), 'defer update button must not remain');
@@ -92,6 +95,12 @@ async function verifyMainProcessAutoUpdateSource() {
     mainSource.includes('await downloadAndInstallUpdate(win, validation.manifest);'),
     'newer manifest must directly start download and install'
   );
+  assert(mainSource.includes("webContents.send('update:status'"), 'renderer update status event is missing');
+  assert(mainSource.includes('response.body.getReader()'), 'download progress stream reader is missing');
+  assert(mainSource.includes("['/S', '--updated']"), 'silent installer arguments are missing');
+  assert(preloadSource.includes('onUpdateStatus'), 'preload update status listener is missing');
+  assert(apiTypes.includes('UpdateStatusPayload') && apiTypes.includes('onUpdateStatus'), 'renderer update status types are missing');
+  assert(appSource.includes('UpdateOverlay') && appSource.includes('업데이트 진행 중'), 'update progress overlay is missing');
 }
 
 async function verifyVersionedPackagingConfig() {

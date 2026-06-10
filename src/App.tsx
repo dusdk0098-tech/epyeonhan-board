@@ -4,6 +4,7 @@ import {
   Camera,
   CheckSquare,
   Clock3,
+  Copy,
   Eye,
   EyeOff,
   FileSpreadsheet,
@@ -52,6 +53,7 @@ import type {
 } from './shared/authTypes';
 import type {
   BoardField,
+  BoardLayoutMode,
   BoardPosition,
   BoardSettings,
   BoardTextColor,
@@ -67,8 +69,14 @@ import type {
 import { isSupabaseConfigured, supabase } from './supabaseClient';
 import {
   DEFAULT_BOARD_WIDTH_RATIO,
+  DEFAULT_LABEL_COLUMN_WIDTH_RATIO,
+  DEFAULT_VALUE_COLUMN_WIDTH_RATIO,
   MAX_BOARD_WIDTH_RATIO,
+  MAX_LABEL_COLUMN_WIDTH_RATIO,
+  MAX_VALUE_COLUMN_WIDTH_RATIO,
   MIN_BOARD_WIDTH_RATIO,
+  MIN_LABEL_COLUMN_WIDTH_RATIO,
+  MIN_VALUE_COLUMN_WIDTH_RATIO,
   boardSizeToWidthRatio,
   clampBoardWidthRatio,
   widthRatioToBoardSize
@@ -76,30 +84,61 @@ import {
 import { buildBoardSvg, calculateBoardPosition } from './shared/boardRenderer';
 import { resolveHighlightCircle } from './shared/highlightRenderer';
 import { calculateContainedSize } from './shared/previewFit';
+import type { UpdateStatusPayload } from './electron-api';
 
 type Screen = 'help' | 'basic' | 'advanced' | 'output' | 'contact' | 'admin';
+type WorkspaceScreen = 'basic' | 'advanced' | 'output';
 type StatusKind = 'info' | 'success' | 'error';
 type AuthMode = 'signin' | 'signup';
+type StateAction<T> = T | ((current: T) => T);
+
+interface BoardWorkspaceState {
+  photos: PhotoItem[];
+  selectedPhotoPath: string;
+  saveDir: string;
+  fields: BoardField[];
+  selectedFieldId: string;
+  settings: BoardSettings;
+  timeOptions: TimeOptions;
+  exifMap: DateTimeMap;
+  previewDataUrl: string;
+  previewRevision: number;
+}
 
 interface StatusMessage {
   kind: StatusKind;
   text: string;
 }
 
-const defaultFields: BoardField[] = [
-  { id: crypto.randomUUID(), label: '공사명', value: '' },
-  { id: crypto.randomUUID(), label: '공종', value: '' },
-  { id: crypto.randomUUID(), label: '위치', value: '' },
-  { id: crypto.randomUUID(), label: '내용', value: '' },
-  { id: crypto.randomUUID(), label: '날짜', value: '' },
-  { id: crypto.randomUUID(), label: '촬영시간', value: '' }
-];
+function isWorkspaceScreen(screen: Screen): screen is WorkspaceScreen {
+  return screen === 'basic' || screen === 'advanced' || screen === 'output';
+}
+
+function resolveStateAction<T>(current: T, action: StateAction<T>) {
+  return typeof action === 'function' ? (action as (current: T) => T)(current) : action;
+}
+
+function createDefaultFields(): BoardField[] {
+  return [
+    { id: crypto.randomUUID(), label: '공사명', value: '' },
+    { id: crypto.randomUUID(), label: '공종', value: '' },
+    { id: crypto.randomUUID(), label: '위치', value: '' },
+    { id: crypto.randomUUID(), label: '내용', value: '' },
+    { id: crypto.randomUUID(), label: '날짜', value: '' },
+    { id: crypto.randomUUID(), label: '촬영시간', value: '' }
+  ];
+}
+
+const defaultFields: BoardField[] = createDefaultFields();
 
 const defaultSettings: BoardSettings = {
+  boardLayoutMode: 'table',
   position: 'bottom-right',
   widthRatio: DEFAULT_BOARD_WIDTH_RATIO,
   margin: 0,
   boardSize: widthRatioToBoardSize(DEFAULT_BOARD_WIDTH_RATIO),
+  labelColumnWidthRatio: DEFAULT_LABEL_COLUMN_WIDTH_RATIO,
+  valueColumnWidthRatio: DEFAULT_VALUE_COLUMN_WIDTH_RATIO,
   fontFamily: 'Malgun Gothic Semilight',
   fontSize: 16,
   itemAlign: 'center',
@@ -125,6 +164,30 @@ const defaultTimeOptions: TimeOptions = {
   sequenceIntervalMinutes: 60,
   sheetMap: {}
 };
+
+function createWorkspaceState(): BoardWorkspaceState {
+  const fields = createDefaultFields();
+  return {
+    photos: [],
+    selectedPhotoPath: '',
+    saveDir: '',
+    fields,
+    selectedFieldId: fields[0]?.id ?? '',
+    settings: { ...defaultSettings },
+    timeOptions: { ...defaultTimeOptions, sheetMap: {} },
+    exifMap: {},
+    previewDataUrl: '',
+    previewRevision: 0
+  };
+}
+
+function createWorkspaceMap(): Record<WorkspaceScreen, BoardWorkspaceState> {
+  return {
+    basic: createWorkspaceState(),
+    advanced: createWorkspaceState(),
+    output: createWorkspaceState()
+  };
+}
 
 const positionLabels: Record<BoardPosition, string> = {
   'top-left': '좌상단',
@@ -176,6 +239,7 @@ const socialAuthProviders: Array<{ id: SocialAuthProvider; label: string; badge:
   { id: 'kakao', label: '카카오로 계속하기', badge: 'K' },
   { id: 'naver', label: '네이버로 계속하기', badge: 'N' }
 ];
+const visibleSocialAuthProviders = socialAuthProviders.filter((provider) => provider.id === 'google');
 
 export default function App() {
   const [authState, setAuthState] = useState<AuthGateState>({
@@ -186,7 +250,6 @@ export default function App() {
   const [authPasswordVisible, setAuthPasswordVisible] = useState(false);
   const [authBusy, setAuthBusy] = useState(false);
   const [oauthBusyProvider, setOauthBusyProvider] = useState<SocialAuthProvider | null>(null);
-  const [showAdminPasswordLogin, setShowAdminPasswordLogin] = useState(false);
   const [profileCompletionForm, setProfileCompletionForm] = useState<ProfileCompletionInput>({
     company: '',
     displayName: ''
@@ -195,21 +258,29 @@ export default function App() {
   const [adminBusy, setAdminBusy] = useState(false);
   const [adminError, setAdminError] = useState('');
   const [activeScreen, setActiveScreen] = useState<Screen>('help');
-  const [photos, setPhotos] = useState<PhotoItem[]>([]);
-  const [selectedPhotoPath, setSelectedPhotoPath] = useState('');
-  const [saveDir, setSaveDir] = useState('');
-  const [fields, setFields] = useState<BoardField[]>(defaultFields);
-  const [selectedFieldId, setSelectedFieldId] = useState(defaultFields[0]?.id ?? '');
-  const [settings, setSettings] = useState<BoardSettings>(defaultSettings);
-  const [timeOptions, setTimeOptions] = useState<TimeOptions>(defaultTimeOptions);
-  const [exifMap, setExifMap] = useState<DateTimeMap>({});
-  const [previewDataUrl, setPreviewDataUrl] = useState('');
+  const [workspaces, setWorkspaces] = useState<Record<WorkspaceScreen, BoardWorkspaceState>>(() => createWorkspaceMap());
   const [activeAdvancedSettingsTab, setActiveAdvancedSettingsTab] = useState<'datetime' | 'boardPdf'>('datetime');
   const [status, setStatus] = useState<StatusMessage | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isDragTargetActive, setIsDragTargetActive] = useState(false);
   const [showPhotoList, setShowPhotoList] = useState(false);
   const [showLargePreview, setShowLargePreview] = useState(false);
-  const [previewRevision, setPreviewRevision] = useState(0);
+  const [updateStatus, setUpdateStatus] = useState<UpdateStatusPayload | null>(null);
+
+  const activeWorkspaceKey: WorkspaceScreen = isWorkspaceScreen(activeScreen) ? activeScreen : 'basic';
+  const workspace = workspaces[activeWorkspaceKey];
+  const {
+    photos,
+    selectedPhotoPath,
+    saveDir,
+    fields,
+    selectedFieldId,
+    settings,
+    timeOptions,
+    exifMap,
+    previewDataUrl,
+    previewRevision
+  } = workspace;
 
   const selectedPhoto = photos.find((photo) => photo.path === selectedPhotoPath);
   const selectedHighlight = selectedPhoto?.highlight;
@@ -226,9 +297,12 @@ export default function App() {
         photoPath: selectedPhotoPath,
         fields: previewFields.map((field) => ({ id: field.id, label: field.label, value: field.value })),
         settings: {
+          boardLayoutMode: settings.boardLayoutMode,
           position: settings.position,
           widthRatio: settings.widthRatio,
           boardSize: settings.boardSize,
+          labelColumnWidthRatio: settings.labelColumnWidthRatio,
+          valueColumnWidthRatio: settings.valueColumnWidthRatio,
           fontFamily: settings.fontFamily,
           fontSize: settings.fontSize,
           itemAlign: settings.itemAlign,
@@ -245,6 +319,46 @@ export default function App() {
       }),
     [previewFields, selectedPhotoPath, selectedPhoto?.highlight, settings]
   );
+
+  function updateWorkspaceFor(key: WorkspaceScreen, updater: (current: BoardWorkspaceState) => BoardWorkspaceState) {
+    setWorkspaces((current) => ({ ...current, [key]: updater(current[key]) }));
+  }
+
+  function updateActiveWorkspace(updater: (current: BoardWorkspaceState) => BoardWorkspaceState) {
+    updateWorkspaceFor(activeWorkspaceKey, updater);
+  }
+
+  function setPhotos(action: StateAction<PhotoItem[]>) {
+    updateActiveWorkspace((current) => ({ ...current, photos: resolveStateAction(current.photos, action) }));
+  }
+
+  function setSelectedPhotoPath(value: string) {
+    updateActiveWorkspace((current) => ({ ...current, selectedPhotoPath: value }));
+  }
+
+  function setSaveDir(value: string) {
+    updateActiveWorkspace((current) => ({ ...current, saveDir: value }));
+  }
+
+  function setFields(action: StateAction<BoardField[]>) {
+    updateActiveWorkspace((current) => ({ ...current, fields: resolveStateAction(current.fields, action) }));
+  }
+
+  function setSelectedFieldId(value: string) {
+    updateActiveWorkspace((current) => ({ ...current, selectedFieldId: value }));
+  }
+
+  function setSettings(action: StateAction<BoardSettings>) {
+    updateActiveWorkspace((current) => ({ ...current, settings: resolveStateAction(current.settings, action) }));
+  }
+
+  function setTimeOptions(action: StateAction<TimeOptions>) {
+    updateActiveWorkspace((current) => ({ ...current, timeOptions: resolveStateAction(current.timeOptions, action) }));
+  }
+
+  function setPreviewRevision(action: StateAction<number>) {
+    updateActiveWorkspace((current) => ({ ...current, previewRevision: resolveStateAction(current.previewRevision, action) }));
+  }
 
   useEffect(() => {
     if (!isSupabaseConfigured || !supabase) {
@@ -309,6 +423,16 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    const unsubscribe = getNativeBridge()?.onUpdateStatus?.((nextStatus) => {
+      setUpdateStatus(nextStatus);
+    });
+
+    return () => {
+      unsubscribe?.();
+    };
+  }, []);
+
+  useEffect(() => {
     if (authState.status !== 'profile_incomplete') {
       return;
     }
@@ -348,8 +472,9 @@ export default function App() {
   }, [status, isProcessing]);
 
   useEffect(() => {
+    const workspaceKey = activeWorkspaceKey;
     if (!selectedPhotoPath) {
-      setPreviewDataUrl('');
+      updateWorkspaceFor(workspaceKey, (current) => ({ ...current, previewDataUrl: '' }));
       return;
     }
 
@@ -357,9 +482,9 @@ export default function App() {
     window.constructView.getImageDataUrl(selectedPhotoPath).then((result) => {
       if (canceled) return;
       if (result.ok && result.dataUrl) {
-        setPreviewDataUrl(result.dataUrl);
+        updateWorkspaceFor(workspaceKey, (current) => ({ ...current, previewDataUrl: result.dataUrl ?? '' }));
       } else {
-        setPreviewDataUrl('');
+        updateWorkspaceFor(workspaceKey, (current) => ({ ...current, previewDataUrl: '' }));
         setStatusMessage('error', result.error ?? '미리보기 이미지를 읽을 수 없습니다.');
       }
     });
@@ -367,21 +492,22 @@ export default function App() {
     return () => {
       canceled = true;
     };
-  }, [selectedPhotoPath]);
+  }, [activeWorkspaceKey, selectedPhotoPath]);
 
   useEffect(() => {
+    const workspaceKey = activeWorkspaceKey;
     if (timeOptions.mode !== 'exif' || photos.length === 0) {
       return;
     }
 
     window.constructView.readPhotoDateTimes(photos.map((photo) => photo.path)).then((result) => {
       if (result.ok) {
-        setExifMap(result.map);
+        updateWorkspaceFor(workspaceKey, (current) => ({ ...current, exifMap: result.map }));
       } else {
         setStatusMessage('error', result.error ?? 'EXIF 정보를 읽을 수 없습니다.');
       }
     });
-  }, [timeOptions.mode, photos]);
+  }, [activeWorkspaceKey, timeOptions.mode, photos]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -421,6 +547,9 @@ export default function App() {
       }
 
       if (editing) {
+        return;
+      }
+      if (!isWorkspaceScreen(activeScreen)) {
         return;
       }
 
@@ -550,7 +679,7 @@ export default function App() {
         window.location.assign(authUrl);
       }
     } catch (error) {
-      setAuthState({ status: 'unauthenticated', message: toUiError(error) });
+      setAuthState({ status: 'unauthenticated', message: toSocialAuthUiError(error, provider) });
     } finally {
       setAuthBusy(false);
       setOauthBusyProvider(null);
@@ -595,7 +724,7 @@ export default function App() {
         window.location.assign(authUrl);
       }
     } catch (error) {
-      setStatusMessage('error', toUiError(error));
+      setStatusMessage('error', toSocialAuthUiError(error, provider));
     } finally {
       setAuthBusy(false);
       setOauthBusyProvider(null);
@@ -719,7 +848,8 @@ export default function App() {
   }
 
   function normalizeSettings(nextSettings: BoardSettings): BoardSettings {
-    const widthRatio = clampBoardWidthRatio(nextSettings.widthRatio, boardSizeToWidthRatio(nextSettings.boardSize));
+    const columnRatios = normalizeColumnRatios(nextSettings);
+    const widthRatio = columnRatios.widthRatio;
     const jpgQuality = Number.isFinite(nextSettings.jpgQuality) ? nextSettings.jpgQuality : defaultSettings.jpgQuality;
     const boardBackgroundOpacity = Number.isFinite(nextSettings.boardBackgroundOpacity)
       ? nextSettings.boardBackgroundOpacity
@@ -729,8 +859,11 @@ export default function App() {
       : defaultSettings.outputMaxLongEdge;
     return {
       ...nextSettings,
+      boardLayoutMode: nextSettings.boardLayoutMode ?? 'table',
       widthRatio,
       boardSize: widthRatioToBoardSize(widthRatio),
+      labelColumnWidthRatio: columnRatios.labelColumnWidthRatio,
+      valueColumnWidthRatio: columnRatios.valueColumnWidthRatio,
       jpgQuality: clamp(Math.round(jpgQuality), 1, 100),
       boardBackgroundOpacity: clamp(Math.round(boardBackgroundOpacity), 0, 100),
       outputMaxLongEdge: Math.max(0, Math.round(outputMaxLongEdge))
@@ -740,8 +873,19 @@ export default function App() {
   function updateSettings(patch: Partial<BoardSettings>) {
     setSettings((current) => {
       const merged = { ...current, ...patch };
-      if (typeof patch.boardSize === 'number' && typeof patch.widthRatio !== 'number') {
-        merged.widthRatio = boardSizeToWidthRatio(patch.boardSize);
+      const updatesBoardWidth =
+        (typeof patch.boardSize === 'number' || typeof patch.widthRatio === 'number') &&
+        typeof patch.labelColumnWidthRatio !== 'number' &&
+        typeof patch.valueColumnWidthRatio !== 'number';
+      if (updatesBoardWidth) {
+        const widthRatio = typeof patch.widthRatio === 'number'
+          ? clampBoardWidthRatio(patch.widthRatio)
+          : boardSizeToWidthRatio(patch.boardSize);
+        const currentTotal = Math.max(0.001, current.labelColumnWidthRatio + current.valueColumnWidthRatio);
+        const labelShare = clamp(current.labelColumnWidthRatio / currentTotal, 0.12, 0.55);
+        merged.widthRatio = widthRatio;
+        merged.labelColumnWidthRatio = Number((widthRatio * labelShare).toFixed(3));
+        merged.valueColumnWidthRatio = Number((widthRatio - merged.labelColumnWidthRatio).toFixed(3));
       }
       return normalizeSettings(merged);
     });
@@ -749,35 +893,78 @@ export default function App() {
   }
 
   async function handleSelectPhotos() {
+    const workspaceKey = activeWorkspaceKey;
     const result = await window.constructView.selectPhotos();
     if (result.canceled) return;
-    addPhotos(result.photos);
+    addPhotos(result.photos, workspaceKey);
   }
 
   async function handleSelectPhotoFolder() {
+    const workspaceKey = activeWorkspaceKey;
     const result = await window.constructView.selectPhotoFolder();
     if (result.canceled) return;
-    addPhotos(result.photos);
+    addPhotos(result.photos, workspaceKey);
   }
 
-  function addPhotos(incoming: PhotoItem[]) {
+  async function handleDroppedPhotoPaths(paths: string[], workspaceKey: WorkspaceScreen) {
+    const result = await window.constructView.resolveDroppedPhotos(paths);
+    if (result.canceled) return;
+    addPhotos(result.photos, workspaceKey);
+  }
+
+  function extractDroppedPaths(event: React.DragEvent<HTMLElement>) {
+    return Array.from(event.dataTransfer.files)
+      .map((file) => window.constructView.getPathForFile?.(file) || (file as File & { path?: string }).path)
+      .filter((filePath): filePath is string => Boolean(filePath));
+  }
+
+  function handleDragOver(event: React.DragEvent<HTMLElement>) {
+    if (!isWorkspaceScreen(activeScreen)) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'copy';
+    setIsDragTargetActive(true);
+  }
+
+  function handleDragLeave(event: React.DragEvent<HTMLElement>) {
+    if (event.currentTarget.contains(event.relatedTarget as Node | null)) return;
+    setIsDragTargetActive(false);
+  }
+
+  function handleDrop(event: React.DragEvent<HTMLElement>) {
+    event.preventDefault();
+    setIsDragTargetActive(false);
+    if (!isWorkspaceScreen(activeScreen)) {
+      setStatusMessage('info', '사진은 보드판 작업 탭에서 끌어오세요.');
+      return;
+    }
+    const workspaceKey = activeWorkspaceKey;
+    const paths = extractDroppedPaths(event);
+    if (paths.length === 0) {
+      setStatusMessage('error', '끌어온 항목에서 파일 경로를 확인하지 못했습니다.');
+      return;
+    }
+    void handleDroppedPhotoPaths(paths, workspaceKey);
+  }
+
+  function addPhotos(incoming: PhotoItem[], workspaceKey = activeWorkspaceKey) {
     if (incoming.length === 0) {
       setStatusMessage('info', '선택한 위치에 지원되는 사진이 없습니다.');
       return;
     }
 
-    setPhotos((current) => {
-      const byPath = new Map(current.map((photo) => [photo.path, photo]));
+    updateWorkspaceFor(workspaceKey, (current) => {
+      const byPath = new Map(current.photos.map((photo) => [photo.path, photo]));
       incoming.forEach((photo) => {
         if (!byPath.has(photo.path)) {
           byPath.set(photo.path, photo);
         }
       });
       const next = Array.from(byPath.values());
-      if (!selectedPhotoPath && next[0]) {
-        setSelectedPhotoPath(next[0].path);
-      }
-      return next;
+      return {
+        ...current,
+        photos: next,
+        selectedPhotoPath: current.selectedPhotoPath || next[0]?.path || ''
+      };
     });
     setStatusMessage('success', `${incoming.length}장의 사진을 불러왔습니다.`);
   }
@@ -792,14 +979,15 @@ export default function App() {
     }
     setPhotos([]);
     setSelectedPhotoPath('');
-    setPreviewDataUrl('');
+    updateActiveWorkspace((current) => ({ ...current, previewDataUrl: '' }));
     setStatusMessage('success', '불러온 사진 목록을 초기화했습니다.');
   }
 
   async function handleSelectSaveFolder() {
+    const workspaceKey = activeWorkspaceKey;
     const result = await window.constructView.selectSaveFolder();
     if (result.canceled || !result.path) return;
-    setSaveDir(result.path);
+    updateWorkspaceFor(workspaceKey, (current) => ({ ...current, saveDir: result.path ?? '' }));
     setStatusMessage('success', '저장 경로를 지정했습니다.');
   }
 
@@ -813,6 +1001,7 @@ export default function App() {
   }
 
   async function handleImportSheet() {
+    const workspaceKey = activeWorkspaceKey;
     const result = await window.constructView.importDateTimeSheet();
     if (result.canceled) return;
 
@@ -821,11 +1010,14 @@ export default function App() {
       return;
     }
 
-    setTimeOptions((current) => ({
+    updateWorkspaceFor(workspaceKey, (current) => ({
       ...current,
-      mode: 'sheet',
-      sheetPath: result.filePath,
-      sheetMap: result.map
+      timeOptions: {
+        ...current.timeOptions,
+        mode: 'sheet',
+        sheetPath: result.filePath,
+        sheetMap: result.map
+      }
     }));
     setStatusMessage('success', `${Object.keys(result.map).length}건의 사진별 날짜/시간을 불러왔습니다.`);
   }
@@ -976,10 +1168,29 @@ export default function App() {
     setStatusMessage('success', `${result.savedFiles.length}개의 JPG 파일을 저장했습니다.${pdfText}${folderText}`);
   }
 
+  async function handleCopyPreviewImage() {
+    if (!selectedPhoto) {
+      setStatusMessage('info', '복사할 미리보기 사진을 먼저 선택하세요.');
+      return;
+    }
+
+    const result = await window.constructView.copyPreviewImage({
+      photo: selectedPhoto,
+      fields: previewFields,
+      settings: normalizeSettings(settings)
+    });
+
+    if (result.ok) {
+      setStatusMessage('success', '미리보기 이미지를 클립보드에 복사했습니다.');
+    } else {
+      setStatusMessage('error', result.error ?? '미리보기 이미지를 복사하지 못했습니다.');
+    }
+  }
+
   function renderTopNavigation() {
     const navItems: Array<{ id: Screen; label: string }> = [
       { id: 'help', label: '사용방법' },
-      { id: 'basic', label: '보드판 작성' },
+      { id: 'basic', label: '보드판 [간편]' },
       { id: 'advanced', label: '보드판 작성 [고급]' },
       { id: 'output', label: '보드판 작성 [프리미엄]' },
       { id: 'contact', label: '문의하기' }
@@ -1054,8 +1265,74 @@ export default function App() {
 
           {(authState.status === 'unauthenticated' || authState.status === 'error') && (
             <div className="auth-login-stack">
+              <form className="auth-form compact" onSubmit={handleAuthSubmit}>
+                <label>
+                  이메일
+                  <input
+                    type="email"
+                    value={authForm.email}
+                    onChange={(event) => updateAuthForm('email', event.currentTarget.value)}
+                    autoComplete="email"
+                  />
+                </label>
+                <label>
+                  비밀번호
+                  <div className="auth-password-field">
+                    <input
+                      type={authPasswordVisible ? 'text' : 'password'}
+                      value={authForm.password}
+                      onChange={(event) => updateAuthForm('password', event.currentTarget.value)}
+                      autoComplete={authMode === 'signin' ? 'current-password' : 'new-password'}
+                    />
+                    <button
+                      type="button"
+                      className="auth-password-toggle"
+                      onClick={() => setAuthPasswordVisible((current) => !current)}
+                      aria-label={authPasswordVisible ? '비밀번호 숨기기' : '비밀번호 보기'}
+                      title={authPasswordVisible ? '비밀번호 숨기기' : '비밀번호 보기'}
+                    >
+                      {authPasswordVisible ? <EyeOff size={17} aria-hidden /> : <Eye size={17} aria-hidden />}
+                    </button>
+                  </div>
+                </label>
+                {authMode === 'signup' && (
+                  <>
+                    <label>
+                      이름
+                      <input
+                        value={authForm.displayName}
+                        onChange={(event) => updateAuthForm('displayName', event.currentTarget.value)}
+                        autoComplete="name"
+                      />
+                    </label>
+                    <label>
+                      회사명
+                      <input
+                        value={authForm.company}
+                        onChange={(event) => updateAuthForm('company', event.currentTarget.value)}
+                        autoComplete="organization"
+                      />
+                    </label>
+                  </>
+                )}
+                <button type="submit" className="primary-button wide" disabled={authBusy}>
+                  {authBusy ? '처리 중...' : authMode === 'signin' ? '로그인' : '회원가입'}
+                </button>
+                <button
+                  type="button"
+                  className="link-button"
+                  onClick={toggleAuthMode}
+                >
+                  {authMode === 'signin' ? '이메일 계정 만들기' : '이미 계정이 있습니다'}
+                </button>
+              </form>
+
+              <div className="auth-divider">
+                <span>또는</span>
+              </div>
+
               <div className="social-auth-buttons" aria-label="소셜 로그인">
-                {socialAuthProviders.map((provider) => (
+                {visibleSocialAuthProviders.map((provider) => (
                   <button
                     key={provider.id}
                     type="button"
@@ -1068,82 +1345,6 @@ export default function App() {
                   </button>
                 ))}
               </div>
-
-              <div className="auth-divider">
-                <span>관리자/복구용</span>
-              </div>
-
-              <button
-                type="button"
-                className="secondary-button wide admin-login-toggle"
-                onClick={() => setShowAdminPasswordLogin((current) => !current)}
-              >
-                관리자 이메일 로그인
-              </button>
-
-              {showAdminPasswordLogin && (
-                <form className="auth-form compact" onSubmit={handleAuthSubmit}>
-                  <label>
-                    이메일
-                    <input
-                      type="email"
-                      value={authForm.email}
-                      onChange={(event) => updateAuthForm('email', event.currentTarget.value)}
-                      autoComplete="email"
-                    />
-                  </label>
-                  <label>
-                    비밀번호
-                    <div className="auth-password-field">
-                      <input
-                        type={authPasswordVisible ? 'text' : 'password'}
-                        value={authForm.password}
-                        onChange={(event) => updateAuthForm('password', event.currentTarget.value)}
-                        autoComplete={authMode === 'signin' ? 'current-password' : 'new-password'}
-                      />
-                      <button
-                        type="button"
-                        className="auth-password-toggle"
-                        onClick={() => setAuthPasswordVisible((current) => !current)}
-                        aria-label={authPasswordVisible ? '비밀번호 숨기기' : '비밀번호 보기'}
-                        title={authPasswordVisible ? '비밀번호 숨기기' : '비밀번호 보기'}
-                      >
-                        {authPasswordVisible ? <EyeOff size={17} aria-hidden /> : <Eye size={17} aria-hidden />}
-                      </button>
-                    </div>
-                  </label>
-                  {authMode === 'signup' && (
-                    <>
-                      <label>
-                        이름
-                        <input
-                          value={authForm.displayName}
-                          onChange={(event) => updateAuthForm('displayName', event.currentTarget.value)}
-                          autoComplete="name"
-                        />
-                      </label>
-                      <label>
-                        회사명
-                        <input
-                          value={authForm.company}
-                          onChange={(event) => updateAuthForm('company', event.currentTarget.value)}
-                          autoComplete="organization"
-                        />
-                      </label>
-                    </>
-                  )}
-                  <button type="submit" className="primary-button wide" disabled={authBusy}>
-                    {authBusy ? '처리 중...' : authMode === 'signin' ? '로그인' : '회원가입'}
-                  </button>
-                  <button
-                    type="button"
-                    className="link-button"
-                    onClick={toggleAuthMode}
-                  >
-                    {authMode === 'signin' ? '이메일 계정 만들기' : '이미 계정이 있습니다'}
-                  </button>
-                </form>
-              )}
             </div>
           )}
 
@@ -1397,9 +1598,14 @@ export default function App() {
                 </select>
               </div>
               <div className="action-footer">
-                <button className="btn ghost" type="button" onClick={openLargePreview}>
-                  <Eye size={17} /> 미리보기
-                </button>
+                <div className="button-row">
+                  <button className="btn ghost" type="button" onClick={openLargePreview}>
+                    <Eye size={17} /> 미리보기
+                  </button>
+                  <button className="btn ghost" type="button" disabled={!selectedPhoto} onClick={() => void handleCopyPreviewImage()}>
+                    <Copy size={17} /> 결과 이미지 복사
+                  </button>
+                </div>
                 <div className="button-row">
                   <button className="btn primary" type="button" disabled={isProcessing} onClick={() => void runProcess('selected')}>
                     1개 작업하기
@@ -1478,36 +1684,106 @@ export default function App() {
   function renderBoardPdfSettings() {
     return (
       <div className="settings-form board-pdf-form">
+        <label>보드 형태</label>
+        <select value={settings.boardLayoutMode} onChange={(event) => updateSettings({ boardLayoutMode: event.target.value as BoardLayoutMode })}>
+          <option value="table">표형 보드</option>
+          <option value="bottom-strip">하부 1단 띠</option>
+        </select>
         <label>위치</label>
-        <select value={settings.position} onChange={(event) => updateSettings({ position: event.target.value as BoardPosition })}>
+        <select
+          value={settings.position}
+          onChange={(event) => updateSettings({ position: event.target.value as BoardPosition })}
+          disabled={settings.boardLayoutMode === 'bottom-strip'}
+        >
           {(Object.keys(positionLabels) as BoardPosition[]).map((position) => (
             <option key={position} value={position}>
               {positionLabels[position]}
             </option>
           ))}
         </select>
-        <label>보드크기</label>
+        {settings.boardLayoutMode === 'table' && (
+          <>
+            <label>보드크기</label>
+            <div className="range-with-number">
+              <input
+                type="range"
+                min={MIN_BOARD_WIDTH_RATIO}
+                max={MAX_BOARD_WIDTH_RATIO}
+                step={0.005}
+                value={settings.widthRatio}
+                onChange={(event) => {
+                  updateSettings({ widthRatio: Number(event.target.value) });
+                }}
+              />
+              <input
+                type="number"
+                min={MIN_BOARD_WIDTH_RATIO}
+                max={MAX_BOARD_WIDTH_RATIO}
+                step={0.005}
+                value={settings.widthRatio}
+                onChange={(event) => {
+                  const value = Number(clampBoardWidthRatio(Number(event.target.value)).toFixed(3));
+                  updateSettings({ widthRatio: value });
+                }}
+              />
+            </div>
+            <label>항목명 칸</label>
+            <div className="range-with-number">
+              <input
+                type="range"
+                min={MIN_LABEL_COLUMN_WIDTH_RATIO}
+                max={MAX_LABEL_COLUMN_WIDTH_RATIO}
+                step={0.005}
+                value={settings.labelColumnWidthRatio}
+                onChange={(event) => updateSettings({ labelColumnWidthRatio: Number(event.target.value) })}
+              />
+              <input
+                type="number"
+                min={MIN_LABEL_COLUMN_WIDTH_RATIO}
+                max={MAX_LABEL_COLUMN_WIDTH_RATIO}
+                step={0.005}
+                value={settings.labelColumnWidthRatio}
+                onChange={(event) => updateSettings({ labelColumnWidthRatio: Number(event.target.value) })}
+              />
+            </div>
+            <label>내용 칸</label>
+            <div className="range-with-number">
+              <input
+                type="range"
+                min={MIN_VALUE_COLUMN_WIDTH_RATIO}
+                max={MAX_VALUE_COLUMN_WIDTH_RATIO}
+                step={0.005}
+                value={settings.valueColumnWidthRatio}
+                onChange={(event) => updateSettings({ valueColumnWidthRatio: Number(event.target.value) })}
+              />
+              <input
+                type="number"
+                min={MIN_VALUE_COLUMN_WIDTH_RATIO}
+                max={MAX_VALUE_COLUMN_WIDTH_RATIO}
+                step={0.005}
+                value={settings.valueColumnWidthRatio}
+                onChange={(event) => updateSettings({ valueColumnWidthRatio: Number(event.target.value) })}
+              />
+            </div>
+          </>
+        )}
+        <label>행 높이</label>
         <div className="range-with-number">
           <input
             type="range"
-            min={MIN_BOARD_WIDTH_RATIO}
-            max={MAX_BOARD_WIDTH_RATIO}
-            step={0.005}
-            value={settings.widthRatio}
-            onChange={(event) => {
-              updateSettings({ widthRatio: Number(event.target.value) });
-            }}
+            min={42}
+            max={110}
+            step={1}
+            value={settings.rowHeight}
+            onChange={(event) => updateSettings({ rowHeight: Number(event.target.value) })}
           />
           <input
             type="number"
-            min={MIN_BOARD_WIDTH_RATIO}
-            max={MAX_BOARD_WIDTH_RATIO}
-            step={0.005}
-            value={settings.widthRatio}
-            onChange={(event) => {
-              const value = Number(clampBoardWidthRatio(Number(event.target.value)).toFixed(3));
-              updateSettings({ widthRatio: value });
-            }}
+            min={42}
+            max={110}
+            step={1}
+            value={settings.rowHeight}
+            onChange={(event) => updateSettings({ rowHeight: clamp(Number(event.target.value), 42, 110) })}
           />
         </div>
         <label>글자크기</label>
@@ -1694,10 +1970,23 @@ export default function App() {
               </div>
             </Card>
 
+            {renderAdvancedActionCard()}
           </div>
 
           <div className="advanced-right">
-            <Card title="미리보기" icon={<Eye size={17} />} action={<span className="ratio-label">비율: 100%</span>} className="advanced-preview-card">
+            <Card
+              title="미리보기"
+              icon={<Eye size={17} />}
+              action={
+                <div className="preview-card-actions">
+                  <span className="ratio-label">비율: 100%</span>
+                  <button className="small-btn outline" type="button" disabled={!selectedPhoto} onClick={() => void handleCopyPreviewImage()}>
+                    <Copy size={15} /> 결과 이미지 복사
+                  </button>
+                </div>
+              }
+              className="advanced-preview-card"
+            >
               <PreviewStage
                 imageDataUrl={previewDataUrl}
                 fields={previewFields}
@@ -1714,7 +2003,6 @@ export default function App() {
 
             <div className="advanced-settings-grid">
               {renderIntegratedSettingsCard()}
-              {renderAdvancedActionCard()}
             </div>
           </div>
         </div>
@@ -1794,7 +2082,16 @@ export default function App() {
             </div>
           </Card>
 
-          <Card title="강조 미리보기" icon={<Eye size={17} />} className="output-preview-card">
+          <Card
+            title="강조 미리보기"
+            icon={<Eye size={17} />}
+            action={
+              <button className="small-btn outline" type="button" disabled={!selectedPhoto} onClick={() => void handleCopyPreviewImage()}>
+                <Copy size={15} /> 결과 이미지 복사
+              </button>
+            }
+            className="output-preview-card"
+          >
             <PreviewStage
               imageDataUrl={previewDataUrl}
               fields={previewFields}
@@ -1855,13 +2152,25 @@ export default function App() {
 
               <div className="output-setting-section">
                 <h4>보드판 표시</h4>
-                <SliderRow
-                  label="보드 크기"
-                  min={widthRatioToBoardSize(MIN_BOARD_WIDTH_RATIO)}
-                  max={widthRatioToBoardSize(MAX_BOARD_WIDTH_RATIO)}
-                  value={settings.boardSize}
-                  onChange={(value) => updateSettings({ boardSize: value })}
-                />
+                <div className="form-row">
+                  <label>보드 형태</label>
+                  <select
+                    value={settings.boardLayoutMode}
+                    onChange={(event) => updateSettings({ boardLayoutMode: event.target.value as BoardLayoutMode })}
+                  >
+                    <option value="table">표형 보드</option>
+                    <option value="bottom-strip">하부 1단 띠</option>
+                  </select>
+                </div>
+                {settings.boardLayoutMode === 'table' && (
+                  <SliderRow
+                    label="보드 크기"
+                    min={widthRatioToBoardSize(MIN_BOARD_WIDTH_RATIO)}
+                    max={widthRatioToBoardSize(MAX_BOARD_WIDTH_RATIO)}
+                    value={settings.boardSize}
+                    onChange={(value) => updateSettings({ boardSize: value })}
+                  />
+                )}
                 <SliderRow
                   label="배경 투명도"
                   min={0}
@@ -1956,7 +2265,7 @@ export default function App() {
               <span>기존 관리자 이메일 계정에 소셜 로그인을 추가합니다.</span>
             </div>
             <div className="admin-oauth-actions">
-              {socialAuthProviders.map((provider) => (
+              {visibleSocialAuthProviders.map((provider) => (
                 <button
                   key={provider.id}
                   type="button"
@@ -2087,11 +2396,21 @@ export default function App() {
   }
 
   if (authState.status !== 'ready') {
-    return <div className="app auth-only">{renderAuthScreen()}</div>;
+    return (
+      <div className="app auth-only">
+        {renderAuthScreen()}
+        {updateStatus && <UpdateOverlay status={updateStatus} />}
+      </div>
+    );
   }
 
   return (
-    <div className="app">
+    <div
+      className={isDragTargetActive ? 'app drag-active' : 'app'}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
       {renderTopNavigation()}
       {activeScreen === 'help' && renderHelpScreen()}
       {activeScreen === 'basic' && renderBasicScreen()}
@@ -2127,6 +2446,11 @@ export default function App() {
       )}
       {showLargePreview && (
         <Modal title="미리보기 큰 화면" onClose={() => setShowLargePreview(false)} wide>
+          <div className="modal-toolbar">
+            <button className="small-btn outline" type="button" disabled={!selectedPhoto} onClick={() => void handleCopyPreviewImage()}>
+              <Copy size={15} /> 결과 이미지 복사
+            </button>
+          </div>
           <PreviewStage
             imageDataUrl={previewDataUrl}
             fields={previewFields}
@@ -2141,6 +2465,7 @@ export default function App() {
           />
         </Modal>
       )}
+      {updateStatus && <UpdateOverlay status={updateStatus} />}
     </div>
   );
 }
@@ -2214,6 +2539,27 @@ function toAuthUiError(error: unknown, mode: AuthMode) {
     return '이메일 확인이 필요한 계정입니다. 메일함을 확인한 뒤 로그인하세요.';
   }
   return message;
+}
+
+function toSocialAuthUiError(error: unknown, provider: SocialAuthProvider) {
+  const message = toUiError(error);
+  if (/unsupported provider|provider is not enabled|validation_failed/i.test(message)) {
+    return `${getSocialProviderName(provider)} 로그인이 Supabase에서 아직 활성화되지 않았습니다. Supabase Dashboard > Authentication > Sign In / Providers에서 해당 Provider를 켠 뒤 Client ID/Secret과 Redirect URL을 등록하세요. 지금은 이메일 로그인/회원가입을 사용할 수 있습니다.`;
+  }
+  return message;
+}
+
+function getSocialProviderName(provider: SocialAuthProvider) {
+  switch (provider) {
+    case 'google':
+      return 'Google';
+    case 'kakao':
+      return '카카오';
+    case 'naver':
+      return '네이버';
+    default:
+      return '소셜';
+  }
 }
 
 function isAlreadyRegisteredError(error: unknown) {
@@ -2750,6 +3096,69 @@ function Modal({
   );
 }
 
+const updatePhaseMessages: Record<UpdateStatusPayload['phase'], string> = {
+  checking: '업데이트 확인 중',
+  available: '새 업데이트를 준비하고 있습니다.',
+  downloading: '업데이트 파일 다운로드 중',
+  verifying: '업데이트 파일 검증 중',
+  installing: '업데이트 설치를 시작합니다.',
+  failed: '업데이트 설치를 완료하지 못했습니다.'
+};
+
+function UpdateOverlay({ status }: { status: UpdateStatusPayload }) {
+  const percent = typeof status.percent === 'number' ? clamp(Math.round(status.percent), 0, 100) : null;
+  const progressValue = percent ?? (status.phase === 'available' ? 6 : 14);
+  const detail = status.error
+    ? status.error
+    : status.phase === 'downloading'
+      ? formatUpdateDownloadDetail(status)
+      : status.version
+        ? `버전 ${status.version}`
+        : '';
+
+  return (
+    <div className="update-overlay" role="alertdialog" aria-modal="true" aria-labelledby="update-title">
+      <div className="update-dialog">
+        <div className={status.phase === 'failed' ? 'update-icon failed' : 'update-icon'}>
+          <RefreshCw size={24} />
+        </div>
+        <div className="update-copy">
+          <h2 id="update-title">업데이트 진행 중</h2>
+          <p>{status.message ?? updatePhaseMessages[status.phase]}</p>
+          {detail && <small>{detail}</small>}
+        </div>
+        <div className="update-progress" style={{ '--progress': `${progressValue}%` } as React.CSSProperties}>
+          <span />
+        </div>
+        <div className="update-progress-label">
+          <span>{updatePhaseMessages[status.phase]}</span>
+          {percent !== null && <strong>{percent}%</strong>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function formatUpdateDownloadDetail(status: UpdateStatusPayload) {
+  if (!status.downloadedBytes || !status.totalBytes) {
+    return status.version ? `버전 ${status.version}` : '';
+  }
+
+  return `${formatBytes(status.downloadedBytes)} / ${formatBytes(status.totalBytes)}`;
+}
+
+function formatBytes(value: number) {
+  if (value >= 1024 * 1024) {
+    return `${(value / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  if (value >= 1024) {
+    return `${Math.round(value / 1024)} KB`;
+  }
+
+  return `${value} B`;
+}
+
 function applyTimeMode(
   fields: BoardField[],
   photo: PhotoItem | undefined,
@@ -2794,6 +3203,36 @@ function formatBoardDate(date: Date) {
 
 function normalizeFileName(fileName: string) {
   return fileName.trim().toLowerCase();
+}
+
+function normalizeColumnRatios(settings: BoardSettings) {
+  let labelColumnWidthRatio = Number.isFinite(settings.labelColumnWidthRatio)
+    ? Number(settings.labelColumnWidthRatio)
+    : DEFAULT_LABEL_COLUMN_WIDTH_RATIO;
+  let valueColumnWidthRatio = Number.isFinite(settings.valueColumnWidthRatio)
+    ? Number(settings.valueColumnWidthRatio)
+    : DEFAULT_VALUE_COLUMN_WIDTH_RATIO;
+
+  labelColumnWidthRatio = clamp(labelColumnWidthRatio, MIN_LABEL_COLUMN_WIDTH_RATIO, MAX_LABEL_COLUMN_WIDTH_RATIO);
+  valueColumnWidthRatio = clamp(valueColumnWidthRatio, MIN_VALUE_COLUMN_WIDTH_RATIO, MAX_VALUE_COLUMN_WIDTH_RATIO);
+
+  let widthRatio = labelColumnWidthRatio + valueColumnWidthRatio;
+  if (widthRatio < MIN_BOARD_WIDTH_RATIO) {
+    valueColumnWidthRatio += MIN_BOARD_WIDTH_RATIO - widthRatio;
+    widthRatio = MIN_BOARD_WIDTH_RATIO;
+  }
+  if (widthRatio > MAX_BOARD_WIDTH_RATIO) {
+    const scale = MAX_BOARD_WIDTH_RATIO / widthRatio;
+    labelColumnWidthRatio *= scale;
+    valueColumnWidthRatio *= scale;
+    widthRatio = MAX_BOARD_WIDTH_RATIO;
+  }
+
+  return {
+    labelColumnWidthRatio: Number(labelColumnWidthRatio.toFixed(3)),
+    valueColumnWidthRatio: Number(valueColumnWidthRatio.toFixed(3)),
+    widthRatio: Number(clampBoardWidthRatio(widthRatio).toFixed(3))
+  };
 }
 
 function trimPath(value: string) {

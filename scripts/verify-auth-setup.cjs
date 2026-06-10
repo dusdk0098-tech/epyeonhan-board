@@ -53,8 +53,13 @@ function verifyRenderer() {
   assert(app.includes('socialAuthProviders'), 'social auth provider buttons are missing');
   assert(app.includes('handleSocialAuth'), 'social auth handler is missing');
   assert(app.includes('handleOAuthCallback'), 'OAuth callback handler is missing');
+  assert(app.includes('toSocialAuthUiError'), 'social auth provider setup error guidance is missing');
+  assert(app.includes('Supabase Dashboard > Authentication > Sign In / Providers'), 'provider disabled error must tell the operator where to fix it');
   assert(app.includes("status: 'profile_incomplete'"), 'profile completion gate is missing');
-  assert(app.includes('관리자 이메일 로그인'), 'admin email fallback login is missing');
+  assert(app.includes('visibleSocialAuthProviders'), 'visible social auth provider list is missing');
+  assert(app.includes("provider.id === 'google'"), 'Kakao/Naver must stay hidden until their provider setup is complete');
+  assert(app.includes('<form className="auth-form compact" onSubmit={handleAuthSubmit}>'), 'email/password form must be visible by default');
+  assert(!app.includes('showAdminPasswordLogin'), 'email/password login must not be hidden behind the old toggle');
 }
 
 function verifyElectronBridge() {

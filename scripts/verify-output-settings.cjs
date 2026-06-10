@@ -1,7 +1,7 @@
 const sharp = require('sharp');
 const fs = require('fs');
 const path = require('path');
-const { buildBoardSvg } = require('../dist-electron/src/shared/boardRenderer.js');
+const { buildBoardSvg, calculateBoardPosition } = require('../dist-electron/src/shared/boardRenderer.js');
 const {
   buildHighlightMaskSvg,
   buildHighlightSvg,
@@ -14,10 +14,13 @@ const fields = [
 ];
 
 const baseSettings = {
+  boardLayoutMode: 'table',
   position: 'bottom-right',
   widthRatio: 0.675,
   margin: 0,
   boardSize: 135,
+  labelColumnWidthRatio: 0.176,
+  valueColumnWidthRatio: 0.499,
   fontFamily: 'Malgun Gothic Semilight',
   fontSize: 16,
   itemAlign: 'center',
@@ -79,9 +82,70 @@ function verifyBoardTypography() {
   assert(labelRatio >= 0.255 && labelRatio <= 0.265, `label cell width ratio drifted: ${labelRatio}`);
 }
 
+function verifyBoardColumnControls() {
+  const narrowLabel = buildBoardSvg(1200, 800, fields, {
+    ...baseSettings,
+    labelColumnWidthRatio: 0.12,
+    valueColumnWidthRatio: 0.50
+  });
+  const wideLabel = buildBoardSvg(1200, 800, fields, {
+    ...baseSettings,
+    labelColumnWidthRatio: 0.26,
+    valueColumnWidthRatio: 0.50
+  });
+  const narrowLabelWidth = extractLabelWidth(narrowLabel.svg);
+  const wideLabelWidth = extractLabelWidth(wideLabel.svg);
+
+  assert(wideLabelWidth > narrowLabelWidth, 'label column width control must affect rendered SVG');
+  assert(wideLabel.width > narrowLabel.width, 'label/value column ratios must affect total board width');
+}
+
+function verifyBottomStripLayout() {
+  const stripFields = [
+    ...fields,
+    { id: 'c', label: '긴항목', value: '아주 긴 설명 텍스트가 들어와도 옆 셀로 번지지 않고 한 줄 영역 안에서 처리되어야 합니다' }
+  ];
+  const strip = buildBoardSvg(1200, 800, stripFields, {
+    ...baseSettings,
+    boardLayoutMode: 'bottom-strip',
+    position: 'top-left'
+  });
+  const position = calculateBoardPosition(1200, 800, strip.width, strip.height, {
+    ...baseSettings,
+    boardLayoutMode: 'bottom-strip',
+    position: 'top-left'
+  });
+
+  assert(strip.width === 1200, `bottom strip must use full image width: ${strip.width}`);
+  assert(position.left === 0, `bottom strip left must be 0: ${position.left}`);
+  assert(position.top === 800 - strip.height, `bottom strip must sit on bottom edge: ${position.top}`);
+  assert(strip.svg.includes('공사명') && strip.svg.includes('154kV'), 'bottom strip must render label and value in one row');
+  assert(strip.svg.includes('<clipPath id="strip-cell-0"'), 'bottom strip cells must clip overflowing text');
+  assert(strip.svg.includes('clip-path="url(#strip-cell-'), 'bottom strip text must be rendered inside cell clip paths');
+}
+
 function verifyInputTableLayout() {
   const css = fs.readFileSync(path.join(__dirname, '..', 'src', 'styles.css'), 'utf8');
   assert(css.includes('grid-template-columns: 128px 1fr;'), 'board content input label cell width must stay at 128px');
+}
+
+function verifyWorkspaceAndBridgeStatic() {
+  const app = fs.readFileSync(path.join(__dirname, '..', 'src', 'App.tsx'), 'utf8');
+  const preload = fs.readFileSync(path.join(__dirname, '..', 'electron', 'preload.ts'), 'utf8');
+  const main = fs.readFileSync(path.join(__dirname, '..', 'electron', 'main.ts'), 'utf8');
+  const api = fs.readFileSync(path.join(__dirname, '..', 'src', 'electron-api.d.ts'), 'utf8');
+  const styles = fs.readFileSync(path.join(__dirname, '..', 'src', 'styles.css'), 'utf8');
+
+  assert(app.includes('Record<WorkspaceScreen, BoardWorkspaceState>'), 'work tab state must be isolated per workspace');
+  assert(app.includes("label: '보드판 [간편]'"), 'basic tab label must be renamed');
+  assert(app.includes('const workspaceKey = activeWorkspaceKey;') && app.includes('handleDroppedPhotoPaths(paths, workspaceKey)'), 'drop target workspace must be captured before async photo resolution');
+  assert(app.includes('handleDrop') && styles.includes('.app.drag-active::after'), 'drag-and-drop UI must be wired');
+  assert(preload.includes('webUtils') && preload.includes('getPathForFile'), 'dragged browser File objects must be resolved through Electron webUtils');
+  assert(api.includes('getPathForFile') && api.includes('file: File'), 'getPathForFile must be exposed in renderer API types');
+  assert(preload.includes('resolveDroppedPhotos') && main.includes("photos:resolve-dropped") && api.includes('resolveDroppedPhotos'), 'dropped photo IPC bridge is incomplete');
+  assert(preload.includes('copyPreviewImage') && main.includes("images:copy-preview") && api.includes('copyPreviewImage'), 'preview copy IPC bridge is incomplete');
+  assert(app.includes('결과 이미지 복사'), 'preview copy button label should clearly indicate output image copy');
+  assert(app.includes("boardLayoutMode: 'table'") && app.includes("value=\"bottom-strip\""), 'board layout mode controls are missing');
 }
 
 function verifyHighlightGeometry() {
@@ -177,11 +241,14 @@ function extractLabelWidth(svg) {
 (async () => {
   verifyBoardOptions();
   verifyBoardTypography();
+  verifyBoardColumnControls();
+  verifyBottomStripLayout();
   verifyInputTableLayout();
+  verifyWorkspaceAndBridgeStatic();
   verifyHighlightGeometry();
   await verifyOutsideGrayscaleMask();
   await verifyResizeBeforeBoardSize();
-  console.log(JSON.stringify({ ok: true, checked: 6 }, null, 2));
+  console.log(JSON.stringify({ ok: true, checked: 9 }, null, 2));
 })().catch((error) => {
   console.error(JSON.stringify({ ok: false, error: error.message }, null, 2));
   process.exit(1);

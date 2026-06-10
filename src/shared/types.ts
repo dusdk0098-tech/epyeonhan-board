@@ -4,6 +4,7 @@ export type FontWeight = 'normal' | 'bold';
 export type BorderWeight = 'normal' | 'bold';
 export type TimeMode = 'manual' | 'exif' | 'sequence' | 'sheet';
 export type BoardTextColor = 'black' | 'blue' | 'red' | 'green';
+export type BoardLayoutMode = 'table' | 'bottom-strip';
 
 export interface PhotoHighlight {
   enabled: boolean;
@@ -28,10 +29,13 @@ export interface BoardField {
 }
 
 export interface BoardSettings {
+  boardLayoutMode: BoardLayoutMode;
   position: BoardPosition;
   widthRatio: number;
   margin: number;
   boardSize: number;
+  labelColumnWidthRatio: number;
+  valueColumnWidthRatio: number;
   fontFamily: string;
   fontSize: number;
   itemAlign: HorizontalAlign;
@@ -80,6 +84,17 @@ export interface ProcessImagesResult {
   ok: boolean;
   savedFiles: string[];
   pdfPath?: string;
+  error?: string;
+}
+
+export interface CopyPreviewImagePayload {
+  photo: PhotoItem;
+  fields: BoardField[];
+  settings: BoardSettings;
+}
+
+export interface CopyImageResult {
+  ok: boolean;
   error?: string;
 }
 
