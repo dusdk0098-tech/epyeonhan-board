@@ -1,6 +1,6 @@
 {
   "name": "epyeonhan-board",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "건설 현장 사진 보드판 합성 로컬 데스크톱 프로그램",
   "author": "대성건설(주)",
   "main": "dist-electron/electron/main.js",

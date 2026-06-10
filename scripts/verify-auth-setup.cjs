@@ -83,6 +83,8 @@ function verifySocialAuthAssets() {
   const edgeFunction = read('supabase/functions/naver-userinfo/index.ts');
   const supabaseConfig = read('supabase/config.toml');
   assert(service.includes("naver: 'custom:naver'"), 'Naver custom OAuth provider mapping missing');
+  assert(service.includes("profile.role !== 'admin'"), 'admin users must bypass renderer-side device claim');
+  assert(service.includes('admin_unlimited'), 'admin unlimited device claim reason is missing');
   assert(service.includes('startSocialSignIn'), 'social OAuth start function missing');
   assert(service.includes('linkSocialIdentity'), 'social identity linking function missing');
   assert(service.includes('exchangeOAuthSessionFromUrl'), 'OAuth session exchange function missing');

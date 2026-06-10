@@ -163,21 +163,8 @@ export async function resolveAuthGateState(
     .single<UserProfile>();
   if (profileError) throw profileError;
 
-  const deviceClaim = options.skipDeviceClaim
-    ? { ok: true, reason: 'preview' }
-    : await claimCurrentDevice(deviceFingerprint, deviceName);
-  const devices = await loadDevicesForUser(user.id);
   const subscription = await loadSubscriptionForUser(user.id);
-
-  if (!deviceClaim?.ok) {
-    return {
-      status: 'device_blocked',
-      profile,
-      subscription,
-      devices,
-      message: '이미 등록된 PC가 있습니다. 관리자에게 기기 해제를 요청하세요.'
-    };
-  }
+  let devices = await loadDevicesForUser(user.id);
 
   if (profile.status === 'suspended') {
     return {
@@ -207,6 +194,25 @@ export async function resolveAuthGateState(
       devices,
       message: '프로그램 사용을 시작하려면 회사명을 입력하세요.'
     };
+  }
+
+  const shouldClaimDevice = profile.role !== 'admin' && !options.skipDeviceClaim;
+  const deviceClaim = shouldClaimDevice
+    ? await claimCurrentDevice(deviceFingerprint, deviceName)
+    : { ok: true, reason: profile.role === 'admin' ? 'admin_unlimited' : 'preview' };
+
+  if (!deviceClaim?.ok) {
+    return {
+      status: 'device_blocked',
+      profile,
+      subscription,
+      devices,
+      message: '이미 등록된 PC가 있습니다. 관리자에게 기기 해제를 요청하세요.'
+    };
+  }
+
+  if (shouldClaimDevice) {
+    devices = await loadDevicesForUser(user.id);
   }
 
   return { status: 'ready', profile, subscription, devices };
