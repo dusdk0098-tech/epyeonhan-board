@@ -29,6 +29,8 @@ function verifyMigration() {
     "values ('hamori4919@naver.com')",
     'create trigger on_auth_user_created',
     'create or replace function public.claim_current_device',
+    "case when role = 'admin' then 2 else 1 end",
+    'if active_other_count >= device_limit then',
     'alter table public.profiles enable row level security',
     'public.is_admin()'
   ].forEach((needle) => assert(sql.includes(needle), `migration missing: ${needle}`));
