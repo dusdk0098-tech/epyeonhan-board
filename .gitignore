@@ -1,0 +1,17 @@
+node_modules
+dist
+dist-electron
+release
+site
+.tmp
+.env
+.env.local
+.env.*.local
+*.zip
+/stitch_local_program_design*/
+/epyeonhan_board_icon_assets/
+/constructview_codex_spec*.md
+/*.png
+*.log
+*.tmp
+.DS_Store

@@ -1,0 +1,114 @@
+export type BoardPosition = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+export type HorizontalAlign = 'left' | 'center';
+export type FontWeight = 'normal' | 'bold';
+export type BorderWeight = 'normal' | 'bold';
+export type TimeMode = 'manual' | 'exif' | 'sequence' | 'sheet';
+export type BoardTextColor = 'black' | 'blue' | 'red' | 'green';
+
+export interface PhotoHighlight {
+  enabled: boolean;
+  xRatio: number;
+  yRatio: number;
+  radiusRatio: number;
+  outsideGrayscale: boolean;
+}
+
+export interface PhotoItem {
+  id: string;
+  path: string;
+  name: string;
+  selectedForProcessing: boolean;
+  highlight?: PhotoHighlight;
+}
+
+export interface BoardField {
+  id: string;
+  label: string;
+  value: string;
+}
+
+export interface BoardSettings {
+  position: BoardPosition;
+  widthRatio: number;
+  margin: number;
+  boardSize: number;
+  fontFamily: string;
+  fontSize: number;
+  itemAlign: HorizontalAlign;
+  contentAlign: HorizontalAlign;
+  fontWeight: FontWeight;
+  rowHeight: number;
+  borderWeight: BorderWeight;
+  jpgQuality: number;
+  boardBackgroundOpacity: number;
+  labelTextColor: BoardTextColor;
+  valueTextColor: BoardTextColor;
+  outputMaxLongEdge: number;
+  outputGrayscale: boolean;
+  openFolderAfterProcessing: boolean;
+  createPdf: boolean;
+  pdfTitle: string;
+}
+
+export interface DateTimeValue {
+  date: string;
+  time: string;
+}
+
+export type DateTimeMap = Record<string, DateTimeValue>;
+
+export interface TimeOptions {
+  mode: TimeMode;
+  sequenceStartDate: string;
+  sequenceStartTime: string;
+  sequenceIntervalMinutes: number;
+  sheetPath?: string;
+  sheetMap?: DateTimeMap;
+}
+
+export interface ProcessImagesPayload {
+  photos: PhotoItem[];
+  selectedPhotoPath?: string;
+  mode: 'selected' | 'all' | 'checked';
+  saveDir: string;
+  fields: BoardField[];
+  settings: BoardSettings;
+  timeOptions: TimeOptions;
+}
+
+export interface ProcessImagesResult {
+  ok: boolean;
+  savedFiles: string[];
+  pdfPath?: string;
+  error?: string;
+}
+
+export interface DialogPhotoResult {
+  canceled: boolean;
+  photos: PhotoItem[];
+}
+
+export interface FolderResult {
+  canceled: boolean;
+  path?: string;
+}
+
+export interface ImageDataResult {
+  ok: boolean;
+  dataUrl?: string;
+  error?: string;
+}
+
+export interface ReadDateTimeResult {
+  ok: boolean;
+  map: DateTimeMap;
+  error?: string;
+}
+
+export interface ImportSheetResult {
+  ok: boolean;
+  canceled: boolean;
+  filePath?: string;
+  map: DateTimeMap;
+  error?: string;
+}
