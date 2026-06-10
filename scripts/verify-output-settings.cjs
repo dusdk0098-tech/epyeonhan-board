@@ -1,4 +1,6 @@
 const sharp = require('sharp');
+const fs = require('fs');
+const path = require('path');
 const { buildBoardSvg } = require('../dist-electron/src/shared/boardRenderer.js');
 const {
   buildHighlightMaskSvg,
@@ -55,6 +57,31 @@ function verifyBoardOptions() {
   const opaque = buildBoardSvg(1200, 800, fields, baseSettings).svg;
   assert(opaque.includes('fill-opacity="1"'), 'default board background opacity must stay opaque');
   assert(opaque.includes('fill="#111827"'), 'default board text color must stay black');
+}
+
+function verifyBoardTypography() {
+  const typographyFields = [
+    { id: '1', label: '공사명', value: '154kV 북평택변전소 토건공사' },
+    { id: '2', label: '공종', value: '직영 화기감시자' },
+    { id: '3', label: '위치', value: '변전소 내' },
+    { id: '4', label: '내용', value: '금속, 석공사 용접 및 그라인딩 작업 화기감시' },
+    { id: '5', label: '날짜', value: '2026.04.07' },
+    { id: '6', label: '촬영시간', value: '10:30' }
+  ];
+  const small = buildBoardSvg(900, 520, typographyFields, { ...baseSettings, fontSize: 12 });
+  const large = buildBoardSvg(900, 520, typographyFields, { ...baseSettings, fontSize: 28 });
+  const smallFont = Math.max(...extractFontSizes(small.svg));
+  const largeFont = Math.max(...extractFontSizes(large.svg));
+  assert(largeFont >= smallFont + 10, `font size control is not reflected enough: ${smallFont} -> ${largeFont}`);
+
+  const labelWidth = extractLabelWidth(large.svg);
+  const labelRatio = labelWidth / large.width;
+  assert(labelRatio >= 0.255 && labelRatio <= 0.265, `label cell width ratio drifted: ${labelRatio}`);
+}
+
+function verifyInputTableLayout() {
+  const css = fs.readFileSync(path.join(__dirname, '..', 'src', 'styles.css'), 'utf8');
+  assert(css.includes('grid-template-columns: 128px 1fr;'), 'board content input label cell width must stay at 128px');
 }
 
 function verifyHighlightGeometry() {
@@ -137,12 +164,24 @@ function readRgb(buffer, width, channels, x, y) {
   };
 }
 
+function extractFontSizes(svg) {
+  return [...svg.matchAll(/font-size="(\d+)"/g)].map((match) => Number(match[1]));
+}
+
+function extractLabelWidth(svg) {
+  const match = svg.match(/<line x1="(\d+(?:\.\d+)?)" y1="0" x2="\1" y2="\d+(?:\.\d+)?"/);
+  assert(match, 'label separator line was not found');
+  return Number(match[1]);
+}
+
 (async () => {
   verifyBoardOptions();
+  verifyBoardTypography();
+  verifyInputTableLayout();
   verifyHighlightGeometry();
   await verifyOutsideGrayscaleMask();
   await verifyResizeBeforeBoardSize();
-  console.log(JSON.stringify({ ok: true, checked: 4 }, null, 2));
+  console.log(JSON.stringify({ ok: true, checked: 6 }, null, 2));
 })().catch((error) => {
   console.error(JSON.stringify({ ok: false, error: error.message }, null, 2));
   process.exit(1);

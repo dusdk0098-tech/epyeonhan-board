@@ -2,7 +2,7 @@ export const MIN_BOARD_WIDTH_RATIO = 0.12;
 export const MAX_BOARD_WIDTH_RATIO = 0.85;
 export const DEFAULT_BOARD_WIDTH_RATIO = 0.675;
 export const BOARD_SIZE_RATIO_DIVISOR = 200;
-export const BOARD_LABEL_WIDTH_RATIO = 0.2;
+export const BOARD_LABEL_WIDTH_RATIO = 0.26;
 
 export function clampBoardWidthRatio(value: number | undefined, fallback = DEFAULT_BOARD_WIDTH_RATIO) {
   const next = Number.isFinite(value) ? Number(value) : fallback;

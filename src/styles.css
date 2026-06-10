@@ -2135,7 +2135,7 @@ body {
 }
 
 .field-row {
-  grid-template-columns: 104px 1fr;
+  grid-template-columns: 128px 1fr;
   height: 32px;
   min-height: 32px;
 }
