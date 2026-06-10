@@ -26,8 +26,8 @@ function validManifest(overrides = {}) {
     pub_date: '2026-06-10T00:00:00.000Z',
     platform: 'windows',
     download_url:
-      'https://github.com/dusdk0098-tech/epyeonhan-board/releases/download/v1.0.1/e%ED%8E%B8%ED%95%9C%EB%B3%B4%EB%93%9C-1.0.1-setup.exe',
-    file_name: 'e편한보드-1.0.1-setup.exe',
+      'https://github.com/dusdk0098-tech/epyeonhan-board/releases/download/v1.0.1/epyeonhan-board-1.0.1-setup.exe',
+    file_name: 'epyeonhan-board-1.0.1-setup.exe',
     sha256: 'a'.repeat(64),
     size_bytes: 12345,
     mandatory: false,
@@ -94,13 +94,43 @@ async function verifyMainProcessAutoUpdateSource() {
   );
 }
 
+async function verifyVersionedPackagingConfig() {
+  const packageJson = JSON.parse(await fs.readFile(path.join(__dirname, '..', 'package.json'), 'utf8'));
+  const workflow = await fs.readFile(path.join(__dirname, '..', '.github', 'workflows', 'release-windows.yml'), 'utf8');
+  const packageScript = await fs.readFile(path.join(__dirname, 'package-win-version.cjs'), 'utf8');
+
+  assert(
+    packageJson.build.nsis.artifactName === 'e편한보드-${version}-setup.${ext}',
+    'local installer artifact name must include package version'
+  );
+  assert(
+    packageJson.scripts['package:win:versioned'] === 'node scripts/package-win-version.cjs',
+    'versioned local packaging script is missing'
+  );
+  assert(
+    workflow.includes('$uploadName = "epyeonhan-board-$env:VERSION-setup.exe"'),
+    'GitHub release asset name must include release version'
+  );
+  assert(
+    workflow.includes('npm version ${{ steps.meta.outputs.version }} --no-git-tag-version --allow-same-version'),
+    'workflow must set package version before building installer'
+  );
+  assert(
+    packageScript.includes('npm run package:win:versioned -- 1.0.2') &&
+      packageScript.includes('e편한보드-${version}-setup.exe') &&
+      packageScript.includes('epyeonhan-board-${version}-setup.exe'),
+    'versioned local packaging script must create versioned installer names'
+  );
+}
+
 (async () => {
   verifySemver();
   verifyUrls();
   verifyManifestParsing();
   await verifySha256();
   await verifyMainProcessAutoUpdateSource();
-  console.log(JSON.stringify({ ok: true, checked: 5 }, null, 2));
+  await verifyVersionedPackagingConfig();
+  console.log(JSON.stringify({ ok: true, checked: 6 }, null, 2));
 })().catch((error) => {
   console.error(JSON.stringify({ ok: false, error: error.message }, null, 2));
   process.exit(1);
