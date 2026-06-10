@@ -93,6 +93,11 @@ button:disabled {
   height: 40px;
 }
 
+.secondary-button.wide {
+  width: 100%;
+  height: 40px;
+}
+
 .secondary-button {
   border: 1px solid var(--primary);
   background: #ffffff;
@@ -162,33 +167,14 @@ input[type="radio"] {
   height: 65px;
   flex: 0 0 auto;
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: 1fr auto;
   align-items: center;
-  gap: 28px;
+  gap: 20px;
   padding: 0 28px;
   color: #ffffff;
   background: var(--navy);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.16);
   z-index: 5;
-}
-
-.brand-area {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 202px;
-}
-
-.brand-logo {
-  width: 52px;
-  height: 38px;
-  object-fit: contain;
-}
-
-.brand-wordmark {
-  width: 132px;
-  height: 35px;
-  object-fit: contain;
 }
 
 .nav-links {
@@ -301,9 +287,91 @@ input[type="radio"] {
   line-height: 1.55;
 }
 
+.auth-login-stack {
+  display: grid;
+  gap: 14px;
+}
+
+.social-auth-buttons {
+  display: grid;
+  gap: 10px;
+}
+
+.social-auth-button {
+  width: 100%;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #ffffff;
+  color: var(--text);
+  font-weight: 900;
+}
+
+.social-auth-button span {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  font-size: 13px;
+}
+
+.social-auth-button.google span {
+  color: #1a73e8;
+  background: #eef5ff;
+}
+
+.social-auth-button.kakao {
+  border-color: #f1d551;
+  background: #fee500;
+}
+
+.social-auth-button.kakao span {
+  color: #3c1e1e;
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.social-auth-button.naver {
+  border-color: #03c75a;
+}
+
+.social-auth-button.naver span {
+  color: #ffffff;
+  background: #03c75a;
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-subtle);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  height: 1px;
+  flex: 1;
+  background: var(--border-soft);
+}
+
+.admin-login-toggle {
+  font-size: 13px;
+}
+
 .auth-form {
   display: grid;
   gap: 14px;
+}
+
+.auth-form.compact {
+  padding-top: 2px;
 }
 
 .auth-form label {
@@ -315,6 +383,11 @@ input[type="radio"] {
 .auth-form input {
   height: 38px;
   padding: 0 11px;
+}
+
+.auth-form .readonly-field {
+  background: #eef2f8;
+  color: var(--text-muted);
 }
 
 .auth-password-field {
@@ -1556,6 +1629,57 @@ input[type="radio"] {
   color: var(--text-muted);
 }
 
+.admin-oauth-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px;
+  margin-bottom: 16px;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background: #f8fbff;
+}
+
+.admin-oauth-link > div:first-child {
+  display: grid;
+  gap: 3px;
+}
+
+.admin-oauth-link span {
+  color: var(--text-subtle);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.admin-oauth-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.admin-oauth-button {
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #ffffff;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.admin-oauth-button.kakao {
+  border-color: #f1d551;
+  background: #fee500;
+}
+
+.admin-oauth-button.naver {
+  border-color: #03c75a;
+  color: #008f42;
+}
+
 .admin-error {
   margin-bottom: 12px;
   padding: 10px 12px;
@@ -1787,23 +1911,8 @@ body {
 
 .top-nav {
   height: 52px;
-  gap: 18px;
+  gap: 16px;
   padding: 0 18px;
-}
-
-.brand-area {
-  gap: 9px;
-  min-width: 176px;
-}
-
-.brand-logo {
-  width: 42px;
-  height: 30px;
-}
-
-.brand-wordmark {
-  width: 116px;
-  height: 30px;
 }
 
 .nav-links {

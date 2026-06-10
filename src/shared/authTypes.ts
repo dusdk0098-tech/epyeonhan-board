@@ -9,6 +9,8 @@ export interface UserProfile {
   company: string | null;
   role: UserRole;
   status: AccountStatus;
+  auth_provider: string | null;
+  profile_completed_at: string | null;
   created_at: string;
   last_seen_at: string | null;
 }
@@ -39,7 +41,15 @@ export interface AdminUserRow {
   devices: RegisteredDevice[];
 }
 
-export type AuthGateStatus = 'loading' | 'config_missing' | 'unauthenticated' | 'ready' | 'restricted' | 'device_blocked' | 'error';
+export type AuthGateStatus =
+  | 'loading'
+  | 'config_missing'
+  | 'unauthenticated'
+  | 'profile_incomplete'
+  | 'ready'
+  | 'restricted'
+  | 'device_blocked'
+  | 'error';
 
 export interface AuthGateState {
   status: AuthGateStatus;
@@ -62,4 +72,11 @@ export interface AuthCredentials {
   password: string;
   displayName?: string;
   company?: string;
+}
+
+export type SocialAuthProvider = 'google' | 'kakao' | 'naver';
+
+export interface ProfileCompletionInput {
+  company: string;
+  displayName?: string;
 }

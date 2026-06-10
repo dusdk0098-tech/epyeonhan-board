@@ -12,5 +12,11 @@ contextBridge.exposeInMainWorld('constructView', {
   processImages: (payload: ProcessImagesPayload) => ipcRenderer.invoke('images:process', payload),
   resizeWindow: (size: { width: number; height: number }) => ipcRenderer.invoke('window:resize', size),
   getDeviceIdentity: () => ipcRenderer.invoke('auth:get-device-fingerprint'),
-  getAppVersion: () => ipcRenderer.invoke('auth:get-app-version')
+  getAppVersion: () => ipcRenderer.invoke('auth:get-app-version'),
+  openOAuthUrl: (url: string) => ipcRenderer.invoke('auth:open-oauth-url', url),
+  onOAuthCallback: (callback: (url: string) => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, url: string) => callback(url);
+    ipcRenderer.on('auth:oauth-callback', listener);
+    return () => ipcRenderer.removeListener('auth:oauth-callback', listener);
+  }
 });

@@ -41,7 +41,11 @@ import {
 const imageExtensions = new Set(['.jpg', '.jpeg', '.png', '.webp']);
 const updateCheckDelayMs = 2500;
 const updateRequestTimeoutMs = 15000;
+const oauthProtocol = 'epyeonhan-board';
 let updateInstallInProgress = false;
+let mainWindow: BrowserWindow | null = null;
+let pendingOAuthCallbackUrl: string | null = null;
+const gotSingleInstanceLock = app.requestSingleInstanceLock();
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -64,7 +68,16 @@ function createWindow() {
       sandbox: false
     }
   });
+  mainWindow = win;
   win.setMenuBarVisibility(false);
+  win.on('closed', () => {
+    if (mainWindow === win) {
+      mainWindow = null;
+    }
+  });
+  win.webContents.on('did-finish-load', () => {
+    setTimeout(() => flushPendingOAuthCallback(), 300);
+  });
 
   const devServerUrl = process.env.VITE_DEV_SERVER_URL;
   if (devServerUrl) {
@@ -82,18 +95,46 @@ function getWindowIconPath() {
     : path.join(__dirname, '..', '..', 'build', 'icon.ico');
 }
 
-app.whenReady().then(() => {
-  Menu.setApplicationMenu(null);
-  registerIpcHandlers();
-  const win = createWindow();
-  scheduleUpdateCheck(win);
+if (!gotSingleInstanceLock) {
+  app.quit();
+} else {
+  app.on('second-instance', (_event, argv) => {
+    const callbackUrl = findOAuthCallbackUrl(argv);
+    if (callbackUrl) {
+      handleOAuthCallbackUrl(callbackUrl);
+      return;
+    }
 
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      const activatedWindow = createWindow();
-      scheduleUpdateCheck(activatedWindow);
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
     }
   });
+
+  app.whenReady().then(() => {
+    Menu.setApplicationMenu(null);
+    registerOAuthProtocol();
+    registerIpcHandlers();
+    const win = createWindow();
+    scheduleUpdateCheck(win);
+
+    const startupCallbackUrl = findOAuthCallbackUrl(process.argv);
+    if (startupCallbackUrl) {
+      handleOAuthCallbackUrl(startupCallbackUrl);
+    }
+
+    app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0) {
+        const activatedWindow = createWindow();
+        scheduleUpdateCheck(activatedWindow);
+      }
+    });
+  });
+}
+
+app.on('open-url', (event, url) => {
+  event.preventDefault();
+  handleOAuthCallbackUrl(url);
 });
 
 app.on('window-all-closed', () => {
@@ -213,6 +254,70 @@ function registerIpcHandlers() {
   ipcMain.handle('window:resize', (event, size: { width: number; height: number }) => resizeWindow(event.sender, size));
   ipcMain.handle('auth:get-device-fingerprint', getDeviceIdentity);
   ipcMain.handle('auth:get-app-version', () => app.getVersion());
+  ipcMain.handle('auth:open-oauth-url', (_event, url: string) => openOAuthUrl(url));
+}
+
+function registerOAuthProtocol() {
+  if (process.defaultApp && process.argv.length >= 2) {
+    app.setAsDefaultProtocolClient(oauthProtocol, process.execPath, [path.resolve(process.argv[1])]);
+    return;
+  }
+  app.setAsDefaultProtocolClient(oauthProtocol);
+}
+
+async function openOAuthUrl(url: string): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const parsed = new URL(url);
+    if (!['https:', 'http:'].includes(parsed.protocol)) {
+      return { ok: false, error: '허용되지 않은 로그인 주소입니다.' };
+    }
+    await shell.openExternal(parsed.toString());
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: toErrorMessage(error) };
+  }
+}
+
+function findOAuthCallbackUrl(argv: string[]) {
+  return argv.find(isOAuthCallbackUrl);
+}
+
+function isOAuthCallbackUrl(value: string | undefined) {
+  if (!value) {
+    return false;
+  }
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === `${oauthProtocol}:` && parsed.hostname === 'auth' && parsed.pathname.startsWith('/callback');
+  } catch {
+    return false;
+  }
+}
+
+function handleOAuthCallbackUrl(url: string) {
+  if (!isOAuthCallbackUrl(url)) {
+    return;
+  }
+
+  pendingOAuthCallbackUrl = url;
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.show();
+    mainWindow.focus();
+    setTimeout(() => flushPendingOAuthCallback(), 300);
+  }
+}
+
+function flushPendingOAuthCallback() {
+  if (!pendingOAuthCallbackUrl || !mainWindow || mainWindow.isDestroyed()) {
+    return;
+  }
+  if (mainWindow.webContents.isLoading()) {
+    return;
+  }
+
+  mainWindow.webContents.send('auth:oauth-callback', pendingOAuthCallbackUrl);
+  pendingOAuthCallbackUrl = null;
 }
 
 function getDeviceIdentity() {

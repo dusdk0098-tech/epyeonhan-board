@@ -11,6 +11,7 @@ export const supabase = isSupabaseConfigured
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: false,
+        flowType: 'pkce',
         storageKey: 'epyeonhan-board-auth'
       }
     })

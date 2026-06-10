@@ -25,14 +25,18 @@ import {
   X
 } from 'lucide-react';
 import {
+  completeCurrentProfile,
+  exchangeOAuthSessionFromUrl,
   INITIAL_ADMIN_EMAIL,
   getCurrentUser,
+  linkSocialIdentity,
   loadAdminUsers,
   resolveAuthGateState,
   revokeDeviceByAdmin,
   signInWithPassword,
   signOut,
   signUpWithPassword,
+  startSocialSignIn,
   updateAccountStatus,
   updateSubscriptionByAdmin,
   updateUserRole
@@ -41,6 +45,8 @@ import type {
   AccountStatus,
   AdminUserRow,
   AuthGateState,
+  ProfileCompletionInput,
+  SocialAuthProvider,
   SubscriptionStatus,
   UserRole
 } from './shared/authTypes';
@@ -164,6 +170,12 @@ const defaultHighlight: PhotoHighlight = {
 const assetBaseUrl = import.meta.env.BASE_URL;
 const authSessionMaxAgeMs = 30 * 24 * 60 * 60 * 1000;
 const authSessionStartedAtKey = 'epyeonhan-auth-started-at';
+const oauthRedirectUrl = 'epyeonhan-board://auth/callback';
+const socialAuthProviders: Array<{ id: SocialAuthProvider; label: string; badge: string }> = [
+  { id: 'google', label: 'Google로 계속하기', badge: 'G' },
+  { id: 'kakao', label: '카카오로 계속하기', badge: 'K' },
+  { id: 'naver', label: '네이버로 계속하기', badge: 'N' }
+];
 
 export default function App() {
   const [authState, setAuthState] = useState<AuthGateState>({
@@ -173,6 +185,12 @@ export default function App() {
   const [authForm, setAuthForm] = useState({ email: '', password: '', displayName: '', company: '' });
   const [authPasswordVisible, setAuthPasswordVisible] = useState(false);
   const [authBusy, setAuthBusy] = useState(false);
+  const [oauthBusyProvider, setOauthBusyProvider] = useState<SocialAuthProvider | null>(null);
+  const [showAdminPasswordLogin, setShowAdminPasswordLogin] = useState(false);
+  const [profileCompletionForm, setProfileCompletionForm] = useState<ProfileCompletionInput>({
+    company: '',
+    displayName: ''
+  });
   const [adminRows, setAdminRows] = useState<AdminUserRow[]>([]);
   const [adminBusy, setAdminBusy] = useState(false);
   const [adminError, setAdminError] = useState('');
@@ -269,6 +287,37 @@ export default function App() {
       authSubscription.data.subscription.unsubscribe();
     };
   }, []);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured || !supabase) {
+      return;
+    }
+
+    const nativeBridge = getNativeBridge();
+    const unsubscribe = nativeBridge?.onOAuthCallback?.((url) => {
+      void handleOAuthCallback(url);
+    });
+
+    if (hasOAuthCallbackParams(window.location.href)) {
+      void handleOAuthCallback(window.location.href);
+      window.history.replaceState({}, document.title, `${window.location.origin}${window.location.pathname}`);
+    }
+
+    return () => {
+      unsubscribe?.();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (authState.status !== 'profile_incomplete') {
+      return;
+    }
+
+    setProfileCompletionForm({
+      displayName: authState.profile?.display_name ?? '',
+      company: authState.profile?.company ?? ''
+    });
+  }, [authState.status, authState.profile?.id]);
 
   useEffect(() => {
     if (activeScreen === 'admin' && !isAdmin) {
@@ -475,6 +524,114 @@ export default function App() {
     }
   }
 
+  async function handleSocialAuth(provider: SocialAuthProvider) {
+    if (!isSupabaseConfigured) {
+      setAuthState({ status: 'config_missing', message: 'Supabase 설정이 필요합니다.' });
+      return;
+    }
+
+    try {
+      setAuthBusy(true);
+      setOauthBusyProvider(provider);
+      const redirectTo = getOAuthRedirectTo();
+      const authUrl = await startSocialSignIn(provider, redirectTo);
+      const nativeBridge = getNativeBridge();
+
+      if (nativeBridge?.openOAuthUrl) {
+        const result = await nativeBridge.openOAuthUrl(authUrl);
+        if (!result.ok) {
+          throw new Error(result.error ?? '브라우저를 열 수 없습니다.');
+        }
+        setAuthState({
+          status: 'unauthenticated',
+          message: '기본 브라우저에서 인증을 완료하면 앱으로 자동 복귀합니다.'
+        });
+      } else {
+        window.location.assign(authUrl);
+      }
+    } catch (error) {
+      setAuthState({ status: 'unauthenticated', message: toUiError(error) });
+    } finally {
+      setAuthBusy(false);
+      setOauthBusyProvider(null);
+    }
+  }
+
+  async function handleOAuthCallback(callbackUrl: string) {
+    try {
+      setAuthBusy(true);
+      setAuthState({
+        status: 'loading',
+        message: '소셜 계정 인증을 마무리하고 있습니다.'
+      });
+      const user = await exchangeOAuthSessionFromUrl(callbackUrl);
+      const resolvedUser = user ?? (await getCurrentUser());
+      if (!resolvedUser) {
+        throw new Error('로그인된 사용자를 확인하지 못했습니다.');
+      }
+      window.localStorage.setItem(authSessionStartedAtKey, String(Date.now()));
+      await loadAuthForUser(resolvedUser);
+    } catch (error) {
+      setAuthState({ status: 'unauthenticated', message: toUiError(error) });
+    } finally {
+      setAuthBusy(false);
+    }
+  }
+
+  async function handleSocialIdentityLink(provider: SocialAuthProvider) {
+    try {
+      setAuthBusy(true);
+      setOauthBusyProvider(provider);
+      const authUrl = await linkSocialIdentity(provider, getOAuthRedirectTo());
+      const nativeBridge = getNativeBridge();
+
+      if (nativeBridge?.openOAuthUrl) {
+        const result = await nativeBridge.openOAuthUrl(authUrl);
+        if (!result.ok) {
+          throw new Error(result.error ?? '브라우저를 열 수 없습니다.');
+        }
+        setStatusMessage('info', '브라우저에서 소셜 계정 연결을 완료하세요.');
+      } else {
+        window.location.assign(authUrl);
+      }
+    } catch (error) {
+      setStatusMessage('error', toUiError(error));
+    } finally {
+      setAuthBusy(false);
+      setOauthBusyProvider(null);
+    }
+  }
+
+  async function handleProfileCompletionSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!profileCompletionForm.company.trim()) {
+      setAuthState((current) => ({
+        ...current,
+        status: 'profile_incomplete',
+        message: '회사명을 입력하세요.'
+      }));
+      return;
+    }
+
+    try {
+      setAuthBusy(true);
+      await completeCurrentProfile(profileCompletionForm);
+      const user = await getCurrentUser();
+      if (!user) {
+        throw new Error('로그인 세션을 확인하지 못했습니다.');
+      }
+      await loadAuthForUser(user);
+    } catch (error) {
+      setAuthState((current) => ({
+        ...current,
+        status: 'profile_incomplete',
+        message: toUiError(error)
+      }));
+    } finally {
+      setAuthBusy(false);
+    }
+  }
+
   async function handleLogout() {
     try {
       setAuthBusy(true);
@@ -539,6 +696,10 @@ export default function App() {
 
   function updateAuthForm(field: keyof typeof authForm, value: string) {
     setAuthForm((current) => ({ ...current, [field]: value }));
+  }
+
+  function updateProfileCompletionForm(field: keyof ProfileCompletionInput, value: string) {
+    setProfileCompletionForm((current) => ({ ...current, [field]: value }));
   }
 
   function toggleAuthMode() {
@@ -830,10 +991,6 @@ export default function App() {
 
     return (
       <header className="top-nav">
-        <div className="brand-area">
-          <img src={`${assetBaseUrl}daesung-logo.png`} alt="대성건설 로고" className="brand-logo" />
-          <img src={`${assetBaseUrl}daesung-wordmark.png`} alt="대성건설(주)" className="brand-wordmark" />
-        </div>
         <nav className="nav-links">
           {navItems.map((item) => (
             <button
@@ -868,7 +1025,8 @@ export default function App() {
     const titleByStatus: Record<AuthGateState['status'], string> = {
       loading: '로그인 상태 확인 중',
       config_missing: 'Supabase 설정 필요',
-      unauthenticated: authMode === 'signin' ? '로그인' : '회원가입',
+      unauthenticated: '로그인',
+      profile_incomplete: '회사 정보 입력',
       ready: '로그인 완료',
       restricted: '사용 제한',
       device_blocked: '등록 기기 제한',
@@ -895,65 +1053,128 @@ export default function App() {
           )}
 
           {(authState.status === 'unauthenticated' || authState.status === 'error') && (
-            <form className="auth-form" onSubmit={handleAuthSubmit}>
+            <div className="auth-login-stack">
+              <div className="social-auth-buttons" aria-label="소셜 로그인">
+                {socialAuthProviders.map((provider) => (
+                  <button
+                    key={provider.id}
+                    type="button"
+                    className={`social-auth-button ${provider.id}`}
+                    onClick={() => void handleSocialAuth(provider.id)}
+                    disabled={authBusy}
+                  >
+                    <span aria-hidden>{provider.badge}</span>
+                    {oauthBusyProvider === provider.id ? '브라우저 여는 중...' : provider.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="auth-divider">
+                <span>관리자/복구용</span>
+              </div>
+
+              <button
+                type="button"
+                className="secondary-button wide admin-login-toggle"
+                onClick={() => setShowAdminPasswordLogin((current) => !current)}
+              >
+                관리자 이메일 로그인
+              </button>
+
+              {showAdminPasswordLogin && (
+                <form className="auth-form compact" onSubmit={handleAuthSubmit}>
+                  <label>
+                    이메일
+                    <input
+                      type="email"
+                      value={authForm.email}
+                      onChange={(event) => updateAuthForm('email', event.currentTarget.value)}
+                      autoComplete="email"
+                    />
+                  </label>
+                  <label>
+                    비밀번호
+                    <div className="auth-password-field">
+                      <input
+                        type={authPasswordVisible ? 'text' : 'password'}
+                        value={authForm.password}
+                        onChange={(event) => updateAuthForm('password', event.currentTarget.value)}
+                        autoComplete={authMode === 'signin' ? 'current-password' : 'new-password'}
+                      />
+                      <button
+                        type="button"
+                        className="auth-password-toggle"
+                        onClick={() => setAuthPasswordVisible((current) => !current)}
+                        aria-label={authPasswordVisible ? '비밀번호 숨기기' : '비밀번호 보기'}
+                        title={authPasswordVisible ? '비밀번호 숨기기' : '비밀번호 보기'}
+                      >
+                        {authPasswordVisible ? <EyeOff size={17} aria-hidden /> : <Eye size={17} aria-hidden />}
+                      </button>
+                    </div>
+                  </label>
+                  {authMode === 'signup' && (
+                    <>
+                      <label>
+                        이름
+                        <input
+                          value={authForm.displayName}
+                          onChange={(event) => updateAuthForm('displayName', event.currentTarget.value)}
+                          autoComplete="name"
+                        />
+                      </label>
+                      <label>
+                        회사명
+                        <input
+                          value={authForm.company}
+                          onChange={(event) => updateAuthForm('company', event.currentTarget.value)}
+                          autoComplete="organization"
+                        />
+                      </label>
+                    </>
+                  )}
+                  <button type="submit" className="primary-button wide" disabled={authBusy}>
+                    {authBusy ? '처리 중...' : authMode === 'signin' ? '로그인' : '회원가입'}
+                  </button>
+                  <button
+                    type="button"
+                    className="link-button"
+                    onClick={toggleAuthMode}
+                  >
+                    {authMode === 'signin' ? '이메일 계정 만들기' : '이미 계정이 있습니다'}
+                  </button>
+                </form>
+              )}
+            </div>
+          )}
+
+          {authState.status === 'profile_incomplete' && (
+            <form className="auth-form" onSubmit={handleProfileCompletionSubmit}>
               <label>
                 이메일
+                <input className="readonly-field" value={authState.profile?.email ?? ''} readOnly />
+              </label>
+              <label>
+                이름
                 <input
-                  type="email"
-                  value={authForm.email}
-                  onChange={(event) => updateAuthForm('email', event.currentTarget.value)}
-                  autoComplete="email"
+                  value={profileCompletionForm.displayName ?? ''}
+                  onChange={(event) => updateProfileCompletionForm('displayName', event.currentTarget.value)}
+                  autoComplete="name"
                 />
               </label>
               <label>
-                비밀번호
-                <div className="auth-password-field">
-                  <input
-                    type={authPasswordVisible ? 'text' : 'password'}
-                    value={authForm.password}
-                    onChange={(event) => updateAuthForm('password', event.currentTarget.value)}
-                    autoComplete={authMode === 'signin' ? 'current-password' : 'new-password'}
-                  />
-                  <button
-                    type="button"
-                    className="auth-password-toggle"
-                    onClick={() => setAuthPasswordVisible((current) => !current)}
-                    aria-label={authPasswordVisible ? '비밀번호 숨기기' : '비밀번호 보기'}
-                    title={authPasswordVisible ? '비밀번호 숨기기' : '비밀번호 보기'}
-                  >
-                    {authPasswordVisible ? <EyeOff size={17} aria-hidden /> : <Eye size={17} aria-hidden />}
-                  </button>
-                </div>
+                회사명
+                <input
+                  value={profileCompletionForm.company}
+                  onChange={(event) => updateProfileCompletionForm('company', event.currentTarget.value)}
+                  autoComplete="organization"
+                  required
+                />
               </label>
-              {authMode === 'signup' && (
-                <>
-                  <label>
-                    이름
-                    <input
-                      value={authForm.displayName}
-                      onChange={(event) => updateAuthForm('displayName', event.currentTarget.value)}
-                      autoComplete="name"
-                    />
-                  </label>
-                  <label>
-                    회사명
-                    <input
-                      value={authForm.company}
-                      onChange={(event) => updateAuthForm('company', event.currentTarget.value)}
-                      autoComplete="organization"
-                    />
-                  </label>
-                </>
-              )}
               <button type="submit" className="primary-button wide" disabled={authBusy}>
-                {authBusy ? '처리 중...' : authMode === 'signin' ? '로그인' : '회원가입'}
+                {authBusy ? '저장 중...' : '저장하고 시작'}
               </button>
-              <button
-                type="button"
-                className="link-button"
-                onClick={toggleAuthMode}
-              >
-                {authMode === 'signin' ? '새 계정 만들기' : '이미 계정이 있습니다'}
+              <button type="button" className="secondary-button wide" onClick={handleLogout} disabled={authBusy}>
+                로그아웃
               </button>
             </form>
           )}
@@ -1729,6 +1950,25 @@ export default function App() {
               <span>활성 구독</span>
             </div>
           </div>
+          <div className="admin-oauth-link">
+            <div>
+              <strong>소셜 계정 연결</strong>
+              <span>기존 관리자 이메일 계정에 소셜 로그인을 추가합니다.</span>
+            </div>
+            <div className="admin-oauth-actions">
+              {socialAuthProviders.map((provider) => (
+                <button
+                  key={provider.id}
+                  type="button"
+                  className={`admin-oauth-button ${provider.id}`}
+                  onClick={() => void handleSocialIdentityLink(provider.id)}
+                  disabled={authBusy}
+                >
+                  {oauthBusyProvider === provider.id ? '연결 중...' : `${provider.badge} 연결`}
+                </button>
+              ))}
+            </div>
+          </div>
           {adminError && <div className="admin-error">{adminError}</div>}
           <div className="admin-table-wrap">
             <table className="admin-table">
@@ -1903,6 +2143,28 @@ export default function App() {
       )}
     </div>
   );
+}
+
+function getOAuthRedirectTo() {
+  return getNativeBridge()?.openOAuthUrl ? oauthRedirectUrl : `${window.location.origin}/auth/callback`;
+}
+
+function getNativeBridge() {
+  return Reflect.get(window, 'constructView') as Partial<Window['constructView']> | undefined;
+}
+
+function hasOAuthCallbackParams(value: string) {
+  try {
+    const url = new URL(value);
+    const params = new URLSearchParams(url.search);
+    if (url.hash) {
+      const hashParams = new URLSearchParams(url.hash.replace(/^#/, ''));
+      hashParams.forEach((paramValue, key) => params.set(key, paramValue));
+    }
+    return Boolean(params.get('code') || params.get('access_token') || params.get('error'));
+  } catch {
+    return false;
+  }
 }
 
 function ensureAuthSessionStart() {

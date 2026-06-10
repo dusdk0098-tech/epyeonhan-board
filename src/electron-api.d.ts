@@ -21,6 +21,8 @@ export interface ConstructViewApi {
   resizeWindow: (size: { width: number; height: number }) => Promise<{ ok: boolean; error?: string }>;
   getDeviceIdentity: () => Promise<AuthDeviceIdentity>;
   getAppVersion: () => Promise<string>;
+  openOAuthUrl: (url: string) => Promise<{ ok: boolean; error?: string }>;
+  onOAuthCallback: (callback: (url: string) => void) => () => void;
 }
 
 declare global {

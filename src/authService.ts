@@ -5,7 +5,9 @@ import type {
   AdminUserRow,
   AuthCredentials,
   AuthGateState,
+  ProfileCompletionInput,
   RegisteredDevice,
+  SocialAuthProvider,
   SubscriptionState,
   SubscriptionStatus,
   UserProfile,
@@ -15,6 +17,11 @@ import type {
 export const INITIAL_ADMIN_EMAIL = 'hamori4919@naver.com';
 
 const allowedSubscriptionStatuses = new Set<SubscriptionStatus>(['trial', 'active', 'manual_active']);
+const socialProviderMap: Record<SocialAuthProvider, string> = {
+  google: 'google',
+  kakao: 'kakao',
+  naver: 'custom:naver'
+};
 
 function requireSupabase() {
   if (!supabase) {
@@ -47,6 +54,79 @@ export async function signUpWithPassword(credentials: AuthCredentials) {
   });
   if (error) throw error;
   return data.session?.user ?? null;
+}
+
+export async function startSocialSignIn(provider: SocialAuthProvider, redirectTo: string) {
+  const client = requireSupabase();
+  const oauthProvider = socialProviderMap[provider];
+  const { data, error } = await client.auth.signInWithOAuth({
+    provider: oauthProvider as never,
+    options: {
+      redirectTo,
+      skipBrowserRedirect: true
+    }
+  });
+  if (error) throw error;
+  if (!data.url) {
+    throw new Error('소셜 로그인 주소를 생성하지 못했습니다.');
+  }
+  return data.url;
+}
+
+export async function linkSocialIdentity(provider: SocialAuthProvider, redirectTo: string) {
+  const client = requireSupabase();
+  const oauthProvider = socialProviderMap[provider];
+  const { data, error } = await client.auth.linkIdentity({
+    provider: oauthProvider as never,
+    options: {
+      redirectTo,
+      skipBrowserRedirect: true
+    }
+  });
+  if (error) throw error;
+  if (!data.url) {
+    throw new Error('소셜 계정 연결 주소를 생성하지 못했습니다.');
+  }
+  return data.url;
+}
+
+export async function exchangeOAuthSessionFromUrl(callbackUrl: string) {
+  const client = requireSupabase();
+  const params = readAuthCallbackParams(callbackUrl);
+  const callbackError = params.get('error_description') ?? params.get('error');
+  if (callbackError) {
+    throw new Error(decodeURIComponent(callbackError));
+  }
+
+  const code = params.get('code');
+  if (code) {
+    const { data, error } = await client.auth.exchangeCodeForSession(code);
+    if (error) throw error;
+    return data.user ?? data.session?.user ?? null;
+  }
+
+  const accessToken = params.get('access_token');
+  const refreshToken = params.get('refresh_token');
+  if (accessToken && refreshToken) {
+    const { data, error } = await client.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken
+    });
+    if (error) throw error;
+    return data.user ?? data.session?.user ?? null;
+  }
+
+  throw new Error('로그인 콜백에서 인증 정보를 찾지 못했습니다.');
+}
+
+export async function completeCurrentProfile(input: ProfileCompletionInput) {
+  const client = requireSupabase();
+  const { data, error } = await client.rpc('complete_current_profile', {
+    p_company: input.company,
+    p_display_name: input.displayName ?? null
+  });
+  if (error) throw error;
+  return data as UserProfile;
 }
 
 export async function signOut() {
@@ -116,6 +196,16 @@ export async function resolveAuthGateState(
       subscription,
       devices,
       message: '사용 가능한 구독 상태가 아닙니다. 관리자에게 문의하세요.'
+    };
+  }
+
+  if (!isProfileComplete(profile)) {
+    return {
+      status: 'profile_incomplete',
+      profile,
+      subscription,
+      devices,
+      message: '프로그램 사용을 시작하려면 회사명을 입력하세요.'
     };
   }
 
@@ -240,6 +330,20 @@ function isSubscriptionUsable(subscription: SubscriptionState | null) {
     return true;
   }
   return new Date(subscription.current_period_end).getTime() >= Date.now();
+}
+
+function isProfileComplete(profile: UserProfile) {
+  return Boolean(profile.profile_completed_at || profile.company?.trim());
+}
+
+function readAuthCallbackParams(callbackUrl: string) {
+  const url = new URL(callbackUrl);
+  const params = new URLSearchParams(url.search);
+  if (url.hash) {
+    const hashParams = new URLSearchParams(url.hash.replace(/^#/, ''));
+    hashParams.forEach((value, key) => params.set(key, value));
+  }
+  return params;
 }
 
 function normalizeEmail(email: string) {
