@@ -21,8 +21,8 @@
   "version": "1.0.1",
   "pub_date": "2026-06-10T00:00:00.000Z",
   "platform": "windows",
-  "download_url": "https://github.com/dusdk0098-tech/epyeonhan-board/releases/download/v1.0.1/e%ED%8E%B8%ED%95%9C%EB%B3%B4%EB%93%9C-1.0.1-setup.exe",
-  "file_name": "e편한보드-1.0.1-setup.exe",
+  "download_url": "https://github.com/dusdk0098-tech/epyeonhan-board/releases/download/v1.0.1/epyeonhan-board-1.0.1-setup.exe",
+  "file_name": "epyeonhan-board-1.0.1-setup.exe",
   "sha256": "64자리 SHA256",
   "size_bytes": 12345678,
   "mandatory": false,
@@ -64,6 +64,8 @@ git push origin v1.0.1
 ```
 
 태그 배포는 기본적으로 `mandatory=false`, `prerelease=false`로 manifest를 생성합니다.
+
+GitHub Release에 올라가는 설치 파일 자산명은 Windows CI의 한글 파일명 인코딩 문제를 피하기 위해 `epyeonhan-board-{version}-setup.exe` 형식을 사용합니다. 설치된 앱 이름과 바로가기 이름은 계속 `e편한보드`로 표시됩니다.
 
 ## 기존 사용자 안내
 

@@ -110,6 +110,8 @@ jobs:
       - name: Inspect installer
         id: artifact
         shell: pwsh
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
         run: |
           $installer = Get-ChildItem -Path release -Filter '*setup.exe' -File |
             Sort-Object LastWriteTime -Descending |
@@ -119,11 +121,15 @@ jobs:
             throw 'NSIS installer was not found under release/.'
           }
 
-          $hash = (Get-FileHash -LiteralPath $installer.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
-          "path=$($installer.FullName)" >> $env:GITHUB_OUTPUT
-          "file_name=$($installer.Name)" >> $env:GITHUB_OUTPUT
+          $uploadName = "epyeonhan-board-$env:VERSION-setup.exe"
+          $uploadPath = Join-Path $installer.DirectoryName $uploadName
+          Copy-Item -LiteralPath $installer.FullName -Destination $uploadPath -Force
+          $uploadFile = Get-Item -LiteralPath $uploadPath
+          $hash = (Get-FileHash -LiteralPath $uploadFile.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+          "path=$($uploadFile.FullName)" >> $env:GITHUB_OUTPUT
+          "file_name=$($uploadFile.Name)" >> $env:GITHUB_OUTPUT
           "sha256=$hash" >> $env:GITHUB_OUTPUT
-          "size_bytes=$($installer.Length)" >> $env:GITHUB_OUTPUT
+          "size_bytes=$($uploadFile.Length)" >> $env:GITHUB_OUTPUT
 
       - name: Create or update GitHub Release
         shell: pwsh
