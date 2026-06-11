@@ -13,7 +13,6 @@ import {
   FileSpreadsheet,
   FolderOpen,
   Image as ImageIcon,
-  Info,
   ListChecks,
   LogOut,
   Monitor,
@@ -25,13 +24,10 @@ import {
   Save,
   Settings,
   ShieldCheck,
-  Sparkles,
-  Sun,
   Trash2,
   User,
   Users,
   Zap,
-  Code2,
   X
 } from 'lucide-react';
 import {
@@ -1614,14 +1610,7 @@ export default function App() {
             onClick={() => setActiveScreen('start')}
             aria-label="시작 화면으로 이동"
           >
-            {activeScreen === 'start' ? (
-              <>
-                <Sparkles className="start-nav-brand-icon" size={30} aria-hidden />
-                <span className="start-nav-brand-text">PEDIT</span>
-              </>
-            ) : (
-              <img className="nav-brand-logo" src={`${assetBaseUrl}pedit-logo-horizontal-blue.png`} alt="PEDIT" />
-            )}
+            <img className="nav-brand-logo" src={`${assetBaseUrl}pedit-logo-horizontal-light-transparent.png`} alt="PEDIT" />
           </button>
           <nav className="nav-links">
             {navItems.map((item) => (
@@ -1835,27 +1824,8 @@ export default function App() {
   function renderStartScreen() {
     return (
       <main className="start-shell" aria-label="프로그램 시작 화면">
-        <div className="start-mesh" aria-hidden>
-          <span className="mesh-blob blob-cyan" />
-          <span className="mesh-blob blob-fuchsia" />
-          <span className="mesh-blob blob-blue" />
-          <span className="mesh-blob blob-violet" />
-        </div>
-        <aside className="start-side-help" aria-label="도움말 및 예시">
-          <h3>도움말 및 예시</h3>
-          <button type="button" onClick={() => setActiveScreen('contact')}>
-            <Info size={22} aria-hidden />
-            사용방법 안내
-          </button>
-          <button type="button" onClick={() => setActiveScreen('output')}>
-            <Code2 size={22} aria-hidden />
-            결과 예시 보기
-          </button>
-        </aside>
-
         <section className="start-content">
           <div className="start-hero-title">
-            <span aria-hidden />
             <h1>PEDIT</h1>
             <p>스마트한 업무를 위한 최고의 선택</p>
           </div>
@@ -1866,17 +1836,21 @@ export default function App() {
                 <Zap size={66} strokeWidth={2.1} />
               </span>
               <strong>LITE</strong>
-              <small>가볍고 빠른 시작</small>
-              <em>라이트모드 설명</em>
+              <span className="start-card-copy">
+                <small>가볍고 빠른 시작</small>
+                <em>라이트모드 설명</em>
+              </span>
             </button>
 
             <button type="button" className="start-mode-card pro" onClick={() => setActiveScreen('output')}>
               <span className="start-mode-icon" aria-hidden>
-                <Sun size={76} strokeWidth={2.1} />
+                <Settings size={72} strokeWidth={2.1} />
               </span>
               <strong>PRO</strong>
-              <small>전문가를 위한 강력한 기능</small>
-              <em>프로모드 설명</em>
+              <span className="start-card-copy">
+                <small>전문가를 위한 강력한 기능</small>
+                <em>프로모드 설명</em>
+              </span>
             </button>
           </div>
         </section>
