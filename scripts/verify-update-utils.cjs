@@ -100,7 +100,7 @@ async function verifyMainProcessAutoUpdateSource() {
   assert(mainSource.includes('response.body.getReader()'), 'download progress stream reader is missing');
   assert(!mainSource.includes("['/S', '--updated']"), 'legacy silent installer arguments must not remain');
   assert(mainSource.includes('buildSilentUpdateInstallArgs()'), 'silent update installer argument builder is missing');
-  assert(mainSource.includes("return ['/S', installModeArg, '/updated', `/D=${installDir}`];"), 'silent update args must include mode and /D path');
+  assert(mainSource.includes("return ['/S', installModeArg, '/force-run', '/updated', `/D=${installDir}`];"), 'silent update args must include mode, force-run, update flag, and /D path');
   assert(mainSource.includes('isPerMachineInstallDirectory'), 'install mode detection is missing');
   assert(mainSource.includes('process.env.ProgramFiles'), 'Program Files install detection is missing');
   assert(mainSource.includes('NSIS requires /D=... to be the last argument'), '/D last-argument guard comment is missing');
@@ -112,6 +112,9 @@ async function verifyMainProcessAutoUpdateSource() {
   assert(mainSource.includes('업데이트 설치 준비') && mainSource.includes('앱 재시작 준비'), 'update install/restart copy is missing');
   assert(installerInclude.includes('!macro customInit'), 'NSIS custom init macro is missing');
   assert(installerInclude.includes('${isUpdated}') && installerInclude.includes('SetSilent silent'), 'NSIS update mode must force silent install');
+  assert(installerInclude.includes('!macro customInstall'), 'NSIS custom install macro is missing');
+  assert(installerInclude.includes('$newDesktopLink') && installerInclude.includes('$newStartMenuLink'), 'NSIS update mode must ensure shortcuts');
+  assert(installerInclude.includes('${isForceRun}') && installerInclude.includes('StdUtils.ExecShellAsUser'), 'NSIS update mode must restart the app even for old updater args');
 }
 
 async function verifyVersionedPackagingConfig() {

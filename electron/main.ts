@@ -294,7 +294,7 @@ function buildSilentUpdateInstallArgs() {
   const installModeArg = isPerMachineInstallDirectory(installDir) ? '/allusers' : '/currentuser';
 
   // NSIS requires /D=... to be the last argument and unquoted.
-  return ['/S', installModeArg, '/updated', `/D=${installDir}`];
+  return ['/S', installModeArg, '/force-run', '/updated', `/D=${installDir}`];
 }
 
 function getCurrentInstallDirectory() {
