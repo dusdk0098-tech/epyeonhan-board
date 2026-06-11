@@ -249,10 +249,10 @@ async function downloadAndInstallUpdate(win: BrowserWindow, manifest: UpdateMani
       percent: 100,
       downloadedBytes: buffer.byteLength,
       totalBytes: manifest.size_bytes,
-      message: '업데이트 설치를 시작합니다.'
+      message: '업데이트를 설치하고 있습니다. 잠시 후 앱이 다시 시작됩니다.'
     });
 
-    const installerProcess = spawn(installerPath, ['/S', '--updated'], {
+    const installerProcess = spawn(installerPath, buildSilentUpdateInstallArgs(), {
       detached: true,
       stdio: 'ignore',
       windowsHide: true
@@ -278,6 +278,42 @@ async function downloadAndInstallUpdate(win: BrowserWindow, manifest: UpdateMani
     });
     updateInstallInProgress = false;
   }
+}
+
+function buildSilentUpdateInstallArgs() {
+  const installDir = getCurrentInstallDirectory();
+  const installModeArg = isPerMachineInstallDirectory(installDir) ? '/allusers' : '/currentuser';
+
+  // NSIS requires /D=... to be the last argument and unquoted.
+  return ['/S', installModeArg, '/updated', `/D=${installDir}`];
+}
+
+function getCurrentInstallDirectory() {
+  return path.dirname(app.getPath('exe'));
+}
+
+function isPerMachineInstallDirectory(installDir: string) {
+  const normalizedInstallDir = normalizeWindowsPath(installDir);
+  return getProgramFilesRoots().some(
+    (root) => normalizedInstallDir === root || normalizedInstallDir.startsWith(`${root}\\`)
+  );
+}
+
+function getProgramFilesRoots() {
+  const roots = [process.env.ProgramFiles, process.env['ProgramFiles(x86)'], process.env.ProgramW6432]
+    .filter((value): value is string => Boolean(value))
+    .map((value) => normalizeWindowsPath(value))
+    .filter(Boolean);
+
+  return Array.from(new Set(roots));
+}
+
+function normalizeWindowsPath(value: string) {
+  return path
+    .resolve(value)
+    .replace(/\//g, '\\')
+    .replace(/\\+$/, '')
+    .toLowerCase();
 }
 
 async function readUpdateResponseBuffer(response: Response, manifest: UpdateManifest, win: BrowserWindow) {

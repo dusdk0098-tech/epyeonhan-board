@@ -1,4 +1,6 @@
 const { calculateContainedSize } = require('../dist-electron/src/shared/previewFit.js');
+const fs = require('node:fs');
+const path = require('node:path');
 
 const cases = [
   { name: 'basic-stage portrait', source: { width: 1080, height: 1920 }, container: { width: 461, height: 255 } },
@@ -62,4 +64,30 @@ if (failed.length > 0) {
   process.exit(1);
 }
 
-console.log(JSON.stringify({ ok: true, checked: results.length, cases: results }, null, 2));
+const rootDir = path.resolve(__dirname, '..');
+const appSource = fs.readFileSync(path.join(rootDir, 'src', 'App.tsx'), 'utf8');
+const cssSource = fs.readFileSync(path.join(rootDir, 'src', 'styles.css'), 'utf8');
+const staticFailures = [];
+
+if (!appSource.includes('const [loadedImage, setLoadedImage]')) {
+  staticFailures.push('PreviewStage must track loaded image dimensions with the matching data URL.');
+}
+
+if (!appSource.includes('if (src !== imageDataUrl) return;')) {
+  staticFailures.push('PreviewStage must ignore stale image load events from previously selected photos.');
+}
+
+if (!/\.preview-image-shell\[style\]\s*>\s*img[\s\S]*object-fit:\s*contain/.test(cssSource)) {
+  staticFailures.push('Styled preview images must use object-fit: contain to prevent cropping.');
+}
+
+if (!/\.advanced-right\s+\.advanced-preview-card\s+\.preview-stage[\s\S]*min-height:\s*0/.test(cssSource)) {
+  staticFailures.push('Advanced preview stage must be allowed to shrink instead of clipping behind the settings card.');
+}
+
+if (staticFailures.length > 0) {
+  console.error(JSON.stringify({ ok: false, checked: results.length, staticFailures }, null, 2));
+  process.exit(1);
+}
+
+console.log(JSON.stringify({ ok: true, checked: results.length + 4, cases: results }, null, 2));

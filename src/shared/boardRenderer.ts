@@ -133,6 +133,7 @@ export function calculateBoardPosition(
 
 function buildBottomStripBoardSvg(imageWidth: number, imageHeight: number, fields: BoardField[], settings: BoardSettings): BoardSvgResult {
   const rows = fields.length > 0 ? fields : [{ id: 'empty', label: '항목', value: '' }];
+  const columnLayout = resolveColumnLayout(settings);
   const boardWidth = Math.max(1, Math.round(imageWidth));
   const baseBoardWidth = Math.max(1, Math.round(imageWidth * DEFAULT_BOARD_WIDTH_RATIO));
   const borderBase = settings.borderWeight === 'bold' ? 2 : 1;
@@ -144,55 +145,70 @@ function buildBottomStripBoardSvg(imageWidth: number, imageHeight: number, field
   const valueTextColor = resolveBoardTextColor(settings.valueTextColor);
   const baseFontSize = Math.max(8, Math.round(baseBoardWidth * (settings.fontSize / 640)));
   const padding = calculateBoardTextPadding(baseFontSize);
-  const preferredBoardHeight = Math.max(
+  const lineHeight = Math.round(baseFontSize * 1.38);
+  const baseRowHeight = Math.max(
     Math.round(baseFontSize * 2.4),
     Math.round(settings.rowHeight * (baseBoardWidth / 720))
   );
-  const boardHeight = Math.max(1, Math.min(preferredBoardHeight, Math.max(1, imageHeight)));
-  const cellWidth = boardWidth / rows.length;
+  const labelWidth = Math.max(1, Math.round(boardWidth * columnLayout.labelShare));
+  const layoutRows = rows.map((field) => {
+    const valueTextWidth = Math.max(4, boardWidth - labelWidth - padding * 2);
+    const valueLines = wrapText(field.value || ' ', valueTextWidth, baseFontSize, false);
+    const lineCount = Math.max(valueLines.length, 1);
+    return {
+      labelLines: [field.label || ' '],
+      valueLines,
+      height: Math.max(baseRowHeight, lineCount * lineHeight + padding * 2)
+    };
+  });
+  const preferredBoardHeight = layoutRows.reduce((sum, row) => sum + row.height, 0);
+  const heightScale = Math.min(1, Math.max(1, imageHeight) / Math.max(1, preferredBoardHeight));
+  const boardHeight = Math.max(1, Math.round(preferredBoardHeight * heightScale));
+  const scaledBorderWidth = Math.max(1, Math.round(borderWidth * heightScale));
+  const scaledFontSize = Math.max(6, Math.round(baseFontSize * heightScale));
   const parts: string[] = [];
 
   parts.push(
     `<svg xmlns="http://www.w3.org/2000/svg" width="${boardWidth}" height="${boardHeight}" viewBox="0 0 ${boardWidth} ${boardHeight}" preserveAspectRatio="none" shape-rendering="crispEdges" text-rendering="geometricPrecision">`
   );
-  parts.push('<defs>');
-  rows.forEach((_field, index) => {
-    const x = Math.round(index * cellWidth);
-    const nextX = index === rows.length - 1 ? boardWidth : Math.round((index + 1) * cellWidth);
-    const width = Math.max(1, nextX - x);
-    parts.push(`<clipPath id="strip-cell-${index}"><rect x="${x}" y="0" width="${width}" height="${boardHeight}"/></clipPath>`);
-  });
-  parts.push('</defs>');
   parts.push(`<rect x="0" y="0" width="${boardWidth}" height="${boardHeight}" fill="#ffffff" fill-opacity="${backgroundOpacity}"/>`);
 
-  rows.forEach((field, index) => {
-    const x = Math.round(index * cellWidth);
-    const nextX = index === rows.length - 1 ? boardWidth : Math.round((index + 1) * cellWidth);
-    const width = Math.max(1, nextX - x);
-    if (index > 0) {
-      parts.push(`<line x1="${x}" y1="0" x2="${x}" y2="${boardHeight}" stroke="#1f2937" stroke-width="${borderWidth}"/>`);
-    }
+  let y = 0;
+  let baseY = 0;
+  layoutRows.forEach((row, index) => {
+    const isLast = index === layoutRows.length - 1;
+    const nextY = isLast ? boardHeight : Math.round((baseY + row.height) * heightScale);
+    const rowHeight = Math.max(1, nextY - y);
+    parts.push(`<line x1="0" y1="${y}" x2="${boardWidth}" y2="${y}" stroke="#1f2937" stroke-width="${scaledBorderWidth}"/>`);
     parts.push(
-      `<g clip-path="url(#strip-cell-${index})">`,
-      renderStripText(
-        field.label || ' ',
-        field.value || ' ',
-        x,
-        0,
-        width,
-        boardHeight,
-        baseFontSize,
-        padding,
+      `<line x1="${labelWidth}" y1="${y}" x2="${labelWidth}" y2="${y + rowHeight}" stroke="#1f2937" stroke-width="${scaledBorderWidth}"/>`
+    );
+    parts.push(renderTextLines(row.labelLines, 0, y, labelWidth, rowHeight, scaledFontSize, fontFamily, 700, settings.itemAlign, labelTextColor));
+    parts.push(
+      renderTextLines(
+        row.valueLines,
+        labelWidth,
+        y,
+        boardWidth - labelWidth,
+        rowHeight,
+        scaledFontSize,
         fontFamily,
         fontWeight,
-        labelTextColor,
+        settings.contentAlign,
         valueTextColor
-      ),
-      '</g>'
+      )
     );
+    if (isLast) {
+      parts.push(`<line x1="0" y1="${y + rowHeight}" x2="${boardWidth}" y2="${y + rowHeight}" stroke="#1f2937" stroke-width="${scaledBorderWidth}"/>`);
+    }
+    y = nextY;
+    baseY += row.height;
   });
 
-  parts.push(`<rect x="${borderWidth / 2}" y="${borderWidth / 2}" width="${boardWidth - borderWidth}" height="${boardHeight - borderWidth}" fill="none" stroke="#1f2937" stroke-width="${borderWidth}"/>`);
+  parts.push(`<line x1="${labelWidth}" y1="0" x2="${labelWidth}" y2="${boardHeight}" stroke="#1f2937" stroke-width="${scaledBorderWidth}"/>`);
+  parts.push(
+    `<rect x="${scaledBorderWidth / 2}" y="${scaledBorderWidth / 2}" width="${boardWidth - scaledBorderWidth}" height="${boardHeight - scaledBorderWidth}" fill="none" stroke="#1f2937" stroke-width="${scaledBorderWidth}"/>`
+  );
   parts.push('</svg>');
 
   return { svg: parts.join(''), width: boardWidth, height: boardHeight };
@@ -258,41 +274,6 @@ function renderTextLines(
     .join('');
 
   return `<text x="${textX}" y="${startY}" font-family="${escapedFamily}, Malgun Gothic, Arial, sans-serif" font-size="${fontSize}" font-weight="${fontWeight}" fill="${color}" text-anchor="${anchor}">${tspans}</text>`;
-}
-
-function renderStripText(
-  label: string,
-  value: string,
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-  fontSize: number,
-  padding: number,
-  fontFamily: string,
-  valueFontWeight: number,
-  labelColor: string,
-  valueColor: string
-) {
-  const escapedFamily = escapeXml(fontFamily);
-  const maxTextWidth = Math.max(4, width - padding * 2);
-  const labelText = `${label.trim()} `;
-  const valueText = value.trim();
-  const estimatedWidth = measureTextWidth(labelText, fontSize, false) + measureTextWidth(valueText, fontSize, false);
-  const adjustedFontSize = Math.max(6, Math.min(fontSize, Math.floor(fontSize * (maxTextWidth / Math.max(1, estimatedWidth)))));
-  const adjustedPadding = calculateBoardTextPadding(adjustedFontSize);
-  const textY = y + height / 2 + adjustedFontSize * 0.36;
-  const textX = x + adjustedPadding;
-  const valueX = textX + measureTextWidth(labelText, adjustedFontSize, false);
-
-  return [
-    `<text x="${textX}" y="${textY}" font-family="${escapedFamily}, Malgun Gothic, Arial, sans-serif" font-size="${adjustedFontSize}" font-weight="700" fill="${labelColor}" text-anchor="start">`,
-    `<tspan>${escapeXml(labelText)}</tspan>`,
-    `</text>`,
-    `<text x="${valueX}" y="${textY}" font-family="${escapedFamily}, Malgun Gothic, Arial, sans-serif" font-size="${adjustedFontSize}" font-weight="${valueFontWeight}" fill="${valueColor}" text-anchor="start">`,
-    `<tspan>${escapeXml(valueText)}</tspan>`,
-    `</text>`
-  ].join('');
 }
 
 function normalizeOpacity(value: number | undefined) {

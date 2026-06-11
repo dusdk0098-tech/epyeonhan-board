@@ -1,6 +1,6 @@
 {
   "name": "epyeonhan-board",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "건설 현장 사진 보드판 합성 로컬 데스크톱 프로그램",
   "author": "대성건설(주)",
   "main": "dist-electron/electron/main.js",
@@ -57,8 +57,8 @@
     "nsis": {
       "artifactName": "e편한보드-${version}-setup.${ext}",
       "oneClick": false,
-      "perMachine": false,
-      "allowToChangeInstallationDirectory": true,
+      "perMachine": true,
+      "allowToChangeInstallationDirectory": false,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "e편한보드"

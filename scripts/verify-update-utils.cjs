@@ -97,10 +97,16 @@ async function verifyMainProcessAutoUpdateSource() {
   );
   assert(mainSource.includes("webContents.send('update:status'"), 'renderer update status event is missing');
   assert(mainSource.includes('response.body.getReader()'), 'download progress stream reader is missing');
-  assert(mainSource.includes("['/S', '--updated']"), 'silent installer arguments are missing');
+  assert(!mainSource.includes("['/S', '--updated']"), 'legacy silent installer arguments must not remain');
+  assert(mainSource.includes('buildSilentUpdateInstallArgs()'), 'silent update installer argument builder is missing');
+  assert(mainSource.includes("return ['/S', installModeArg, '/updated', `/D=${installDir}`];"), 'silent update args must include mode and /D path');
+  assert(mainSource.includes('isPerMachineInstallDirectory'), 'install mode detection is missing');
+  assert(mainSource.includes('process.env.ProgramFiles'), 'Program Files install detection is missing');
+  assert(mainSource.includes('NSIS requires /D=... to be the last argument'), '/D last-argument guard comment is missing');
   assert(preloadSource.includes('onUpdateStatus'), 'preload update status listener is missing');
   assert(apiTypes.includes('UpdateStatusPayload') && apiTypes.includes('onUpdateStatus'), 'renderer update status types are missing');
   assert(appSource.includes('UpdateOverlay') && appSource.includes('업데이트 진행 중'), 'update progress overlay is missing');
+  assert(mainSource.includes('업데이트를 설치하고 있습니다. 잠시 후 앱이 다시 시작됩니다.'), 'update installing copy is missing');
 }
 
 async function verifyVersionedPackagingConfig() {
@@ -111,6 +117,12 @@ async function verifyVersionedPackagingConfig() {
   assert(
     packageJson.build.nsis.artifactName === 'e편한보드-${version}-setup.${ext}',
     'local installer artifact name must include package version'
+  );
+  assert(packageJson.build.nsis.oneClick === false, 'installer should remain assisted for predictable NSIS update behavior');
+  assert(packageJson.build.nsis.perMachine === true, 'installer mode page should be removed by requiring per-machine install');
+  assert(
+    packageJson.build.nsis.allowToChangeInstallationDirectory === false,
+    'installer directory page should be removed to prevent clipped install path text'
   );
   assert(
     packageJson.scripts['package:win:versioned'] === 'node scripts/package-win-version.cjs',

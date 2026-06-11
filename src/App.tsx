@@ -86,11 +86,15 @@ import { resolveHighlightCircle } from './shared/highlightRenderer';
 import { calculateContainedSize } from './shared/previewFit';
 import type { UpdateStatusPayload } from './electron-api';
 
-type Screen = 'help' | 'basic' | 'advanced' | 'output' | 'contact' | 'admin';
+type Screen = 'help' | 'basic' | 'advanced' | 'output' | 'commonSettings' | 'contact' | 'admin';
 type WorkspaceScreen = 'basic' | 'advanced' | 'output';
 type StatusKind = 'info' | 'success' | 'error';
 type AuthMode = 'signin' | 'signup';
 type StateAction<T> = T | ((current: T) => T);
+type CommonOutputSettings = Pick<
+  BoardSettings,
+  'jpgQuality' | 'outputMaxLongEdge' | 'outputGrayscale' | 'openFolderAfterProcessing' | 'createPdf' | 'pdfTitle'
+>;
 
 interface BoardWorkspaceState {
   photos: PhotoItem[];
@@ -189,6 +193,17 @@ function createWorkspaceMap(): Record<WorkspaceScreen, BoardWorkspaceState> {
   };
 }
 
+function createCommonOutputSettings(): CommonOutputSettings {
+  return {
+    jpgQuality: defaultSettings.jpgQuality,
+    outputMaxLongEdge: defaultSettings.outputMaxLongEdge,
+    outputGrayscale: defaultSettings.outputGrayscale,
+    openFolderAfterProcessing: defaultSettings.openFolderAfterProcessing,
+    createPdf: defaultSettings.createPdf,
+    pdfTitle: defaultSettings.pdfTitle
+  };
+}
+
 const positionLabels: Record<BoardPosition, string> = {
   'top-left': '좌상단',
   'top-right': '우상단',
@@ -259,7 +274,10 @@ export default function App() {
   const [adminError, setAdminError] = useState('');
   const [activeScreen, setActiveScreen] = useState<Screen>('help');
   const [workspaces, setWorkspaces] = useState<Record<WorkspaceScreen, BoardWorkspaceState>>(() => createWorkspaceMap());
-  const [activeAdvancedSettingsTab, setActiveAdvancedSettingsTab] = useState<'datetime' | 'boardPdf'>('datetime');
+  const [commonOutputSettings, setCommonOutputSettings] = useState<CommonOutputSettings>(() => createCommonOutputSettings());
+  const [activeAdvancedSettingsTab, setActiveAdvancedSettingsTab] = useState<'datetime' | 'board'>('datetime');
+  const [activeAdvancedBoardTab, setActiveAdvancedBoardTab] = useState<'layout' | 'typography'>('layout');
+  const [activeOutputSettingsTab, setActiveOutputSettingsTab] = useState<'fields' | 'layout' | 'typography' | 'highlight'>('fields');
   const [status, setStatus] = useState<StatusMessage | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isDragTargetActive, setIsDragTargetActive] = useState(false);
@@ -892,6 +910,43 @@ export default function App() {
     refreshPreview();
   }
 
+  function normalizeCommonOutputSettings(nextSettings: CommonOutputSettings): CommonOutputSettings {
+    return {
+      ...nextSettings,
+      jpgQuality: clamp(Math.round(Number(nextSettings.jpgQuality)), 1, 100),
+      outputMaxLongEdge: Math.max(0, Math.round(Number(nextSettings.outputMaxLongEdge))),
+      outputGrayscale: Boolean(nextSettings.outputGrayscale),
+      openFolderAfterProcessing: Boolean(nextSettings.openFolderAfterProcessing),
+      createPdf: Boolean(nextSettings.createPdf),
+      pdfTitle: nextSettings.pdfTitle || '사진대지'
+    };
+  }
+
+  function mergeCommonOutputSettings(settingsValue: BoardSettings, commonSettings = commonOutputSettings): BoardSettings {
+    return normalizeSettings({
+      ...settingsValue,
+      ...commonSettings
+    });
+  }
+
+  function updateCommonOutputSettings(patch: Partial<CommonOutputSettings>) {
+    setCommonOutputSettings((current) => {
+      const next = normalizeCommonOutputSettings({ ...current, ...patch });
+      setWorkspaces((currentWorkspaces) => {
+        const nextWorkspaces = { ...currentWorkspaces };
+        (Object.keys(nextWorkspaces) as WorkspaceScreen[]).forEach((key) => {
+          nextWorkspaces[key] = {
+            ...nextWorkspaces[key],
+            settings: mergeCommonOutputSettings(nextWorkspaces[key].settings, next),
+            previewRevision: nextWorkspaces[key].previewRevision + 1
+          };
+        });
+        return nextWorkspaces;
+      });
+      return next;
+    });
+  }
+
   async function handleSelectPhotos() {
     const workspaceKey = activeWorkspaceKey;
     const result = await window.constructView.selectPhotos();
@@ -1144,14 +1199,14 @@ export default function App() {
     setIsProcessing(true);
     setStatusMessage('info', '사진을 처리하는 중입니다.');
 
-    const processSettings = normalizeSettings(settings);
+    const processSettings = mergeCommonOutputSettings(settings);
     const payload: ProcessImagesPayload = {
       photos,
       selectedPhotoPath,
       mode,
       saveDir,
       fields,
-      settings: activeScreen === 'basic' ? { ...processSettings, createPdf: false } : processSettings,
+      settings: processSettings,
       timeOptions
     };
 
@@ -1193,6 +1248,7 @@ export default function App() {
       { id: 'basic', label: '보드판 [간편]' },
       { id: 'advanced', label: '보드판 작성 [고급]' },
       { id: 'output', label: '보드판 작성 [프리미엄]' },
+      { id: 'commonSettings', label: '통합 설정' },
       { id: 'contact', label: '문의하기' }
     ];
     const signedInUserName = formatProfileName(authState.profile);
@@ -1632,9 +1688,6 @@ export default function App() {
           <button className="btn blue wide" type="button" disabled={isProcessing} onClick={() => void runProcess('selected')}>
             <Play size={17} /> 선택 사진 작업
           </button>
-          <button className="btn primary wide" type="button" disabled={isProcessing} onClick={() => void runProcess('checked')}>
-            <Play size={17} /> 전체 사진 작업
-          </button>
           <button className="btn outline wide" type="button" onClick={handleOpenSaveFolder}>
             <FolderOpen size={17} /> 결과 폴더 열기
           </button>
@@ -1681,13 +1734,13 @@ export default function App() {
     );
   }
 
-  function renderBoardPdfSettings() {
+  function renderBoardLayoutSettings() {
     return (
       <div className="settings-form board-pdf-form">
         <label>보드 형태</label>
         <select value={settings.boardLayoutMode} onChange={(event) => updateSettings({ boardLayoutMode: event.target.value as BoardLayoutMode })}>
           <option value="table">표형 보드</option>
-          <option value="bottom-strip">하부 1단 띠</option>
+          <option value="bottom-strip">하부 띠</option>
         </select>
         <label>위치</label>
         <select
@@ -1727,46 +1780,46 @@ export default function App() {
                 }}
               />
             </div>
-            <label>항목명 칸</label>
-            <div className="range-with-number">
-              <input
-                type="range"
-                min={MIN_LABEL_COLUMN_WIDTH_RATIO}
-                max={MAX_LABEL_COLUMN_WIDTH_RATIO}
-                step={0.005}
-                value={settings.labelColumnWidthRatio}
-                onChange={(event) => updateSettings({ labelColumnWidthRatio: Number(event.target.value) })}
-              />
-              <input
-                type="number"
-                min={MIN_LABEL_COLUMN_WIDTH_RATIO}
-                max={MAX_LABEL_COLUMN_WIDTH_RATIO}
-                step={0.005}
-                value={settings.labelColumnWidthRatio}
-                onChange={(event) => updateSettings({ labelColumnWidthRatio: Number(event.target.value) })}
-              />
-            </div>
-            <label>내용 칸</label>
-            <div className="range-with-number">
-              <input
-                type="range"
-                min={MIN_VALUE_COLUMN_WIDTH_RATIO}
-                max={MAX_VALUE_COLUMN_WIDTH_RATIO}
-                step={0.005}
-                value={settings.valueColumnWidthRatio}
-                onChange={(event) => updateSettings({ valueColumnWidthRatio: Number(event.target.value) })}
-              />
-              <input
-                type="number"
-                min={MIN_VALUE_COLUMN_WIDTH_RATIO}
-                max={MAX_VALUE_COLUMN_WIDTH_RATIO}
-                step={0.005}
-                value={settings.valueColumnWidthRatio}
-                onChange={(event) => updateSettings({ valueColumnWidthRatio: Number(event.target.value) })}
-              />
-            </div>
           </>
         )}
+        <label>항목명 칸</label>
+        <div className="range-with-number">
+          <input
+            type="range"
+            min={MIN_LABEL_COLUMN_WIDTH_RATIO}
+            max={MAX_LABEL_COLUMN_WIDTH_RATIO}
+            step={0.005}
+            value={settings.labelColumnWidthRatio}
+            onChange={(event) => updateSettings({ labelColumnWidthRatio: Number(event.target.value) })}
+          />
+          <input
+            type="number"
+            min={MIN_LABEL_COLUMN_WIDTH_RATIO}
+            max={MAX_LABEL_COLUMN_WIDTH_RATIO}
+            step={0.005}
+            value={settings.labelColumnWidthRatio}
+            onChange={(event) => updateSettings({ labelColumnWidthRatio: Number(event.target.value) })}
+          />
+        </div>
+        <label>내용 칸</label>
+        <div className="range-with-number">
+          <input
+            type="range"
+            min={MIN_VALUE_COLUMN_WIDTH_RATIO}
+            max={MAX_VALUE_COLUMN_WIDTH_RATIO}
+            step={0.005}
+            value={settings.valueColumnWidthRatio}
+            onChange={(event) => updateSettings({ valueColumnWidthRatio: Number(event.target.value) })}
+          />
+          <input
+            type="number"
+            min={MIN_VALUE_COLUMN_WIDTH_RATIO}
+            max={MAX_VALUE_COLUMN_WIDTH_RATIO}
+            step={0.005}
+            value={settings.valueColumnWidthRatio}
+            onChange={(event) => updateSettings({ valueColumnWidthRatio: Number(event.target.value) })}
+          />
+        </div>
         <label>행 높이</label>
         <div className="range-with-number">
           <input
@@ -1786,6 +1839,13 @@ export default function App() {
             onChange={(event) => updateSettings({ rowHeight: clamp(Number(event.target.value), 42, 110) })}
           />
         </div>
+      </div>
+    );
+  }
+
+  function renderBoardTypographySettings() {
+    return (
+      <div className="settings-form board-pdf-form">
         <label>글자크기</label>
         <div className="range-with-number">
           <input
@@ -1805,36 +1865,137 @@ export default function App() {
             onChange={(event) => updateSettings({ fontSize: clamp(Number(event.target.value), 12, 28) })}
           />
         </div>
+        <label>글꼴</label>
+        <select value={settings.fontFamily} onChange={(event) => updateSettings({ fontFamily: event.target.value })}>
+          <option>Malgun Gothic Semilight</option>
+          <option>Malgun Gothic</option>
+          <option>Arial</option>
+          <option>Helvetica</option>
+        </select>
+        <label>항목 정렬</label>
+        <select value={settings.itemAlign} onChange={(event) => updateSettings({ itemAlign: event.target.value as HorizontalAlign })}>
+          <option value="left">왼쪽</option>
+          <option value="center">가운데</option>
+        </select>
+        <label>내용 정렬</label>
+        <select value={settings.contentAlign} onChange={(event) => updateSettings({ contentAlign: event.target.value as HorizontalAlign })}>
+          <option value="left">왼쪽</option>
+          <option value="center">가운데</option>
+        </select>
+        <label>글자 굵기</label>
+        <select value={settings.fontWeight} onChange={(event) => updateSettings({ fontWeight: event.target.value as BoardSettings['fontWeight'] })}>
+          <option value="normal">보통</option>
+          <option value="bold">굵게</option>
+        </select>
+        <label>테두리 굵기</label>
+        <select value={settings.borderWeight} onChange={(event) => updateSettings({ borderWeight: event.target.value as BoardSettings['borderWeight'] })}>
+          <option value="normal">보통</option>
+          <option value="bold">굵게</option>
+        </select>
+      </div>
+    );
+  }
+
+  function renderAdvancedBoardSettings() {
+    return (
+      <div className="board-settings-stack">
+        <div className="sub-settings-tabs" role="tablist" aria-label="보드판 세부 설정">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeAdvancedBoardTab === 'layout'}
+            className={activeAdvancedBoardTab === 'layout' ? 'sub-settings-tab active' : 'sub-settings-tab'}
+            onClick={() => setActiveAdvancedBoardTab('layout')}
+          >
+            크기/배치
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeAdvancedBoardTab === 'typography'}
+            className={activeAdvancedBoardTab === 'typography' ? 'sub-settings-tab active' : 'sub-settings-tab'}
+            onClick={() => setActiveAdvancedBoardTab('typography')}
+          >
+            글자/테두리
+          </button>
+        </div>
+        {activeAdvancedBoardTab === 'layout' ? renderBoardLayoutSettings() : renderBoardTypographySettings()}
+      </div>
+    );
+  }
+
+  function renderCommonOutputSettingsForm() {
+    return (
+      <div className="settings-form board-pdf-form output-common-form">
         <label>JPG 품질</label>
         <input
           type="number"
           min={1}
           max={100}
-          value={settings.jpgQuality}
-          onChange={(event) => updateSettings({ jpgQuality: clamp(Number(event.target.value), 1, 100) })}
+          value={commonOutputSettings.jpgQuality}
+          onChange={(event) => updateCommonOutputSettings({ jpgQuality: clamp(Number(event.target.value), 1, 100) })}
         />
+        <label>최대 긴 변</label>
+        <input
+          type="number"
+          min={0}
+          step={100}
+          value={commonOutputSettings.outputMaxLongEdge}
+          onChange={(event) => updateCommonOutputSettings({ outputMaxLongEdge: Math.max(0, Number(event.target.value)) })}
+        />
+        <label>흑백 저장</label>
+        <label className="check-label compact-check">
+          <input
+            type="checkbox"
+            checked={commonOutputSettings.outputGrayscale}
+            onChange={(event) => updateCommonOutputSettings({ outputGrayscale: event.target.checked })}
+          />
+          결과물 흑백 저장
+        </label>
+        <label>폴더 열기</label>
+        <label className="check-label compact-check">
+          <input
+            type="checkbox"
+            checked={commonOutputSettings.openFolderAfterProcessing}
+            onChange={(event) => updateCommonOutputSettings({ openFolderAfterProcessing: event.target.checked })}
+          />
+          작업 완료 후 결과 폴더 열기
+        </label>
         <div className="pdf-options">
           <label className="check-label">
             <input
               type="checkbox"
-              checked={settings.createPdf}
-              onChange={(event) => updateSettings({ createPdf: event.target.checked })}
+              checked={commonOutputSettings.createPdf}
+              onChange={(event) => updateCommonOutputSettings({ createPdf: event.target.checked })}
             />
             PDF 생성 (사진대지)
           </label>
           <div className="form-row compact">
             <label>PDF 제목</label>
-            <input value={settings.pdfTitle} onChange={(event) => updateSettings({ pdfTitle: event.target.value })} />
+            <input value={commonOutputSettings.pdfTitle} onChange={(event) => updateCommonOutputSettings({ pdfTitle: event.target.value })} />
           </div>
         </div>
       </div>
     );
   }
 
+  function renderCommonSettingsScreen() {
+    return (
+      <main className="page-shell common-settings-shell">
+        <Card title="통합 설정" icon={<Settings size={17} />} className="common-settings-card">
+          {renderCommonOutputSettingsForm()}
+          <p className="setting-hint common-settings-hint">
+            이 설정은 보드판 [간편], 보드판 작성 [고급], 보드판 작성 [프리미엄] 작업에 공통 적용됩니다.
+          </p>
+        </Card>
+      </main>
+    );
+  }
+
   function renderIntegratedSettingsCard() {
     return (
-      <Card title="통합 설정" icon={<Settings size={17} />} className="integrated-settings-card">
-        <div className="settings-tabs" role="tablist" aria-label="통합 설정">
+      <Card title="고급 설정" icon={<Settings size={17} />} className="integrated-settings-card">
+        <div className="settings-tabs advanced-settings-tabs" role="tablist" aria-label="고급 설정">
           <button
             type="button"
             role="tab"
@@ -1847,15 +2008,159 @@ export default function App() {
           <button
             type="button"
             role="tab"
-            aria-selected={activeAdvancedSettingsTab === 'boardPdf'}
-            className={activeAdvancedSettingsTab === 'boardPdf' ? 'settings-tab active' : 'settings-tab'}
-            onClick={() => setActiveAdvancedSettingsTab('boardPdf')}
+            aria-selected={activeAdvancedSettingsTab === 'board'}
+            className={activeAdvancedSettingsTab === 'board' ? 'settings-tab active' : 'settings-tab'}
+            onClick={() => setActiveAdvancedSettingsTab('board')}
           >
-            <Settings size={15} /> 보드판/PDF
+            <Settings size={15} /> 보드판 설정
           </button>
         </div>
         <div className="settings-tab-panel">
-          {activeAdvancedSettingsTab === 'datetime' ? renderDateTimeSettings() : renderBoardPdfSettings()}
+          {activeAdvancedSettingsTab === 'datetime' && renderDateTimeSettings()}
+          {activeAdvancedSettingsTab === 'board' && renderAdvancedBoardSettings()}
+        </div>
+      </Card>
+    );
+  }
+
+  function renderBoardFieldEditor(className = 'advanced-field-list') {
+    return (
+      <div className={className}>
+        {fields.map((field) => (
+          <div key={field.id} className="advanced-field-row">
+            <input value={field.label} onInput={(event) => updateField(field.id, { label: event.currentTarget.value })} />
+            <input value={field.value} onInput={(event) => updateField(field.id, { value: event.currentTarget.value })} />
+            <button type="button" onClick={() => deleteField(field.id)} aria-label="항목 삭제">
+              <Trash2 size={16} />
+            </button>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  function renderPremiumTypographySettings() {
+    return (
+      <div className="premium-settings-stack">
+        {renderBoardTypographySettings()}
+        <div className="output-setting-section premium-display-section">
+          <h4>색상/배경</h4>
+          <SliderRow
+            label="배경 투명도"
+            min={0}
+            max={100}
+            value={settings.boardBackgroundOpacity}
+            suffix="%"
+            onChange={(value) => updateSettings({ boardBackgroundOpacity: value })}
+          />
+          <ColorSelectRow label="항목명 글씨" value={settings.labelTextColor} onChange={(value) => updateSettings({ labelTextColor: value })} />
+          <ColorSelectRow label="내용 글씨" value={settings.valueTextColor} onChange={(value) => updateSettings({ valueTextColor: value })} />
+        </div>
+      </div>
+    );
+  }
+
+  function renderPremiumHighlightAndActions() {
+    return (
+      <div className="premium-settings-stack">
+        <div className="output-setting-section">
+          <h4>원형 강조</h4>
+          <label className="check-label">
+            <input
+              type="checkbox"
+              checked={Boolean(selectedHighlight?.enabled)}
+              disabled={!selectedPhoto}
+              onChange={(event) => setSelectedHighlightEnabled(event.target.checked)}
+            />
+            선택 사진 원형 강조
+          </label>
+          <label className="check-label">
+            <input
+              type="checkbox"
+              checked={Boolean(selectedHighlight?.outsideGrayscale)}
+              disabled={!selectedHighlight?.enabled || settings.outputGrayscale}
+              onChange={(event) => updateSelectedHighlightPatch({ outsideGrayscale: event.target.checked })}
+            />
+            원 바깥 흑백
+          </label>
+          <button className="small-btn danger" type="button" disabled={!selectedHighlight?.enabled} onClick={() => updateSelectedPhotoHighlight(undefined)}>
+            <Trash2 size={15} /> 강조 삭제
+          </button>
+          <p className="output-help-text compact">
+            미리보기 사진 위에서 드래그하면 빨간 원을 만들고, 원 안쪽을 드래그하면 이동, 테두리 근처를 드래그하면 크기를 조절합니다.
+          </p>
+        </div>
+        <div className="output-setting-section">
+          <h4>작업 실행</h4>
+          <div className="button-row">
+            <button className="btn primary" type="button" disabled={isProcessing} onClick={() => void runProcess('selected')}>
+              선택 사진 작업
+            </button>
+            <button className="btn blue" type="button" disabled={isProcessing} onClick={() => void runProcess('checked')}>
+              체크 사진 작업
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  function renderPremiumSettingsCard() {
+    return (
+      <Card title="프리미엄 설정" icon={<Settings size={17} />} className="output-settings-card premium-settings-card">
+        <div className="settings-tabs premium-settings-tabs" role="tablist" aria-label="프리미엄 설정">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeOutputSettingsTab === 'fields'}
+            className={activeOutputSettingsTab === 'fields' ? 'settings-tab active' : 'settings-tab'}
+            onClick={() => setActiveOutputSettingsTab('fields')}
+          >
+            보드 내용
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeOutputSettingsTab === 'layout'}
+            className={activeOutputSettingsTab === 'layout' ? 'settings-tab active' : 'settings-tab'}
+            onClick={() => setActiveOutputSettingsTab('layout')}
+          >
+            크기/배치
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeOutputSettingsTab === 'typography'}
+            className={activeOutputSettingsTab === 'typography' ? 'settings-tab active' : 'settings-tab'}
+            onClick={() => setActiveOutputSettingsTab('typography')}
+          >
+            글자/테두리
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeOutputSettingsTab === 'highlight'}
+            className={activeOutputSettingsTab === 'highlight' ? 'settings-tab active' : 'settings-tab'}
+            onClick={() => setActiveOutputSettingsTab('highlight')}
+          >
+            강조/실행
+          </button>
+        </div>
+        <div className="settings-tab-panel output-tab-panel">
+          {activeOutputSettingsTab === 'fields' && (
+            <div className="premium-field-editor">
+              <div className="premium-field-header">
+                <span>항목명 / 내용</span>
+                <button className="small-btn outline" type="button" onClick={addField}>
+                  <Plus size={15} /> 항목 추가
+                </button>
+              </div>
+              {renderBoardFieldEditor('advanced-field-list premium-field-list')}
+            </div>
+          )}
+          {activeOutputSettingsTab === 'layout' && renderBoardLayoutSettings()}
+          {activeOutputSettingsTab === 'typography' && renderPremiumTypographySettings()}
+          {activeOutputSettingsTab === 'highlight' && renderPremiumHighlightAndActions()}
         </div>
       </Card>
     );
@@ -1866,7 +2171,7 @@ export default function App() {
       <main className="page-shell advanced-shell">
         <div className="advanced-grid">
           <div className="advanced-left">
-            <Card title="사진/출력 폴더 설정" icon={<FolderOpen size={17} />}>
+            <Card title="사진/출력 폴더 설정" icon={<FolderOpen size={17} />} className="advanced-folder-card">
               <div className="compact-row">
                 <label>원본 사진</label>
                 <input value={photos[0] ? trimPath(photos[0].path) : '사진을 불러오세요'} readOnly />
@@ -1881,7 +2186,7 @@ export default function App() {
                   선택
                 </button>
               </div>
-              <div className="button-row">
+              <div className="button-row advanced-folder-actions">
                 <button className="small-btn outline" type="button" onClick={handleSelectPhotoFolder}>
                   <FolderOpen size={15} /> 폴더 불러오기
                 </button>
@@ -1957,17 +2262,7 @@ export default function App() {
               action={<button onClick={addField}>+ 항목 추가</button>}
               className="advanced-field-card"
             >
-              <div className="advanced-field-list">
-                {fields.map((field) => (
-                  <div key={field.id} className="advanced-field-row">
-                    <input value={field.label} onInput={(event) => updateField(field.id, { label: event.currentTarget.value })} />
-                    <input value={field.value} onInput={(event) => updateField(field.id, { value: event.currentTarget.value })} />
-                    <button type="button" onClick={() => deleteField(field.id)} aria-label="항목 삭제">
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                ))}
-              </div>
+              {renderBoardFieldEditor()}
             </Card>
 
             {renderAdvancedActionCard()}
@@ -2106,112 +2401,9 @@ export default function App() {
               onHighlightChange={updateSelectedPhotoHighlight}
               large
             />
-            <div className="highlight-controls">
-              <label className="check-label">
-                <input
-                  type="checkbox"
-                  checked={Boolean(selectedHighlight?.enabled)}
-                  disabled={!selectedPhoto}
-                  onChange={(event) => setSelectedHighlightEnabled(event.target.checked)}
-                />
-                선택 사진 원형 강조
-              </label>
-              <label className="check-label">
-                <input
-                  type="checkbox"
-                  checked={Boolean(selectedHighlight?.outsideGrayscale)}
-                  disabled={!selectedHighlight?.enabled || settings.outputGrayscale}
-                  onChange={(event) => updateSelectedHighlightPatch({ outsideGrayscale: event.target.checked })}
-                />
-                원 바깥 흑백
-              </label>
-              <button className="small-btn danger" type="button" disabled={!selectedHighlight?.enabled} onClick={() => updateSelectedPhotoHighlight(undefined)}>
-                <Trash2 size={15} /> 강조 삭제
-              </button>
-            </div>
-            <p className="output-help-text">미리보기 사진 위에서 드래그하면 빨간 원을 만들고, 원 안쪽을 드래그하면 이동, 테두리 근처를 드래그하면 크기를 조절합니다.</p>
           </Card>
 
-          <Card title="결과물 설정" icon={<Settings size={17} />} className="output-settings-card">
-            <div className="output-settings-stack">
-              <div className="output-setting-section">
-                <h4>용량 / 품질</h4>
-                <SliderRow label="JPG 품질" min={1} max={100} value={settings.jpgQuality} suffix="%" onChange={(value) => updateSettings({ jpgQuality: value })} />
-                <div className="form-row">
-                  <label>최대 긴 변</label>
-                  <input
-                    type="number"
-                    min={0}
-                    step={100}
-                    value={settings.outputMaxLongEdge}
-                    onChange={(event) => updateSettings({ outputMaxLongEdge: Math.max(0, Number(event.target.value)) })}
-                  />
-                </div>
-                <p className="setting-hint">0이면 원본 크기로 저장합니다.</p>
-              </div>
-
-              <div className="output-setting-section">
-                <h4>보드판 표시</h4>
-                <div className="form-row">
-                  <label>보드 형태</label>
-                  <select
-                    value={settings.boardLayoutMode}
-                    onChange={(event) => updateSettings({ boardLayoutMode: event.target.value as BoardLayoutMode })}
-                  >
-                    <option value="table">표형 보드</option>
-                    <option value="bottom-strip">하부 1단 띠</option>
-                  </select>
-                </div>
-                {settings.boardLayoutMode === 'table' && (
-                  <SliderRow
-                    label="보드 크기"
-                    min={widthRatioToBoardSize(MIN_BOARD_WIDTH_RATIO)}
-                    max={widthRatioToBoardSize(MAX_BOARD_WIDTH_RATIO)}
-                    value={settings.boardSize}
-                    onChange={(value) => updateSettings({ boardSize: value })}
-                  />
-                )}
-                <SliderRow
-                  label="배경 투명도"
-                  min={0}
-                  max={100}
-                  value={settings.boardBackgroundOpacity}
-                  suffix="%"
-                  onChange={(value) => updateSettings({ boardBackgroundOpacity: value })}
-                />
-                <ColorSelectRow label="항목명 글씨" value={settings.labelTextColor} onChange={(value) => updateSettings({ labelTextColor: value })} />
-                <ColorSelectRow label="내용 글씨" value={settings.valueTextColor} onChange={(value) => updateSettings({ valueTextColor: value })} />
-              </div>
-
-              <div className="output-setting-section">
-                <h4>출력 동작</h4>
-                <label className="check-label">
-                  <input
-                    type="checkbox"
-                    checked={settings.outputGrayscale}
-                    onChange={(event) => updateSettings({ outputGrayscale: event.target.checked })}
-                  />
-                  결과물 흑백 저장
-                </label>
-                <label className="check-label">
-                  <input
-                    type="checkbox"
-                    checked={settings.openFolderAfterProcessing}
-                    onChange={(event) => updateSettings({ openFolderAfterProcessing: event.target.checked })}
-                  />
-                  작업 완료 후 결과 폴더 열기
-                </label>
-                <div className="button-row">
-                  <button className="btn primary" type="button" disabled={isProcessing} onClick={() => void runProcess('selected')}>
-                    선택 사진 작업
-                  </button>
-                  <button className="btn blue" type="button" disabled={isProcessing} onClick={() => void runProcess('checked')}>
-                    체크 사진 작업
-                  </button>
-                </div>
-              </div>
-            </div>
-          </Card>
+          {renderPremiumSettingsCard()}
         </div>
       </main>
     );
@@ -2416,6 +2608,7 @@ export default function App() {
       {activeScreen === 'basic' && renderBasicScreen()}
       {activeScreen === 'advanced' && renderAdvancedScreen()}
       {activeScreen === 'output' && renderOutputScreen()}
+      {activeScreen === 'commonSettings' && renderCommonSettingsScreen()}
       {activeScreen === 'contact' && renderContactScreen()}
       {activeScreen === 'admin' && isAdmin && renderAdminScreen()}
       {renderStatus()}
@@ -2810,7 +3003,7 @@ function PreviewStage({
   onHighlightChange?: (highlight: PhotoHighlight | undefined) => void;
   large?: boolean;
 }) {
-  const [imageSize, setImageSize] = useState<{ width: number; height: number } | null>(null);
+  const [loadedImage, setLoadedImage] = useState<{ src: string; width: number; height: number } | null>(null);
   const [stageSize, setStageSize] = useState<{ width: number; height: number } | null>(null);
   const [highlightDrag, setHighlightDrag] = useState<{
     mode: 'create' | 'move' | 'resize';
@@ -2833,10 +3026,12 @@ function PreviewStage({
 
   function syncImageSize(image: HTMLImageElement | null) {
     if (!image?.naturalWidth || !image.naturalHeight) return;
-    setImageSize((current) =>
-      current?.width === image.naturalWidth && current?.height === image.naturalHeight
+    const src = image.currentSrc || image.src;
+    if (src !== imageDataUrl) return;
+    setLoadedImage((current) =>
+      current?.src === src && current.width === image.naturalWidth && current.height === image.naturalHeight
         ? current
-        : { width: image.naturalWidth, height: image.naturalHeight }
+        : { src, width: image.naturalWidth, height: image.naturalHeight }
     );
   }
 
@@ -2853,13 +3048,17 @@ function PreviewStage({
   }, []);
 
   useEffect(() => {
-    setImageSize(null);
+    setLoadedImage(null);
   }, [imageDataUrl]);
 
   useEffect(() => {
     if (!imageDataUrl) return;
     syncImageSize(imageRef.current);
   }, [imageDataUrl, livePreviewSignature, previewRevision]);
+
+  const imageSize = loadedImage?.src === imageDataUrl
+    ? { width: loadedImage.width, height: loadedImage.height }
+    : null;
 
   const boardPreview = useMemo(() => {
     if (!imageSize) return null;

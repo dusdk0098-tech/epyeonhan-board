@@ -119,9 +119,9 @@ function verifyBottomStripLayout() {
   assert(strip.width === 1200, `bottom strip must use full image width: ${strip.width}`);
   assert(position.left === 0, `bottom strip left must be 0: ${position.left}`);
   assert(position.top === 800 - strip.height, `bottom strip must sit on bottom edge: ${position.top}`);
-  assert(strip.svg.includes('공사명') && strip.svg.includes('154kV'), 'bottom strip must render label and value in one row');
-  assert(strip.svg.includes('<clipPath id="strip-cell-0"'), 'bottom strip cells must clip overflowing text');
-  assert(strip.svg.includes('clip-path="url(#strip-cell-'), 'bottom strip text must be rendered inside cell clip paths');
+  assert(strip.svg.includes('공사명') && strip.svg.includes('154kV'), 'bottom strip must render label and value cells');
+  assert(/<line x1="31[0-9]" y1="0" x2="31[0-9]" y2="/.test(strip.svg), 'bottom strip must draw a separator between label and value cells');
+  assert((strip.svg.match(/x1="0" y1="/g) || []).length >= stripFields.length, 'bottom strip must stack one horizontal row per field');
 }
 
 function verifyInputTableLayout() {
@@ -145,7 +145,42 @@ function verifyWorkspaceAndBridgeStatic() {
   assert(preload.includes('resolveDroppedPhotos') && main.includes("photos:resolve-dropped") && api.includes('resolveDroppedPhotos'), 'dropped photo IPC bridge is incomplete');
   assert(preload.includes('copyPreviewImage') && main.includes("images:copy-preview") && api.includes('copyPreviewImage'), 'preview copy IPC bridge is incomplete');
   assert(app.includes('결과 이미지 복사'), 'preview copy button label should clearly indicate output image copy');
-  assert(app.includes("boardLayoutMode: 'table'") && app.includes("value=\"bottom-strip\""), 'board layout mode controls are missing');
+  assert(app.includes("boardLayoutMode: 'table'") && app.includes("value=\"bottom-strip\"") && app.includes('하부 띠'), 'board layout mode controls are missing');
+  assert(app.includes('항목 정렬') && app.includes('내용 정렬'), 'advanced board alignment controls are missing');
+  assert(app.includes('글자 굵기') && app.includes('테두리 굵기') && app.includes('글꼴'), 'advanced board typography controls are missing');
+  assert(
+    /\{settings\.boardLayoutMode === 'table' && \([\s\S]*?<label>보드크기<\/label>[\s\S]*?<\/>\s*\)}\s*<label>항목명 칸<\/label>/.test(app),
+    'label/value column width controls must be available outside the table-only board size block'
+  );
+  assert(app.includes("id: 'commonSettings', label: '통합 설정'"), 'common output settings must be exposed as a top-level navigation tab');
+  assert(app.includes("'datetime' | 'board'") && !app.includes("'datetime' | 'board' | 'output'"), 'advanced settings must only contain datetime and board tabs');
+  assert(app.includes('sub-settings-tabs') && app.includes('크기/배치') && app.includes('글자/테두리'), 'advanced board settings must be split into size and typography tabs');
+  assert(app.includes('renderCommonSettingsScreen') && app.includes('output-common-form'), 'common settings screen must render output settings');
+  assert(app.includes('commonOutputSettings') && app.includes('updateCommonOutputSettings'), 'common output settings must use shared state');
+  assert(app.includes('결과물 흑백 저장') && app.includes('작업 완료 후 결과 폴더 열기'), 'common output settings are missing');
+  assert(app.includes('activeOutputSettingsTab') && app.includes('renderPremiumSettingsCard'), 'premium tab must use a tabbed settings card');
+  assert(app.includes('보드 내용') && app.includes('renderBoardFieldEditor') && app.includes('premium-field-editor'), 'premium tab must allow editing board labels and values');
+  assert(app.includes('크기/배치') && app.includes('renderBoardLayoutSettings()'), 'premium tab must expose detailed board size/layout settings');
+  assert(app.includes('글자/테두리') && app.includes('renderPremiumTypographySettings'), 'premium tab must expose detailed typography settings');
+  assert(styles.includes('.premium-settings-tabs') && styles.includes('.premium-field-list'), 'premium settings layout styling is missing');
+  assert(app.includes('const processSettings = mergeCommonOutputSettings(settings);'), 'processing must merge common output settings for every work tab');
+  assert(app.includes('settings: processSettings'), 'process payload must use common output settings without per-tab overrides');
+  assert(!app.includes("activeScreen === 'basic' ? { ...processSettings, createPdf: false }"), 'basic tab must not bypass common PDF settings');
+  [
+    'JPG 품질',
+    '최대 긴 변',
+    '결과물 흑백 저장',
+    '작업 완료 후 결과 폴더 열기',
+    'PDF 생성 (사진대지)',
+    'PDF 제목'
+  ].forEach((label) => {
+    const count = app.split(label).length - 1;
+    assert(count === 1, `${label} control must only be rendered in the top-level common settings tab, found ${count}`);
+  });
+  assert(styles.includes('.common-settings-shell') && styles.includes('.common-settings-card'), 'common settings screen styling is missing');
+  assert(styles.includes('.sub-settings-tabs'), 'advanced board sub-tab styling is missing');
+  assert(styles.includes('grid-template-rows: 366px minmax(0, 1fr);'), 'advanced preview/settings rows must be fixed so settings tabs cannot resize preview');
+  assert(styles.includes('height: 366px;'), 'advanced preview card must keep a fixed height across settings tab changes');
 }
 
 function verifyHighlightGeometry() {

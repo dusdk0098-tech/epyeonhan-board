@@ -45,7 +45,7 @@ function verifyMigration() {
 
 function verifyRenderer() {
   const app = read('src/App.tsx');
-  assert(app.includes("type Screen = 'help' | 'basic' | 'advanced' | 'output' | 'contact' | 'admin'"), 'admin screen type is missing');
+  assert(app.includes("'admin'") && app.includes("type Screen =") && app.includes("'commonSettings'"), 'admin/common settings screen type is missing');
   assert(app.includes("navItems.push({ id: 'admin', label: '관리자' })"), 'admin nav must be conditional');
   assert(app.includes("activeScreen === 'admin' && !isAdmin"), 'non-admin admin route guard is missing');
   assert(app.includes("authState.status !== 'ready'"), 'auth gate must block app until ready');
