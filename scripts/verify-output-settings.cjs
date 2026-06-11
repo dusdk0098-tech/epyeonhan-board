@@ -164,6 +164,10 @@ function verifyWorkspaceAndBridgeStatic() {
   assert(preload.includes('resolveDroppedPhotos') && main.includes("photos:resolve-dropped") && api.includes('resolveDroppedPhotos'), 'dropped photo IPC bridge is incomplete');
   assert(preload.includes('copyPreviewImage') && main.includes("images:copy-preview") && api.includes('copyPreviewImage'), 'preview copy IPC bridge is incomplete');
   assert(preload.includes('printPreviewImage') && main.includes("images:print-preview") && api.includes('printPreviewImage'), 'preview print IPC bridge is incomplete');
+  assert(main.includes('validateImageFilePath') && main.includes('maxImageInputBytes'), 'image IPC paths must be validated and size-limited');
+  assert(main.includes('validateSheetFilePath') && main.includes('maxSheetInputBytes'), 'sheet import paths must be validated and size-limited');
+  assert(main.includes('sanitizeParsedRows') && main.includes('isUnsafeObjectKey'), 'sheet parser rows must be sanitized before mapping');
+  assert(main.includes('path.isAbsolute(trimmed)') && main.includes('trimmed.includes'), 'local IPC paths must reject relative or null-byte paths');
   assert(app.includes('결과 이미지 복사'), 'preview copy button label should clearly indicate output image copy');
   assert(app.includes('미리보기 인쇄') && app.includes('handlePrintPreviewImage'), 'preview print UI must be exposed');
   assert(main.includes('webContents.print') && main.includes("title: 'PEDIT (페딧) 인쇄'"), 'main process must print through an internal print window');

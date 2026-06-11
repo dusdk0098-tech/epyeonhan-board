@@ -1,6 +1,6 @@
 {
   "name": "epyeonhan-board",
-  "version": "1.0.11",
+  "version": "1.0.12",
   "description": "PICTURE EDIT 현장 사진 편집 로컬 데스크톱 프로그램",
   "author": "대성건설(주)",
   "main": "dist-electron/electron/main.js",
@@ -85,7 +85,7 @@
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
     "@vitejs/plugin-react": "^4.3.4",
-    "concurrently": "^9.1.0",
+    "concurrently": "^10.0.3",
     "cross-env": "^7.0.3",
     "electron": "^33.2.1",
     "electron-builder": "^26.15.2",

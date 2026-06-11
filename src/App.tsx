@@ -14,7 +14,6 @@ import {
   FolderOpen,
   Image as ImageIcon,
   ListChecks,
-  LockKeyhole,
   LogOut,
   Monitor,
   Play,
@@ -936,12 +935,11 @@ export default function App() {
 
       const rawValue = window.localStorage.getItem(rememberedLoginStorageKey);
       if (!rawValue) return;
-      const remembered = JSON.parse(rawValue) as { email?: string; password?: string };
+      const remembered = JSON.parse(rawValue) as { email?: string };
       setRememberLogin(true);
       setAuthForm((current) => ({
         ...current,
-        email: remembered.email ?? current.email,
-        password: remembered.password ?? current.password
+        email: remembered.email ?? current.email
       }));
     } catch {
       // Remembered login is a convenience feature and must not block sign-in.
@@ -956,7 +954,7 @@ export default function App() {
           await nativeBridge.saveRememberedLogin({ remember: true, email, password });
           return;
         }
-        window.localStorage.setItem(rememberedLoginStorageKey, JSON.stringify({ email, password }));
+        window.localStorage.setItem(rememberedLoginStorageKey, JSON.stringify({ email }));
         return;
       }
 
@@ -1512,8 +1510,7 @@ export default function App() {
             onClick={() => setActiveScreen('start')}
             aria-label="시작 화면으로 이동"
           >
-            <Monitor size={18} aria-hidden />
-            <span>PEDIT</span>
+            <img className="nav-brand-logo" src={`${assetBaseUrl}pedit-logo-horizontal-blue.png`} alt="PEDIT" />
           </button>
           <nav className="nav-links">
             {navItems.map((item) => (
@@ -1562,7 +1559,7 @@ export default function App() {
       <div className="auth-shell">
         <section className="auth-card">
           <div className="auth-mark">
-            <LockKeyhole size={34} aria-hidden />
+            <img className="auth-mark-logo" src={`${assetBaseUrl}pedit-app-icon.png`} alt="" />
           </div>
           <h1>{titleByStatus[authState.status]}</h1>
           {authState.message && <p className="auth-message">{authState.message}</p>}
@@ -1730,8 +1727,7 @@ export default function App() {
         <div className="start-pattern" aria-hidden />
         <section className="start-content">
           <div className="start-title-card">
-            <h1>PEDIT</h1>
-            <p>PICTURE EDIT</p>
+            <img className="start-brand-logo" src={`${assetBaseUrl}pedit-logo-vertical-transparent.png`} alt="PEDIT Picture Edit" />
           </div>
 
           <div className="start-mode-grid">
@@ -2502,7 +2498,7 @@ export default function App() {
 
   function renderPremiumSettingsCard() {
     return (
-      <Card title="PRO 설정" icon={<Settings size={17} />} className="output-settings-card premium-settings-card">
+      <Card title="설정" icon={<Settings size={17} />} className="output-settings-card premium-settings-card">
         <div className="settings-tabs premium-settings-tabs" role="tablist" aria-label="PRO 설정">
           <button
             type="button"
@@ -2732,13 +2728,16 @@ export default function App() {
       <main className="page-shell output-shell">
         <div className="output-grid">
           <Card
-            title={`불러온 사진 ${photos.length}장`}
+            title="사진 목록"
             icon={<ListChecks size={17} />}
             className="output-photo-card"
             action={
-              <button className="small-btn outline" type="button" onClick={() => setShowPhotoList(true)}>
-                자세히
-              </button>
+              <div className="output-title-actions">
+                <span>선택 {photos.filter((photo) => photo.selectedForProcessing).length}장</span>
+                <button className="small-btn outline" type="button" onClick={() => setShowPhotoList(true)}>
+                  자세히
+                </button>
+              </div>
             }
           >
             <div className="photo-card-actions output-photo-select-actions">

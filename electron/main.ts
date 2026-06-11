@@ -44,6 +44,11 @@ import {
 } from '../src/shared/updateUtils';
 
 const imageExtensions = new Set(['.jpg', '.jpeg', '.png', '.webp']);
+const sheetExtensions = new Set(['.csv', '.xlsx', '.xls']);
+const maxDroppedPathCount = 500;
+const maxFolderImageCount = 2000;
+const maxImageInputBytes = 80 * 1024 * 1024;
+const maxSheetInputBytes = 10 * 1024 * 1024;
 const updateCheckDelayMs = 2500;
 const updateRequestTimeoutMs = 15000;
 const oauthProtocol = 'epyeonhan-board';
@@ -95,10 +100,11 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: false
+      sandbox: true
     }
   });
   mainWindow = win;
+  hardenWebContents(win);
   win.setMenuBarVisibility(false);
   win.on('closed', () => {
     if (mainWindow === win) {
@@ -442,7 +448,7 @@ function registerOAuthProtocol() {
 async function openOAuthUrl(url: string): Promise<{ ok: boolean; error?: string }> {
   try {
     const parsed = new URL(url);
-    if (!['https:', 'http:'].includes(parsed.protocol)) {
+    if (parsed.protocol !== 'https:' || !isAllowedOAuthHost(parsed.hostname)) {
       return { ok: false, error: '허용되지 않은 로그인 주소입니다.' };
     }
     await shell.openExternal(parsed.toString());
@@ -450,6 +456,11 @@ async function openOAuthUrl(url: string): Promise<{ ok: boolean; error?: string 
   } catch (error) {
     return { ok: false, error: toErrorMessage(error) };
   }
+}
+
+function isAllowedOAuthHost(hostname: string) {
+  const normalized = hostname.toLowerCase();
+  return normalized === 'supabase.co' || normalized.endsWith('.supabase.co');
 }
 
 async function getRememberedLogin(): Promise<RememberedLoginResult> {
@@ -676,6 +687,35 @@ function resizeWindow(webContents: WebContents, size: { width: number; height: n
   }
 }
 
+function hardenWebContents(win: BrowserWindow) {
+  win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  win.webContents.session.setPermissionRequestHandler((_webContents, _permission, callback) => {
+    callback(false);
+  });
+  win.webContents.on('will-navigate', (event, navigationUrl) => {
+    if (!isAllowedAppNavigationUrl(navigationUrl)) {
+      event.preventDefault();
+    }
+  });
+}
+
+function isAllowedAppNavigationUrl(navigationUrl: string) {
+  try {
+    const parsed = new URL(navigationUrl);
+    const devServerUrl = process.env.VITE_DEV_SERVER_URL;
+    if (devServerUrl && hasSameOrigin(parsed, new URL(devServerUrl))) {
+      return true;
+    }
+    return parsed.protocol === 'file:';
+  } catch {
+    return false;
+  }
+}
+
+function hasSameOrigin(left: URL, right: URL) {
+  return left.protocol === right.protocol && left.hostname === right.hostname && left.port === right.port;
+}
+
 async function selectPhotos(): Promise<DialogPhotoResult> {
   const result = await dialog.showOpenDialog({
     title: '보드판을 합성할 사진 선택',
@@ -721,20 +761,22 @@ async function resolveDroppedPhotos(paths: string[]): Promise<DialogPhotoResult>
   }
 
   const filePaths: string[] = [];
-  for (const rawPath of paths) {
-    if (!rawPath || typeof rawPath !== 'string') {
+  for (const rawPath of paths.slice(0, maxDroppedPathCount)) {
+    const localPath = normalizeLocalPath(rawPath);
+    if (!localPath) {
       continue;
     }
 
     try {
-      const stat = await fs.stat(rawPath);
-      if (stat.isFile() && isSupportedImage(rawPath)) {
-        filePaths.push(rawPath);
+      const stat = await fs.stat(localPath);
+      if (stat.isFile() && isSupportedImage(localPath) && stat.size <= maxImageInputBytes) {
+        filePaths.push(localPath);
       } else if (stat.isDirectory()) {
-        const entries = await fs.readdir(rawPath, { withFileTypes: true });
+        const entries = await fs.readdir(localPath, { withFileTypes: true });
         entries
           .filter((entry) => entry.isFile())
-          .map((entry) => path.join(rawPath, entry.name))
+          .slice(0, maxFolderImageCount)
+          .map((entry) => path.join(localPath, entry.name))
           .filter(isSupportedImage)
           .forEach((filePath) => filePaths.push(filePath));
       }
@@ -765,11 +807,16 @@ async function selectSaveFolder(): Promise<FolderResult> {
 
 async function openFolder(folderPath: string): Promise<{ ok: boolean; error?: string }> {
   try {
-    if (!folderPath) {
+    const localPath = normalizeLocalPath(folderPath);
+    if (!localPath) {
       return { ok: false, error: '저장 경로가 지정되지 않았습니다.' };
     }
-    await fs.access(folderPath, fsConstants.R_OK);
-    const error = await shell.openPath(folderPath);
+    const stat = await fs.stat(localPath);
+    if (!stat.isDirectory()) {
+      return { ok: false, error: '폴더 경로만 열 수 있습니다.' };
+    }
+    await fs.access(localPath, fsConstants.R_OK);
+    const error = await shell.openPath(localPath);
     return error ? { ok: false, error } : { ok: true };
   } catch (error) {
     return { ok: false, error: toErrorMessage(error) };
@@ -778,11 +825,12 @@ async function openFolder(folderPath: string): Promise<{ ok: boolean; error?: st
 
 async function getImageDataUrl(photoPath: string) {
   try {
-    if (!isSupportedImage(photoPath)) {
+    const localPath = await validateImageFilePath(photoPath);
+    if (!localPath) {
       return { ok: false, error: '지원하지 않는 이미지 형식입니다.' };
     }
 
-    const buffer = await sharp(photoPath)
+    const buffer = await sharp(localPath)
       .rotate()
       .flatten({ background: '#ffffff' })
       .jpeg({ quality: 92, mozjpeg: true })
@@ -798,11 +846,13 @@ async function readPhotoDateTimes(photoPaths: string[]): Promise<ReadDateTimeRes
   try {
     const map: DateTimeMap = {};
     await Promise.all(
-      photoPaths.map(async (photoPath) => {
-        const value = await readExifDateTime(photoPath);
+      photoPaths.slice(0, maxDroppedPathCount).map(async (photoPath) => {
+        const localPath = await validateImageFilePath(photoPath);
+        if (!localPath) return;
+        const value = await readExifDateTime(localPath);
         if (value) {
-          map[normalizeFileName(path.basename(photoPath))] = value;
-          map[photoPath] = value;
+          map[normalizeFileName(path.basename(localPath))] = value;
+          map[localPath] = value;
         }
       })
     );
@@ -827,8 +877,9 @@ async function importDateTimeSheet(): Promise<ImportSheetResult> {
   const filePath = result.filePaths[0];
 
   try {
-    const ext = path.extname(filePath).toLowerCase();
-    const rows = ext === '.csv' ? await readCsvRows(filePath) : readWorkbookRows(filePath);
+    const localPath = await validateSheetFilePath(filePath);
+    const ext = path.extname(localPath).toLowerCase();
+    const rows = ext === '.csv' ? await readCsvRows(localPath) : readWorkbookRows(localPath);
     const map = extractDateTimeMap(rows);
     return { ok: true, canceled: false, filePath, map };
   } catch (error) {
@@ -838,11 +889,12 @@ async function importDateTimeSheet(): Promise<ImportSheetResult> {
 
 async function processImages(payload: ProcessImagesPayload): Promise<ProcessImagesResult> {
   try {
-    if (!payload.saveDir) {
+    const saveDir = normalizeLocalPath(payload.saveDir);
+    if (!saveDir) {
       return { ok: false, savedFiles: [], error: '저장 경로를 먼저 지정하세요.' };
     }
 
-    await fs.mkdir(payload.saveDir, { recursive: true });
+    await fs.mkdir(saveDir, { recursive: true });
 
     const photos = selectPhotosForProcessing(payload);
     if (photos.length === 0) {
@@ -854,7 +906,7 @@ async function processImages(payload: ProcessImagesPayload): Promise<ProcessImag
     for (let index = 0; index < photos.length; index += 1) {
       const photo = photos[index];
       const fields = await resolveFieldsForPhoto(photo, index, payload.fields, payload.timeOptions);
-      const outputPath = await nextAvailablePath(payload.saveDir, path.basename(photo.name, path.extname(photo.name)), '_board.jpg');
+      const outputPath = await nextAvailablePath(saveDir, path.basename(photo.name, path.extname(photo.name)), '_board.jpg');
       await renderBoardImage(photo, outputPath, fields, payload.settings);
       savedFiles.push(outputPath);
       pdfEntries.push({ imagePath: outputPath, fields, photoLedger: photo.photoLedger });
@@ -863,12 +915,12 @@ async function processImages(payload: ProcessImagesPayload): Promise<ProcessImag
     let pdfPath: string | undefined;
     if (payload.settings.createPdf) {
       const pdfTitle = sanitizeFileName(payload.settings.pdfTitle || '사진대지');
-      pdfPath = await nextAvailablePath(payload.saveDir, pdfTitle, '.pdf');
+      pdfPath = await nextAvailablePath(saveDir, pdfTitle, '.pdf');
       await createPhotoLedgerPdf(pdfEntries, pdfPath, payload.settings.pdfTitle || '사진대지', payload.settings);
     }
 
     if (payload.settings.openFolderAfterProcessing) {
-      await shell.openPath(payload.saveDir);
+      await shell.openPath(saveDir);
     }
 
     return { ok: true, savedFiles, pdfPath };
@@ -921,9 +973,10 @@ async function printImageBuffer(buffer: Buffer, imageWidth: number, imageHeight:
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      sandbox: false
+      sandbox: true
     }
   });
+  hardenWebContents(printWindow);
 
   try {
     await printWindow.loadURL(buildPrintDataUrl(buffer, imageWidth, imageHeight));
@@ -1019,7 +1072,12 @@ async function renderBoardImage(photo: PhotoItem, outputPath: string, fields: Bo
 }
 
 async function renderBoardCompositeBuffer(photo: PhotoItem, fields: BoardField[], settings: BoardSettings) {
-  let imagePipeline = sharp(photo.path).rotate();
+  const localPath = await validateImageFilePath(photo.path);
+  if (!localPath) {
+    throw new Error('지원하지 않는 이미지 파일입니다.');
+  }
+
+  let imagePipeline = sharp(localPath).rotate();
   const maxLongEdge = normalizeOutputMaxLongEdge(settings.outputMaxLongEdge);
   if (maxLongEdge > 0) {
     imagePipeline = imagePipeline.resize({
@@ -1112,7 +1170,9 @@ async function resolveFieldsForPhoto(
 
 async function readExifDateTime(photoPath: string): Promise<DateTimeValue | undefined> {
   try {
-    const data = await exifr.parse(photoPath, ['DateTimeOriginal', 'CreateDate', 'ModifyDate', 'DateTimeDigitized']);
+    const localPath = await validateImageFilePath(photoPath);
+    if (!localPath) return undefined;
+    const data = await exifr.parse(localPath, ['DateTimeOriginal', 'CreateDate', 'ModifyDate', 'DateTimeDigitized']);
     const raw = data?.DateTimeOriginal ?? data?.CreateDate ?? data?.DateTimeDigitized ?? data?.ModifyDate;
     const date = toDate(raw);
     return date ? formatDateTime(date) : undefined;
@@ -1165,7 +1225,8 @@ function formatDateTime(date: Date): DateTimeValue {
 }
 
 async function readCsvRows(filePath: string): Promise<Record<string, unknown>[]> {
-  const text = await fs.readFile(filePath, 'utf8');
+  const localPath = await validateSheetFilePath(filePath);
+  const text = await fs.readFile(localPath, 'utf8');
   const parsed = Papa.parse<Record<string, unknown>>(text, {
     header: true,
     skipEmptyLines: true
@@ -1175,7 +1236,7 @@ async function readCsvRows(filePath: string): Promise<Record<string, unknown>[]>
     throw new Error(parsed.errors[0].message);
   }
 
-  return parsed.data;
+  return sanitizeParsedRows(parsed.data);
 }
 
 function readWorkbookRows(filePath: string): Record<string, unknown>[] {
@@ -1185,7 +1246,7 @@ function readWorkbookRows(filePath: string): Record<string, unknown>[] {
     return [];
   }
   const sheet = workbook.Sheets[sheetName];
-  return XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: '' });
+  return sanitizeParsedRows(XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: '' }));
 }
 
 function extractDateTimeMap(rows: Record<string, unknown>[]): DateTimeMap {
@@ -1259,17 +1320,86 @@ function formatTimeCell(value: unknown) {
   return text;
 }
 
+function sanitizeParsedRows(rows: Record<string, unknown>[]) {
+  return rows.map((row) => {
+    const sanitized = Object.create(null) as Record<string, unknown>;
+    Object.entries(row).forEach(([key, value]) => {
+      if (!isUnsafeObjectKey(key)) {
+        sanitized[key] = value;
+      }
+    });
+    return sanitized;
+  });
+}
+
+function isUnsafeObjectKey(key: string) {
+  return key === '__proto__' || key === 'prototype' || key === 'constructor';
+}
+
 function toPhotoItem(filePath: string): PhotoItem {
+  const localPath = normalizeLocalPath(filePath) ?? filePath;
   return {
-    id: Buffer.from(filePath).toString('base64url'),
-    path: filePath,
-    name: path.basename(filePath),
+    id: Buffer.from(localPath).toString('base64url'),
+    path: localPath,
+    name: path.basename(localPath),
     selectedForProcessing: true
   };
 }
 
 function isSupportedImage(filePath: string) {
   return imageExtensions.has(path.extname(filePath).toLowerCase());
+}
+
+function isSupportedSheet(filePath: string) {
+  return sheetExtensions.has(path.extname(filePath).toLowerCase());
+}
+
+function normalizeLocalPath(value: unknown) {
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed || trimmed.length > 4096 || trimmed.includes('\0')) {
+    return null;
+  }
+
+  if (!path.isAbsolute(trimmed)) {
+    return null;
+  }
+
+  return path.resolve(trimmed);
+}
+
+async function validateImageFilePath(filePath: unknown) {
+  const localPath = normalizeLocalPath(filePath);
+  if (!localPath || !isSupportedImage(localPath)) {
+    return null;
+  }
+
+  const stat = await fs.stat(localPath);
+  if (!stat.isFile() || stat.size > maxImageInputBytes) {
+    return null;
+  }
+
+  return localPath;
+}
+
+async function validateSheetFilePath(filePath: unknown) {
+  const localPath = normalizeLocalPath(filePath);
+  if (!localPath || !isSupportedSheet(localPath)) {
+    throw new Error('지원하지 않는 날짜/시간 파일 형식입니다.');
+  }
+
+  const stat = await fs.stat(localPath);
+  if (!stat.isFile()) {
+    throw new Error('날짜/시간 파일을 찾을 수 없습니다.');
+  }
+  if (stat.size > maxSheetInputBytes) {
+    throw new Error('날짜/시간 파일은 10MB 이하만 불러올 수 있습니다.');
+  }
+
+  return localPath;
 }
 
 async function nextAvailablePath(folderPath: string, baseName: string, suffix: string) {

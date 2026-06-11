@@ -81,6 +81,8 @@ function verifyRenderer() {
   assert(app.includes('20260611_auth_permission_repair.sql'), 'permission denied auth errors must point to the repair migration');
   assert(app.includes('rememberLogin') && app.includes('아이디 및 비밀번호 기억하기'), 'remember login checkbox is missing');
   assert(app.includes('loadRememberedLogin') && app.includes('saveRememberedLoginPreference'), 'remember login persistence is not wired');
+  assert(!app.includes('JSON.stringify({ email, password })'), 'browser fallback must not store remembered passwords in localStorage');
+  assert(!app.includes('password: remembered.password'), 'browser fallback must not restore plaintext remembered passwords');
   assert(app.includes('passwordConfirm') && app.includes('비밀번호 확인'), 'signup password confirmation input is missing');
   assert(app.includes("authForm.password !== authForm.passwordConfirm") && app.includes('비밀번호와 비밀번호 확인이 일치하지 않습니다.'), 'signup password confirmation validation is missing');
   assert(app.includes("type Screen = 'start'") && app.includes("useState<Screen>('start')"), 'program start screen must be the default ready screen');
@@ -102,6 +104,10 @@ function verifyElectronBridge() {
   assert(main.includes("ipcMain.handle('auth:save-remembered-login'"), 'remembered login save IPC handler missing');
   assert(main.includes("ipcMain.handle('auth:clear-remembered-login'"), 'remembered login clear IPC handler missing');
   assert(main.includes('safeStorage.encryptString') && main.includes('safeStorage.decryptString'), 'remembered password must use Electron safeStorage');
+  assert(main.includes('isAllowedOAuthHost') && main.includes("parsed.protocol !== 'https:'"), 'OAuth external opener must restrict URLs to HTTPS Supabase hosts');
+  assert(main.includes('sandbox: true') && !main.includes('sandbox: false'), 'Electron windows must run with sandbox enabled');
+  assert(main.includes('hardenWebContents') && main.includes('setWindowOpenHandler') && main.includes('setPermissionRequestHandler'), 'Electron webContents hardening is missing');
+  assert(main.includes('will-navigate') && main.includes('isAllowedAppNavigationUrl'), 'Electron windows must block unexpected navigation');
   assert(main.includes("createHash('sha256')"), 'device identity must be hashed');
   assert(main.includes('readWindowsMachineGuid'), 'Windows MachineGuid-based device identity is missing');
   assert(main.includes('epyeonhan-board-device-v2'), 'stable device identity version marker is missing');
