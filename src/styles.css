@@ -2959,24 +2959,25 @@ body {
 }
 
 .update-dialog {
-  width: min(430px, calc(100vw - 40px));
+  width: min(470px, calc(100vw - 40px));
   display: grid;
-  grid-template-columns: 48px minmax(0, 1fr);
+  grid-template-columns: 54px minmax(0, 1fr);
   gap: 12px 14px;
-  padding: 22px;
-  border: 1px solid rgba(148, 163, 184, 0.45);
-  border-radius: 10px;
-  background: #ffffff;
-  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28);
+  padding: 24px;
+  border: 1px solid rgba(40, 111, 196, 0.22);
+  border-radius: 14px;
+  background: linear-gradient(180deg, #ffffff 0%, #f7fbff 100%);
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.3);
 }
 
 .update-icon {
-  width: 48px;
-  height: 48px;
+  width: 54px;
+  height: 54px;
   display: grid;
   place-items: center;
-  border-radius: 999px;
-  background: #e8f1ff;
+  border: 1px solid rgba(0, 63, 135, 0.16);
+  border-radius: 14px;
+  background: #e7f1ff;
   color: var(--primary);
 }
 
@@ -2994,9 +2995,21 @@ body {
 }
 
 .update-copy h2 {
-  margin: 0 0 6px;
+  margin: 2px 0 8px;
   color: var(--text);
   font-size: 18px;
+}
+
+.update-kicker {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #dcecff;
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 900;
 }
 
 .update-copy p {
@@ -3004,6 +3017,15 @@ body {
   color: var(--text);
   font-size: 13px;
   font-weight: 800;
+}
+
+.update-copy em {
+  display: block;
+  margin-top: 5px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-style: normal;
+  line-height: 1.45;
 }
 
 .update-copy small {

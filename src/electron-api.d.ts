@@ -17,6 +17,7 @@ export type UpdateStatusPhase =
   | 'downloading'
   | 'verifying'
   | 'installing'
+  | 'restarting'
   | 'failed';
 
 export interface UpdateStatusPayload {

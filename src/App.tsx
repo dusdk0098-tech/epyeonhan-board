@@ -3298,10 +3298,21 @@ function Modal({
 const updatePhaseMessages: Record<UpdateStatusPayload['phase'], string> = {
   checking: '업데이트 확인 중',
   available: '새 업데이트를 준비하고 있습니다.',
-  downloading: '업데이트 파일 다운로드 중',
-  verifying: '업데이트 파일 검증 중',
-  installing: '업데이트 설치를 시작합니다.',
+  downloading: '업데이트 다운로드',
+  verifying: '파일 검증',
+  installing: '업데이트 설치 준비',
+  restarting: '앱 재시작 준비',
   failed: '업데이트 설치를 완료하지 못했습니다.'
+};
+
+const updatePhaseDescriptions: Record<UpdateStatusPayload['phase'], string> = {
+  checking: '새 버전을 확인하고 있습니다.',
+  available: '업데이트를 시작할 준비를 하고 있습니다.',
+  downloading: '새 버전을 안전하게 다운로드하고 있습니다.',
+  verifying: '다운로드한 파일의 무결성을 확인하고 있습니다.',
+  installing: '설치 화면을 띄우지 않고 업데이트를 적용합니다.',
+  restarting: '잠시 후 앱이 자동으로 종료되고 다시 시작됩니다.',
+  failed: '업데이트를 완료하지 못했습니다.'
 };
 
 function UpdateOverlay({ status }: { status: UpdateStatusPayload }) {
@@ -3312,18 +3323,20 @@ function UpdateOverlay({ status }: { status: UpdateStatusPayload }) {
     : status.phase === 'downloading'
       ? formatUpdateDownloadDetail(status)
       : status.version
-        ? `버전 ${status.version}`
+        ? `대상 버전 ${status.version}`
         : '';
 
   return (
     <div className="update-overlay" role="alertdialog" aria-modal="true" aria-labelledby="update-title">
       <div className="update-dialog">
         <div className={status.phase === 'failed' ? 'update-icon failed' : 'update-icon'}>
-          <RefreshCw size={24} />
+          {status.phase === 'failed' ? <X size={24} /> : <RefreshCw size={24} />}
         </div>
         <div className="update-copy">
-          <h2 id="update-title">업데이트 진행 중</h2>
+          <span className="update-kicker">자동 업데이트</span>
+          <h2 id="update-title">e편한보드 업데이트 중</h2>
           <p>{status.message ?? updatePhaseMessages[status.phase]}</p>
+          <em>{updatePhaseDescriptions[status.phase]}</em>
           {detail && <small>{detail}</small>}
         </div>
         <div className="update-progress" style={{ '--progress': `${progressValue}%` } as React.CSSProperties}>

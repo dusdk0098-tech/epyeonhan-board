@@ -85,6 +85,7 @@ async function verifyMainProcessAutoUpdateSource() {
   const preloadSource = await fs.readFile(path.join(__dirname, '..', 'electron', 'preload.ts'), 'utf8');
   const apiTypes = await fs.readFile(path.join(__dirname, '..', 'src', 'electron-api.d.ts'), 'utf8');
   const appSource = await fs.readFile(path.join(__dirname, '..', 'src', 'App.tsx'), 'utf8');
+  const installerInclude = await fs.readFile(path.join(__dirname, '..', 'build', 'installer.nsh'), 'utf8');
   assert(!mainSource.includes('업데이트 알림'), 'update confirmation alert must not be shown');
   assert(!mainSource.includes('다운로드 및 설치'), 'update confirmation button must not remain');
   assert(!mainSource.includes('나중에'), 'defer update button must not remain');
@@ -103,10 +104,14 @@ async function verifyMainProcessAutoUpdateSource() {
   assert(mainSource.includes('isPerMachineInstallDirectory'), 'install mode detection is missing');
   assert(mainSource.includes('process.env.ProgramFiles'), 'Program Files install detection is missing');
   assert(mainSource.includes('NSIS requires /D=... to be the last argument'), '/D last-argument guard comment is missing');
+  assert(mainSource.includes("phase: 'restarting'"), 'restart preparation update status is missing');
   assert(preloadSource.includes('onUpdateStatus'), 'preload update status listener is missing');
-  assert(apiTypes.includes('UpdateStatusPayload') && apiTypes.includes('onUpdateStatus'), 'renderer update status types are missing');
-  assert(appSource.includes('UpdateOverlay') && appSource.includes('업데이트 진행 중'), 'update progress overlay is missing');
-  assert(mainSource.includes('업데이트를 설치하고 있습니다. 잠시 후 앱이 다시 시작됩니다.'), 'update installing copy is missing');
+  assert(apiTypes.includes('UpdateStatusPayload') && apiTypes.includes("'restarting'") && apiTypes.includes('onUpdateStatus'), 'renderer update status types are missing');
+  assert(appSource.includes('UpdateOverlay') && appSource.includes('e편한보드 업데이트 중'), 'update progress overlay is missing');
+  assert(appSource.includes('updatePhaseDescriptions') && appSource.includes('설치 화면을 띄우지 않고 업데이트를 적용합니다.'), 'dedicated update UI copy is missing');
+  assert(mainSource.includes('업데이트 설치 준비') && mainSource.includes('앱 재시작 준비'), 'update install/restart copy is missing');
+  assert(installerInclude.includes('!macro customInit'), 'NSIS custom init macro is missing');
+  assert(installerInclude.includes('${isUpdated}') && installerInclude.includes('SetSilent silent'), 'NSIS update mode must force silent install');
 }
 
 async function verifyVersionedPackagingConfig() {
@@ -124,6 +129,7 @@ async function verifyVersionedPackagingConfig() {
     packageJson.build.nsis.allowToChangeInstallationDirectory === false,
     'installer directory page should be removed to prevent clipped install path text'
   );
+  assert(packageJson.build.nsis.include === 'build/installer.nsh', 'NSIS installer include must be wired');
   assert(
     packageJson.scripts['package:win:versioned'] === 'node scripts/package-win-version.cjs',
     'versioned local packaging script is missing'

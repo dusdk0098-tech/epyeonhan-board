@@ -51,7 +51,7 @@ let pendingOAuthCallbackUrl: string | null = null;
 const gotSingleInstanceLock = app.requestSingleInstanceLock();
 
 type UpdateStatusPayload = {
-  phase: 'checking' | 'available' | 'downloading' | 'verifying' | 'installing' | 'failed';
+  phase: 'checking' | 'available' | 'downloading' | 'verifying' | 'installing' | 'restarting' | 'failed';
   version?: string;
   percent?: number;
   downloadedBytes?: number;
@@ -213,7 +213,7 @@ async function downloadAndInstallUpdate(win: BrowserWindow, manifest: UpdateMani
       percent: 0,
       downloadedBytes: 0,
       totalBytes: manifest.size_bytes,
-      message: '업데이트 파일 다운로드 중'
+      message: '업데이트 다운로드'
     });
     const response = await fetchWithTimeout(manifest.download_url, updateRequestTimeoutMs * 4);
     if (!response.ok) {
@@ -231,7 +231,7 @@ async function downloadAndInstallUpdate(win: BrowserWindow, manifest: UpdateMani
       percent: 100,
       downloadedBytes: buffer.byteLength,
       totalBytes: manifest.size_bytes,
-      message: '업데이트 파일 검증 중'
+      message: '파일 검증'
     });
     const actualSha256 = createHash('sha256').update(buffer).digest('hex').toLowerCase();
     if (actualSha256 !== manifest.sha256.toLowerCase()) {
@@ -249,7 +249,7 @@ async function downloadAndInstallUpdate(win: BrowserWindow, manifest: UpdateMani
       percent: 100,
       downloadedBytes: buffer.byteLength,
       totalBytes: manifest.size_bytes,
-      message: '업데이트를 설치하고 있습니다. 잠시 후 앱이 다시 시작됩니다.'
+      message: '업데이트 설치 준비'
     });
 
     const installerProcess = spawn(installerPath, buildSilentUpdateInstallArgs(), {
@@ -260,7 +260,16 @@ async function downloadAndInstallUpdate(win: BrowserWindow, manifest: UpdateMani
     installerProcess.on('error', () => undefined);
     installerProcess.unref();
 
-    setTimeout(() => app.quit(), 1000);
+    sendUpdateStatus(win, {
+      phase: 'restarting',
+      version: manifest.version,
+      percent: 100,
+      downloadedBytes: buffer.byteLength,
+      totalBytes: manifest.size_bytes,
+      message: '앱 재시작 준비'
+    });
+
+    setTimeout(() => app.quit(), 1400);
   } catch (error) {
     sendUpdateStatus(win, {
       phase: 'failed',
