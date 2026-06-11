@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import {
+  ArrowDown,
+  ArrowUp,
   Camera,
   CheckSquare,
   Clock3,
   Copy,
+  Gauge,
   Eye,
   EyeOff,
   FileSpreadsheet,
@@ -16,11 +19,13 @@ import {
   Monitor,
   Play,
   Plus,
+  Printer,
   RefreshCw,
   RotateCcw,
   Save,
   Settings,
   ShieldCheck,
+  SlidersHorizontal,
   Trash2,
   User,
   X
@@ -62,6 +67,7 @@ import type {
   HorizontalAlign,
   PhotoHighlight,
   PhotoItem,
+  PhotoLedgerInfo,
   ProcessImagesPayload,
   TimeMode,
   TimeOptions
@@ -86,14 +92,17 @@ import { resolveHighlightCircle } from './shared/highlightRenderer';
 import { calculateContainedSize } from './shared/previewFit';
 import type { UpdateStatusPayload } from './electron-api';
 
-type Screen = 'help' | 'basic' | 'advanced' | 'output' | 'commonSettings' | 'contact' | 'admin';
+type Screen = 'start' | 'help' | 'basic' | 'advanced' | 'output' | 'commonSettings' | 'contact' | 'admin';
 type WorkspaceScreen = 'basic' | 'advanced' | 'output';
 type StatusKind = 'info' | 'success' | 'error';
 type AuthMode = 'signin' | 'signup';
 type StateAction<T> = T | ((current: T) => T);
 type CommonOutputSettings = Pick<
   BoardSettings,
-  'jpgQuality' | 'outputMaxLongEdge' | 'outputGrayscale' | 'openFolderAfterProcessing' | 'createPdf' | 'pdfTitle'
+  | 'jpgQuality'
+  | 'outputMaxLongEdge'
+  | 'outputGrayscale'
+  | 'openFolderAfterProcessing'
 >;
 
 interface BoardWorkspaceState {
@@ -157,8 +166,12 @@ const defaultSettings: BoardSettings = {
   outputMaxLongEdge: 0,
   outputGrayscale: false,
   openFolderAfterProcessing: false,
-  createPdf: true,
-  pdfTitle: '사진대지'
+  createPdf: false,
+  pdfTitle: '사진대지',
+  photoLedgerUseBoardFields: true,
+  photoLedgerLocation: '',
+  photoLedgerContent: '',
+  photoLedgerDate: ''
 };
 
 const defaultTimeOptions: TimeOptions = {
@@ -198,9 +211,7 @@ function createCommonOutputSettings(): CommonOutputSettings {
     jpgQuality: defaultSettings.jpgQuality,
     outputMaxLongEdge: defaultSettings.outputMaxLongEdge,
     outputGrayscale: defaultSettings.outputGrayscale,
-    openFolderAfterProcessing: defaultSettings.openFolderAfterProcessing,
-    createPdf: defaultSettings.createPdf,
-    pdfTitle: defaultSettings.pdfTitle
+    openFolderAfterProcessing: defaultSettings.openFolderAfterProcessing
   };
 }
 
@@ -216,6 +227,23 @@ const boardTextColorOptions: Array<[BoardTextColor, string]> = [
   ['blue', '파랑'],
   ['red', '빨강'],
   ['green', '녹색']
+];
+
+const boardFontOptions = [
+  'Malgun Gothic Semilight',
+  'Malgun Gothic',
+  'Gulim',
+  'Dotum',
+  'Batang',
+  'Gungsuh',
+  'Arial',
+  'Helvetica',
+  'Verdana',
+  'Tahoma',
+  'Georgia',
+  'Times New Roman',
+  'Consolas',
+  'Courier New'
 ];
 
 const roleOptions: Array<[UserRole, string]> = [
@@ -245,9 +273,16 @@ const defaultHighlight: PhotoHighlight = {
   outsideGrayscale: true
 };
 
+const defaultPhotoLedgerInfo: PhotoLedgerInfo = {
+  location: '',
+  content: '',
+  date: ''
+};
+
 const assetBaseUrl = import.meta.env.BASE_URL;
 const authSessionMaxAgeMs = 30 * 24 * 60 * 60 * 1000;
 const authSessionStartedAtKey = 'epyeonhan-auth-started-at';
+const rememberedLoginStorageKey = 'epyeonhan-remembered-login';
 const oauthRedirectUrl = 'epyeonhan-board://auth/callback';
 const socialAuthProviders: Array<{ id: SocialAuthProvider; label: string; badge: string }> = [
   { id: 'google', label: 'Google로 계속하기', badge: 'G' },
@@ -261,7 +296,8 @@ export default function App() {
     status: isSupabaseConfigured ? 'loading' : 'config_missing'
   });
   const [authMode, setAuthMode] = useState<AuthMode>('signin');
-  const [authForm, setAuthForm] = useState({ email: '', password: '', displayName: '', company: '' });
+  const [authForm, setAuthForm] = useState({ email: '', password: '', passwordConfirm: '', displayName: '', company: '' });
+  const [rememberLogin, setRememberLogin] = useState(false);
   const [authPasswordVisible, setAuthPasswordVisible] = useState(false);
   const [authBusy, setAuthBusy] = useState(false);
   const [oauthBusyProvider, setOauthBusyProvider] = useState<SocialAuthProvider | null>(null);
@@ -272,12 +308,12 @@ export default function App() {
   const [adminRows, setAdminRows] = useState<AdminUserRow[]>([]);
   const [adminBusy, setAdminBusy] = useState(false);
   const [adminError, setAdminError] = useState('');
-  const [activeScreen, setActiveScreen] = useState<Screen>('help');
+  const [activeScreen, setActiveScreen] = useState<Screen>('start');
   const [workspaces, setWorkspaces] = useState<Record<WorkspaceScreen, BoardWorkspaceState>>(() => createWorkspaceMap());
   const [commonOutputSettings, setCommonOutputSettings] = useState<CommonOutputSettings>(() => createCommonOutputSettings());
   const [activeAdvancedSettingsTab, setActiveAdvancedSettingsTab] = useState<'datetime' | 'board'>('datetime');
   const [activeAdvancedBoardTab, setActiveAdvancedBoardTab] = useState<'layout' | 'typography'>('layout');
-  const [activeOutputSettingsTab, setActiveOutputSettingsTab] = useState<'fields' | 'layout' | 'typography' | 'highlight'>('fields');
+  const [activeOutputSettingsTab, setActiveOutputSettingsTab] = useState<'fields' | 'datetime' | 'layout' | 'typography' | 'highlight' | 'ledger'>('fields');
   const [status, setStatus] = useState<StatusMessage | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isDragTargetActive, setIsDragTargetActive] = useState(false);
@@ -302,6 +338,7 @@ export default function App() {
 
   const selectedPhoto = photos.find((photo) => photo.path === selectedPhotoPath);
   const selectedHighlight = selectedPhoto?.highlight;
+  const selectedPhotoLedger = selectedPhoto?.photoLedger ?? defaultPhotoLedgerInfo;
   const selectedIndex = selectedPhoto ? photos.findIndex((photo) => photo.path === selectedPhoto.path) : -1;
   const isAdmin = authState.status === 'ready' && authState.profile?.role === 'admin';
 
@@ -451,6 +488,10 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    void loadRememberedLogin();
+  }, []);
+
+  useEffect(() => {
     if (authState.status !== 'profile_incomplete') {
       return;
     }
@@ -463,9 +504,15 @@ export default function App() {
 
   useEffect(() => {
     if (activeScreen === 'admin' && !isAdmin) {
-      setActiveScreen('help');
+      setActiveScreen('start');
     }
   }, [activeScreen, isAdmin]);
+
+  useEffect(() => {
+    if (activeScreen === 'help' || activeScreen === 'advanced') {
+      setActiveScreen('start');
+    }
+  }, [activeScreen]);
 
   useEffect(() => {
     if (activeScreen === 'admin' && isAdmin) {
@@ -624,7 +671,8 @@ export default function App() {
       }
 
       const nextState = await resolveAuthGateState(user, identity.fingerprint, identity.deviceName, {
-        skipDeviceClaim: identity.skipDeviceClaim
+        skipDeviceClaim: identity.skipDeviceClaim,
+        knownFingerprints: identity.knownFingerprints
       });
       if (!canceled) {
         setAuthState(nextState);
@@ -642,6 +690,10 @@ export default function App() {
       setAuthState({ status: 'unauthenticated', message: '이메일과 비밀번호를 입력하세요.' });
       return;
     }
+    if (authMode === 'signup' && authForm.password !== authForm.passwordConfirm) {
+      setAuthState({ status: 'unauthenticated', message: '비밀번호와 비밀번호 확인이 일치하지 않습니다.' });
+      return;
+    }
 
     try {
       setAuthBusy(true);
@@ -657,13 +709,14 @@ export default function App() {
         return;
       }
       window.localStorage.setItem(authSessionStartedAtKey, String(Date.now()));
+      await saveRememberedLoginPreference(authForm.email, authForm.password);
       await loadAuthForUser(user);
     } catch (error) {
       const message = toAuthUiError(error, authMode);
       if (authMode === 'signup' && isAlreadyRegisteredError(error)) {
         setAuthMode('signin');
         setAuthPasswordVisible(false);
-        setAuthForm((current) => ({ ...current, password: '' }));
+        setAuthForm((current) => ({ ...current, password: '', passwordConfirm: '' }));
       }
       setAuthState({ status: 'unauthenticated', message });
     } finally {
@@ -789,7 +842,7 @@ export default function App() {
       window.localStorage.removeItem(authSessionStartedAtKey);
       setAuthBusy(false);
       setAuthState({ status: 'unauthenticated' });
-      setActiveScreen('help');
+      setActiveScreen('start');
     }
   }
 
@@ -845,6 +898,58 @@ export default function App() {
     setAuthForm((current) => ({ ...current, [field]: value }));
   }
 
+  async function loadRememberedLogin() {
+    try {
+      const nativeBridge = getNativeBridge();
+      if (nativeBridge?.getRememberedLogin) {
+        const result = await nativeBridge.getRememberedLogin();
+        if (result.ok && result.remember) {
+          setRememberLogin(true);
+          setAuthForm((current) => ({
+            ...current,
+            email: result.email ?? current.email,
+            password: result.password ?? current.password
+          }));
+        }
+        return;
+      }
+
+      const rawValue = window.localStorage.getItem(rememberedLoginStorageKey);
+      if (!rawValue) return;
+      const remembered = JSON.parse(rawValue) as { email?: string; password?: string };
+      setRememberLogin(true);
+      setAuthForm((current) => ({
+        ...current,
+        email: remembered.email ?? current.email,
+        password: remembered.password ?? current.password
+      }));
+    } catch {
+      // Remembered login is a convenience feature and must not block sign-in.
+    }
+  }
+
+  async function saveRememberedLoginPreference(email: string, password: string) {
+    try {
+      const nativeBridge = getNativeBridge();
+      if (rememberLogin) {
+        if (nativeBridge?.saveRememberedLogin) {
+          await nativeBridge.saveRememberedLogin({ remember: true, email, password });
+          return;
+        }
+        window.localStorage.setItem(rememberedLoginStorageKey, JSON.stringify({ email, password }));
+        return;
+      }
+
+      if (nativeBridge?.clearRememberedLogin) {
+        await nativeBridge.clearRememberedLogin();
+        return;
+      }
+      window.localStorage.removeItem(rememberedLoginStorageKey);
+    } catch {
+      // Login should continue even if remembering credentials fails.
+    }
+  }
+
   function updateProfileCompletionForm(field: keyof ProfileCompletionInput, value: string) {
     setProfileCompletionForm((current) => ({ ...current, [field]: value }));
   }
@@ -852,7 +957,7 @@ export default function App() {
   function toggleAuthMode() {
     setAuthMode((current) => (current === 'signin' ? 'signup' : 'signin'));
     setAuthPasswordVisible(false);
-    setAuthForm((current) => ({ ...current, password: '' }));
+    setAuthForm((current) => ({ ...current, password: '', passwordConfirm: '' }));
     setAuthState({ status: 'unauthenticated' });
   }
 
@@ -884,7 +989,11 @@ export default function App() {
       valueColumnWidthRatio: columnRatios.valueColumnWidthRatio,
       jpgQuality: clamp(Math.round(jpgQuality), 1, 100),
       boardBackgroundOpacity: clamp(Math.round(boardBackgroundOpacity), 0, 100),
-      outputMaxLongEdge: Math.max(0, Math.round(outputMaxLongEdge))
+      outputMaxLongEdge: Math.max(0, Math.round(outputMaxLongEdge)),
+      photoLedgerUseBoardFields: Boolean(nextSettings.photoLedgerUseBoardFields),
+      photoLedgerLocation: nextSettings.photoLedgerLocation ?? '',
+      photoLedgerContent: nextSettings.photoLedgerContent ?? '',
+      photoLedgerDate: nextSettings.photoLedgerDate ?? ''
     };
   }
 
@@ -904,6 +1013,20 @@ export default function App() {
         merged.widthRatio = widthRatio;
         merged.labelColumnWidthRatio = Number((widthRatio * labelShare).toFixed(3));
         merged.valueColumnWidthRatio = Number((widthRatio - merged.labelColumnWidthRatio).toFixed(3));
+      } else if (typeof patch.labelColumnWidthRatio === 'number' && typeof patch.valueColumnWidthRatio !== 'number') {
+        const widthRatio = clampBoardWidthRatio(current.widthRatio, boardSizeToWidthRatio(current.boardSize));
+        const bounds = getColumnRatioBounds(widthRatio);
+        const labelColumnWidthRatio = roundRatio(clamp(patch.labelColumnWidthRatio, bounds.minLabel, bounds.maxLabel));
+        merged.widthRatio = widthRatio;
+        merged.labelColumnWidthRatio = labelColumnWidthRatio;
+        merged.valueColumnWidthRatio = roundRatio(widthRatio - labelColumnWidthRatio);
+      } else if (typeof patch.valueColumnWidthRatio === 'number' && typeof patch.labelColumnWidthRatio !== 'number') {
+        const widthRatio = clampBoardWidthRatio(current.widthRatio, boardSizeToWidthRatio(current.boardSize));
+        const bounds = getColumnRatioBounds(widthRatio);
+        const valueColumnWidthRatio = roundRatio(clamp(patch.valueColumnWidthRatio, bounds.minValue, bounds.maxValue));
+        merged.widthRatio = widthRatio;
+        merged.valueColumnWidthRatio = valueColumnWidthRatio;
+        merged.labelColumnWidthRatio = roundRatio(widthRatio - valueColumnWidthRatio);
       }
       return normalizeSettings(merged);
     });
@@ -916,9 +1039,7 @@ export default function App() {
       jpgQuality: clamp(Math.round(Number(nextSettings.jpgQuality)), 1, 100),
       outputMaxLongEdge: Math.max(0, Math.round(Number(nextSettings.outputMaxLongEdge))),
       outputGrayscale: Boolean(nextSettings.outputGrayscale),
-      openFolderAfterProcessing: Boolean(nextSettings.openFolderAfterProcessing),
-      createPdf: Boolean(nextSettings.createPdf),
-      pdfTitle: nextSettings.pdfTitle || '사진대지'
+      openFolderAfterProcessing: Boolean(nextSettings.openFolderAfterProcessing)
     };
   }
 
@@ -1116,6 +1237,10 @@ export default function App() {
     refreshPreview();
   }
 
+  function findFieldValueByLabel(sourceFields: BoardField[], pattern: RegExp) {
+    return sourceFields.find((field) => pattern.test(field.label))?.value ?? '';
+  }
+
   function insertSelectedFileName() {
     if (!selectedPhoto) {
       setStatusMessage('info', '파일명을 삽입할 사진을 먼저 선택하세요.');
@@ -1132,6 +1257,26 @@ export default function App() {
     const currentIndex = Math.max(0, selectedIndex);
     const nextIndex = clamp(currentIndex + direction, 0, photos.length - 1);
     setSelectedPhotoPath(photos[nextIndex].path);
+  }
+
+  function moveSelectedPhotoOrder(direction: -1 | 1) {
+    if (!selectedPhoto) {
+      setStatusMessage('info', '순서를 변경할 사진을 먼저 선택하세요.');
+      return;
+    }
+    const currentIndex = photos.findIndex((photo) => photo.path === selectedPhoto.path);
+    const nextIndex = clamp(currentIndex + direction, 0, photos.length - 1);
+    if (currentIndex < 0 || nextIndex === currentIndex) {
+      setStatusMessage('info', direction < 0 ? '이미 첫 번째 사진입니다.' : '이미 마지막 사진입니다.');
+      return;
+    }
+
+    const nextPhotos = [...photos];
+    [nextPhotos[currentIndex], nextPhotos[nextIndex]] = [nextPhotos[nextIndex], nextPhotos[currentIndex]];
+    setPhotos(nextPhotos);
+    setSelectedPhotoPath(selectedPhoto.path);
+    refreshPreview();
+    setStatusMessage('success', `선택 사진을 ${nextIndex + 1}번 순서로 이동했습니다.`);
   }
 
   function togglePhotoChecked(pathValue: string) {
@@ -1182,7 +1327,65 @@ export default function App() {
     updateSelectedPhotoHighlight({ ...(selectedPhoto?.highlight ?? defaultHighlight), ...patch, enabled: true });
   }
 
-  async function runProcess(mode: ProcessImagesPayload['mode']) {
+  function normalizePhotoLedgerInfo(value: Partial<PhotoLedgerInfo> | undefined): PhotoLedgerInfo {
+    return {
+      location: value?.location ?? '',
+      content: value?.content ?? '',
+      date: value?.date ?? ''
+    };
+  }
+
+  function updateSelectedPhotoLedgerPatch(patch: Partial<PhotoLedgerInfo>) {
+    if (!selectedPhotoPath) {
+      setStatusMessage('info', '사진대지 하단정보를 입력할 사진을 먼저 선택하세요.');
+      return;
+    }
+    setPhotos((current) =>
+      current.map((photo) =>
+        photo.path === selectedPhotoPath
+          ? { ...photo, photoLedger: normalizePhotoLedgerInfo({ ...(photo.photoLedger ?? defaultPhotoLedgerInfo), ...patch }) }
+          : photo
+      )
+    );
+  }
+
+  function resolveLedgerInfoFromBoardFields(sourceFields: BoardField[]): PhotoLedgerInfo {
+    return {
+      location: findFieldValueByLabel(sourceFields, /위치/),
+      content: findFieldValueByLabel(sourceFields, /내용/),
+      date: findFieldValueByLabel(sourceFields, /날짜|일자/)
+    };
+  }
+
+  function applyCurrentBoardFieldsToSelectedLedger() {
+    if (!selectedPhotoPath) {
+      setStatusMessage('info', '사진대지 하단정보를 적용할 사진을 먼저 선택하세요.');
+      return;
+    }
+    updateSelectedPhotoLedgerPatch(resolveLedgerInfoFromBoardFields(previewFields));
+    setStatusMessage('success', '선택 사진의 사진대지 하단정보에 보드판 내용을 적용했습니다.');
+  }
+
+  function applySelectedLedgerToCheckedPhotos() {
+    if (!selectedPhotoPath) {
+      setStatusMessage('info', '복사할 사진대지 하단정보가 있는 사진을 먼저 선택하세요.');
+      return;
+    }
+    const targetCount = photos.filter((photo) => photo.selectedForProcessing).length;
+    if (targetCount === 0) {
+      setStatusMessage('info', '같은 하단정보를 적용할 사진을 체크하세요.');
+      return;
+    }
+    const nextLedger = normalizePhotoLedgerInfo(selectedPhoto?.photoLedger ?? defaultPhotoLedgerInfo);
+    setPhotos((current) =>
+      current.map((photo) =>
+        photo.selectedForProcessing ? { ...photo, photoLedger: { ...nextLedger } } : photo
+      )
+    );
+    setStatusMessage('success', `${targetCount}장의 사진에 같은 사진대지 하단정보를 적용했습니다.`);
+  }
+
+  async function runProcess(mode: ProcessImagesPayload['mode'], options: { createPhotoLedgerPdf?: boolean } = {}) {
     if (photos.length === 0) {
       setStatusMessage('error', '처리할 사진을 먼저 불러오세요.');
       return;
@@ -1199,7 +1402,10 @@ export default function App() {
     setIsProcessing(true);
     setStatusMessage('info', '사진을 처리하는 중입니다.');
 
-    const processSettings = mergeCommonOutputSettings(settings);
+    const processSettings = normalizeSettings({
+      ...mergeCommonOutputSettings(settings),
+      createPdf: Boolean(options.createPhotoLedgerPdf)
+    });
     const payload: ProcessImagesPayload = {
       photos,
       selectedPhotoPath,
@@ -1218,7 +1424,7 @@ export default function App() {
       return;
     }
 
-    const pdfText = result.pdfPath ? ` PDF도 생성했습니다.` : '';
+    const pdfText = result.pdfPath ? ` 사진대지 PDF도 생성했습니다.` : '';
     const folderText = processSettings.openFolderAfterProcessing ? ' 결과 폴더를 열었습니다.' : '';
     setStatusMessage('success', `${result.savedFiles.length}개의 JPG 파일을 저장했습니다.${pdfText}${folderText}`);
   }
@@ -1242,12 +1448,32 @@ export default function App() {
     }
   }
 
+  async function handlePrintPreviewImage() {
+    if (!selectedPhoto) {
+      setStatusMessage('info', '인쇄할 미리보기 사진을 먼저 선택하세요.');
+      return;
+    }
+
+    setStatusMessage('info', '인쇄 화면을 준비하는 중입니다.');
+    const result = await window.constructView.printPreviewImage({
+      photo: selectedPhoto,
+      fields: previewFields,
+      settings: normalizeSettings(settings)
+    });
+
+    if (result.ok) {
+      setStatusMessage('success', '인쇄 요청을 보냈습니다.');
+    } else if (result.canceled) {
+      setStatusMessage('info', '인쇄를 취소했습니다.');
+    } else {
+      setStatusMessage('error', result.error ?? '미리보기 이미지를 인쇄하지 못했습니다.');
+    }
+  }
+
   function renderTopNavigation() {
     const navItems: Array<{ id: Screen; label: string }> = [
-      { id: 'help', label: '사용방법' },
-      { id: 'basic', label: '보드판 [간편]' },
-      { id: 'advanced', label: '보드판 작성 [고급]' },
-      { id: 'output', label: '보드판 작성 [프리미엄]' },
+      { id: 'basic', label: 'LITE' },
+      { id: 'output', label: 'PRO' },
       { id: 'commonSettings', label: '통합 설정' },
       { id: 'contact', label: '문의하기' }
     ];
@@ -1258,18 +1484,29 @@ export default function App() {
 
     return (
       <header className="top-nav">
-        <nav className="nav-links">
-          {navItems.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className={activeScreen === item.id ? 'nav-link active' : 'nav-link'}
-              onClick={() => setActiveScreen(item.id)}
-            >
-              {item.label}
-            </button>
-          ))}
-        </nav>
+        <div className="nav-main">
+          <button
+            type="button"
+            className={activeScreen === 'start' ? 'nav-brand active' : 'nav-brand'}
+            onClick={() => setActiveScreen('start')}
+            aria-label="시작 화면으로 이동"
+          >
+            <Monitor size={18} aria-hidden />
+            <span>e편한보드</span>
+          </button>
+          <nav className="nav-links">
+            {navItems.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                className={activeScreen === item.id ? 'nav-link active' : 'nav-link'}
+                onClick={() => setActiveScreen(item.id)}
+              >
+                {item.label}
+              </button>
+            ))}
+          </nav>
+        </div>
         <div className="nav-user">
           <span title={authState.profile?.email ?? signedInUserName}>{signedInUserName}</span>
           {isAdmin && <ShieldCheck size={17} aria-label="관리자" />}
@@ -1351,8 +1588,25 @@ export default function App() {
                     </button>
                   </div>
                 </label>
+                <label className="auth-remember-check">
+                  <input
+                    type="checkbox"
+                    checked={rememberLogin}
+                    onChange={(event) => setRememberLogin(event.currentTarget.checked)}
+                  />
+                  아이디 및 비밀번호 기억하기
+                </label>
                 {authMode === 'signup' && (
                   <>
+                    <label>
+                      비밀번호 확인
+                      <input
+                        type={authPasswordVisible ? 'text' : 'password'}
+                        value={authForm.passwordConfirm}
+                        onChange={(event) => updateAuthForm('passwordConfirm', event.currentTarget.value)}
+                        autoComplete="new-password"
+                      />
+                    </label>
                     <label>
                       이름
                       <input
@@ -1449,6 +1703,43 @@ export default function App() {
     );
   }
 
+  function renderStartScreen() {
+    return (
+      <main className="start-shell" aria-label="프로그램 시작 화면">
+        <div className="start-pattern" aria-hidden />
+        <section className="start-content">
+          <div className="start-title-card">
+            <h1>e편한보드</h1>
+          </div>
+
+          <div className="start-mode-grid">
+            <button type="button" className="start-mode-card lite" onClick={() => setActiveScreen('basic')}>
+              <span className="start-mode-icon" aria-hidden>
+                <Gauge size={54} strokeWidth={1.9} />
+              </span>
+              <strong>LITE</strong>
+              <small>간편 보드 작성</small>
+            </button>
+
+            <button type="button" className="start-mode-card pro" onClick={() => setActiveScreen('output')}>
+              <span className="start-mode-icon" aria-hidden>
+                <SlidersHorizontal size={54} strokeWidth={1.9} />
+              </span>
+              <strong>PRO</strong>
+              <small>사진대지 및 상세 설정</small>
+            </button>
+          </div>
+
+          <div className="start-actions">
+            <button type="button" className="start-settings-button" onClick={() => setActiveScreen('commonSettings')} aria-label="통합 설정">
+              <Settings size={34} aria-hidden />
+            </button>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
   function renderHelpScreen() {
     return (
       <main className="page-shell help-shell">
@@ -1524,10 +1815,11 @@ export default function App() {
               <div className="form-row">
                 <label>글꼴 선택</label>
                 <select value={settings.fontFamily} onChange={(event) => updateSettings({ fontFamily: event.target.value })}>
-                  <option>Malgun Gothic Semilight</option>
-                  <option>Malgun Gothic</option>
-                  <option>Arial</option>
-                  <option>Helvetica</option>
+                  {boardFontOptions.map((font) => (
+                    <option key={font} value={font}>
+                      {font}
+                    </option>
+                  ))}
                 </select>
               </div>
               <SliderRow
@@ -1660,6 +1952,9 @@ export default function App() {
                   </button>
                   <button className="btn ghost" type="button" disabled={!selectedPhoto} onClick={() => void handleCopyPreviewImage()}>
                     <Copy size={17} /> 결과 이미지 복사
+                  </button>
+                  <button className="btn ghost" type="button" disabled={!selectedPhoto} onClick={() => void handlePrintPreviewImage()}>
+                    <Printer size={17} /> 미리보기 인쇄
                   </button>
                 </div>
                 <div className="button-row">
@@ -1867,10 +2162,11 @@ export default function App() {
         </div>
         <label>글꼴</label>
         <select value={settings.fontFamily} onChange={(event) => updateSettings({ fontFamily: event.target.value })}>
-          <option>Malgun Gothic Semilight</option>
-          <option>Malgun Gothic</option>
-          <option>Arial</option>
-          <option>Helvetica</option>
+          {boardFontOptions.map((font) => (
+            <option key={font} value={font}>
+              {font}
+            </option>
+          ))}
         </select>
         <label>항목 정렬</label>
         <select value={settings.itemAlign} onChange={(event) => updateSettings({ itemAlign: event.target.value as HorizontalAlign })}>
@@ -1961,20 +2257,6 @@ export default function App() {
           />
           작업 완료 후 결과 폴더 열기
         </label>
-        <div className="pdf-options">
-          <label className="check-label">
-            <input
-              type="checkbox"
-              checked={commonOutputSettings.createPdf}
-              onChange={(event) => updateCommonOutputSettings({ createPdf: event.target.checked })}
-            />
-            PDF 생성 (사진대지)
-          </label>
-          <div className="form-row compact">
-            <label>PDF 제목</label>
-            <input value={commonOutputSettings.pdfTitle} onChange={(event) => updateCommonOutputSettings({ pdfTitle: event.target.value })} />
-          </div>
-        </div>
       </div>
     );
   }
@@ -1985,7 +2267,7 @@ export default function App() {
         <Card title="통합 설정" icon={<Settings size={17} />} className="common-settings-card">
           {renderCommonOutputSettingsForm()}
           <p className="setting-hint common-settings-hint">
-            이 설정은 보드판 [간편], 보드판 작성 [고급], 보드판 작성 [프리미엄] 작업에 공통 적용됩니다.
+            이 설정은 LITE와 PRO 작업에 공통 적용됩니다.
           </p>
         </Card>
       </main>
@@ -2086,9 +2368,6 @@ export default function App() {
           <button className="small-btn danger" type="button" disabled={!selectedHighlight?.enabled} onClick={() => updateSelectedPhotoHighlight(undefined)}>
             <Trash2 size={15} /> 강조 삭제
           </button>
-          <p className="output-help-text compact">
-            미리보기 사진 위에서 드래그하면 빨간 원을 만들고, 원 안쪽을 드래그하면 이동, 테두리 근처를 드래그하면 크기를 조절합니다.
-          </p>
         </div>
         <div className="output-setting-section">
           <h4>작업 실행</h4>
@@ -2105,10 +2384,104 @@ export default function App() {
     );
   }
 
+  function renderPremiumPhotoLedgerSettings() {
+    const manualLedgerDisabled = settings.photoLedgerUseBoardFields || !selectedPhoto;
+    return (
+      <div className="premium-settings-stack">
+        <div className="output-setting-section premium-ledger-section">
+          <h4>사진대지 PDF 설정</h4>
+          <div className="settings-form board-pdf-form premium-ledger-form">
+            <label>PDF 제목</label>
+            <input value={settings.pdfTitle} onChange={(event) => updateSettings({ pdfTitle: event.target.value })} />
+            <label>적용 방식</label>
+            <label className="check-label compact-check">
+              <input
+                type="checkbox"
+                checked={settings.photoLedgerUseBoardFields}
+                onChange={(event) => updateSettings({ photoLedgerUseBoardFields: event.target.checked })}
+              />
+              보드판 내용과 동일하게 적용
+            </label>
+          </div>
+
+          <div className="ledger-selected-photo">
+            <span>선택 사진</span>
+            <strong>{selectedPhoto?.name ?? '사진을 선택하세요'}</strong>
+          </div>
+
+          <div className="ledger-order-control">
+            <span>출력 순서</span>
+            <strong>{selectedPhoto ? `${selectedIndex + 1} / ${photos.length}` : '-'}</strong>
+            <button type="button" className="small-btn outline" disabled={!selectedPhoto || selectedIndex <= 0} onClick={() => moveSelectedPhotoOrder(-1)}>
+              <ArrowUp size={14} /> 위로
+            </button>
+            <button
+              type="button"
+              className="small-btn outline"
+              disabled={!selectedPhoto || selectedIndex < 0 || selectedIndex >= photos.length - 1}
+              onClick={() => moveSelectedPhotoOrder(1)}
+            >
+              <ArrowDown size={14} /> 아래로
+            </button>
+          </div>
+
+          <div className="settings-form board-pdf-form premium-ledger-form">
+            <label>위치</label>
+            <input
+              value={selectedPhotoLedger.location}
+              disabled={manualLedgerDisabled}
+              onChange={(event) => updateSelectedPhotoLedgerPatch({ location: event.target.value })}
+            />
+            <label>사진내용</label>
+            <input
+              value={selectedPhotoLedger.content}
+              disabled={manualLedgerDisabled}
+              onChange={(event) => updateSelectedPhotoLedgerPatch({ content: event.target.value })}
+            />
+            <label>촬영일자</label>
+            <input
+              value={selectedPhotoLedger.date}
+              disabled={manualLedgerDisabled}
+              onChange={(event) => updateSelectedPhotoLedgerPatch({ date: event.target.value })}
+            />
+          </div>
+
+          <div className="ledger-action-row">
+            <button
+              className="small-btn outline"
+              type="button"
+              disabled={!selectedPhoto || settings.photoLedgerUseBoardFields}
+              onClick={applyCurrentBoardFieldsToSelectedLedger}
+            >
+              보드판 내용 불러오기
+            </button>
+            <button
+              className="small-btn outline"
+              type="button"
+              disabled={!selectedPhoto || settings.photoLedgerUseBoardFields}
+              onClick={applySelectedLedgerToCheckedPhotos}
+            >
+              체크 사진에 적용
+            </button>
+          </div>
+
+          <button className="btn primary wide ledger-create-btn" type="button" disabled={isProcessing} onClick={() => void runProcess('all', { createPhotoLedgerPdf: true })}>
+            <FileSpreadsheet size={17} /> 사진대지 만들기
+          </button>
+          <p className="output-help-text compact">
+            {settings.photoLedgerUseBoardFields
+              ? 'PDF 생성 시 각 사진의 보드판 입력값에서 위치, 내용, 촬영일자를 자동 적용합니다.'
+              : '사진 목록에서 사진을 하나씩 선택해 하단정보와 출력 순서를 지정하면 PDF에 사진별로 다르게 출력됩니다.'}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   function renderPremiumSettingsCard() {
     return (
-      <Card title="프리미엄 설정" icon={<Settings size={17} />} className="output-settings-card premium-settings-card">
-        <div className="settings-tabs premium-settings-tabs" role="tablist" aria-label="프리미엄 설정">
+      <Card title="PRO 설정" icon={<Settings size={17} />} className="output-settings-card premium-settings-card">
+        <div className="settings-tabs premium-settings-tabs" role="tablist" aria-label="PRO 설정">
           <button
             type="button"
             role="tab"
@@ -2117,6 +2490,15 @@ export default function App() {
             onClick={() => setActiveOutputSettingsTab('fields')}
           >
             보드 내용
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeOutputSettingsTab === 'datetime'}
+            className={activeOutputSettingsTab === 'datetime' ? 'settings-tab active' : 'settings-tab'}
+            onClick={() => setActiveOutputSettingsTab('datetime')}
+          >
+            날짜/시간
           </button>
           <button
             type="button"
@@ -2145,6 +2527,15 @@ export default function App() {
           >
             강조/실행
           </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeOutputSettingsTab === 'ledger'}
+            className={activeOutputSettingsTab === 'ledger' ? 'settings-tab active' : 'settings-tab'}
+            onClick={() => setActiveOutputSettingsTab('ledger')}
+          >
+            사진대지
+          </button>
         </div>
         <div className="settings-tab-panel output-tab-panel">
           {activeOutputSettingsTab === 'fields' && (
@@ -2158,9 +2549,15 @@ export default function App() {
               {renderBoardFieldEditor('advanced-field-list premium-field-list')}
             </div>
           )}
+          {activeOutputSettingsTab === 'datetime' && (
+            <div className="premium-settings-stack premium-datetime-settings">
+              {renderDateTimeSettings()}
+            </div>
+          )}
           {activeOutputSettingsTab === 'layout' && renderBoardLayoutSettings()}
           {activeOutputSettingsTab === 'typography' && renderPremiumTypographySettings()}
           {activeOutputSettingsTab === 'highlight' && renderPremiumHighlightAndActions()}
+          {activeOutputSettingsTab === 'ledger' && renderPremiumPhotoLedgerSettings()}
         </div>
       </Card>
     );
@@ -2278,6 +2675,9 @@ export default function App() {
                   <button className="small-btn outline" type="button" disabled={!selectedPhoto} onClick={() => void handleCopyPreviewImage()}>
                     <Copy size={15} /> 결과 이미지 복사
                   </button>
+                  <button className="small-btn outline" type="button" disabled={!selectedPhoto} onClick={() => void handlePrintPreviewImage()}>
+                    <Printer size={15} /> 미리보기 인쇄
+                  </button>
                 </div>
               }
               className="advanced-preview-card"
@@ -2310,7 +2710,7 @@ export default function App() {
       <main className="page-shell output-shell">
         <div className="output-grid">
           <Card
-            title={`사진별 강조 ${photos.length}장`}
+            title={`불러온 사진 ${photos.length}장`}
             icon={<ListChecks size={17} />}
             className="output-photo-card"
             action={
@@ -2319,16 +2719,27 @@ export default function App() {
               </button>
             }
           >
+            <div className="photo-card-actions output-photo-select-actions">
+              <button type="button" onClick={() => setAllPhotoChecks(true)}>
+                전체 선택
+              </button>
+              <button type="button" onClick={() => setAllPhotoChecks(false)}>
+                전체 해제
+              </button>
+              <button type="button" onClick={invertPhotoChecks}>
+                선택 반전
+              </button>
+            </div>
             <div className="photo-list output-photo-list">
               <div className="photo-list-head">
-                <span>강조</span>
-                <span>파일명</span>
+                <span>선택</span>
+                <span>순서 / 파일명</span>
               </div>
               <div className="photo-list-body">
                 {photos.length === 0 ? (
                   <div className="empty-list">사진이 없습니다.</div>
                 ) : (
-                  photos.map((photo) => (
+                  photos.map((photo, index) => (
                     <div
                       key={photo.path}
                       className={selectedPhotoPath === photo.path ? 'photo-list-row active' : 'photo-list-row'}
@@ -2336,28 +2747,20 @@ export default function App() {
                     >
                       <input
                         type="checkbox"
-                        checked={Boolean(photo.highlight?.enabled)}
-                        onChange={(event) => {
-                          event.stopPropagation();
-                          if (photo.highlight?.enabled) {
-                            setPhotos((current) => current.map((item) => (item.path === photo.path ? { ...item, highlight: undefined } : item)));
-                          } else {
-                            setPhotos((current) =>
-                              current.map((item) => (item.path === photo.path ? { ...item, highlight: defaultHighlight } : item))
-                            );
-                          }
-                          refreshPreview();
-                        }}
+                        checked={photo.selectedForProcessing}
+                        onChange={() => togglePhotoChecked(photo.path)}
                         onClick={(event) => event.stopPropagation()}
                       />
-                      <span title={photo.name}>{photo.name}</span>
+                      <span title={photo.name}>
+                        <em className="photo-order-badge">{index + 1}</em>
+                        {photo.name}
+                      </span>
                       <button
                         type="button"
-                        aria-label="강조 삭제"
+                        aria-label="사진 삭제"
                         onClick={(event) => {
                           event.stopPropagation();
-                          setPhotos((current) => current.map((item) => (item.path === photo.path ? { ...item, highlight: undefined } : item)));
-                          refreshPreview();
+                          removePhoto(photo.path);
                         }}
                       >
                         <Trash2 size={14} />
@@ -2371,19 +2774,36 @@ export default function App() {
               <button className="btn ghost wide" type="button" onClick={handleSelectPhotos}>
                 <Camera size={17} /> 사진 불러오기
               </button>
+              <button className="btn ghost wide" type="button" onClick={handleSelectPhotoFolder}>
+                <FolderOpen size={17} /> 폴더 불러오기
+              </button>
               <button className="btn ghost wide" type="button" onClick={handleSelectSaveFolder}>
-                <Save size={17} /> 저장 경로 지정
+                <Save size={17} /> 저장 경로
+              </button>
+              <button className="btn ghost wide" type="button" onClick={handleOpenSaveFolder}>
+                <FolderOpen size={17} /> 결과 폴더
+              </button>
+              <button className="text-action danger-text" type="button" onClick={handleClearPhotos}>
+                <RotateCcw size={15} /> 목록 초기화
               </button>
             </div>
           </Card>
 
           <Card
-            title="강조 미리보기"
+            title="미리보기"
             icon={<Eye size={17} />}
             action={
-              <button className="small-btn outline" type="button" disabled={!selectedPhoto} onClick={() => void handleCopyPreviewImage()}>
-                <Copy size={15} /> 결과 이미지 복사
-              </button>
+              <div className="preview-card-actions">
+                <button className="small-btn outline" type="button" onClick={openLargePreview}>
+                  <Eye size={15} /> 크게 보기
+                </button>
+                <button className="small-btn outline" type="button" disabled={!selectedPhoto} onClick={() => void handleCopyPreviewImage()}>
+                  <Copy size={15} /> 결과 이미지 복사
+                </button>
+                <button className="small-btn outline" type="button" disabled={!selectedPhoto} onClick={() => void handlePrintPreviewImage()}>
+                  <Printer size={15} /> 미리보기 인쇄
+                </button>
+              </div>
             }
             className="output-preview-card"
           >
@@ -2394,7 +2814,7 @@ export default function App() {
               previewRevision={previewRevision}
               livePreviewSignature={livePreviewSignature}
               selectedPhotoName={selectedPhoto?.name}
-              emptyText="왼쪽 목록에서 강조할 사진을 선택하세요"
+              emptyText="왼쪽 목록에서 사진을 선택하세요"
               highlight={selectedHighlight}
               outputGrayscale={settings.outputGrayscale}
               editableHighlight
@@ -2430,6 +2850,7 @@ export default function App() {
       <main className="page-shell admin-shell">
         <Panel
           title="관리자"
+          className="admin-panel"
           actions={
             <button type="button" className="secondary-button small" onClick={refreshAdminRows} disabled={adminBusy}>
               <RefreshCw size={16} aria-hidden />
@@ -2437,37 +2858,39 @@ export default function App() {
             </button>
           }
         >
-          <div className="admin-summary">
-            <div>
-              <strong>{adminRows.length}</strong>
-              <span>사용자</span>
+          <div className="admin-overview">
+            <div className="admin-summary">
+              <div>
+                <strong>{adminRows.length}</strong>
+                <span>사용자</span>
+              </div>
+              <div>
+                <strong>{adminRows.filter((row) => row.profile.role === 'admin').length}</strong>
+                <span>관리자</span>
+              </div>
+              <div>
+                <strong>{adminRows.filter((row) => row.subscription?.status === 'manual_active' || row.subscription?.status === 'active').length}</strong>
+                <span>활성 구독</span>
+              </div>
             </div>
-            <div>
-              <strong>{adminRows.filter((row) => row.profile.role === 'admin').length}</strong>
-              <span>관리자</span>
-            </div>
-            <div>
-              <strong>{adminRows.filter((row) => row.subscription?.status === 'manual_active' || row.subscription?.status === 'active').length}</strong>
-              <span>활성 구독</span>
-            </div>
-          </div>
-          <div className="admin-oauth-link">
-            <div>
-              <strong>소셜 계정 연결</strong>
-              <span>기존 관리자 이메일 계정에 소셜 로그인을 추가합니다.</span>
-            </div>
-            <div className="admin-oauth-actions">
-              {visibleSocialAuthProviders.map((provider) => (
-                <button
-                  key={provider.id}
-                  type="button"
-                  className={`admin-oauth-button ${provider.id}`}
-                  onClick={() => void handleSocialIdentityLink(provider.id)}
-                  disabled={authBusy}
-                >
-                  {oauthBusyProvider === provider.id ? '연결 중...' : `${provider.badge} 연결`}
-                </button>
-              ))}
+            <div className="admin-oauth-link">
+              <div>
+                <strong>소셜 계정 연결</strong>
+                <span>기존 관리자 이메일 계정에 소셜 로그인을 추가합니다.</span>
+              </div>
+              <div className="admin-oauth-actions">
+                {visibleSocialAuthProviders.map((provider) => (
+                  <button
+                    key={provider.id}
+                    type="button"
+                    className={`admin-oauth-button ${provider.id}`}
+                    onClick={() => void handleSocialIdentityLink(provider.id)}
+                    disabled={authBusy}
+                  >
+                    {oauthBusyProvider === provider.id ? '연결 중...' : `${provider.badge} 연결`}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
           {adminError && <div className="admin-error">{adminError}</div>}
@@ -2604,6 +3027,7 @@ export default function App() {
       onDrop={handleDrop}
     >
       {renderTopNavigation()}
+      {activeScreen === 'start' && renderStartScreen()}
       {activeScreen === 'help' && renderHelpScreen()}
       {activeScreen === 'basic' && renderBasicScreen()}
       {activeScreen === 'advanced' && renderAdvancedScreen()}
@@ -2642,6 +3066,9 @@ export default function App() {
           <div className="modal-toolbar">
             <button className="small-btn outline" type="button" disabled={!selectedPhoto} onClick={() => void handleCopyPreviewImage()}>
               <Copy size={15} /> 결과 이미지 복사
+            </button>
+            <button className="small-btn outline" type="button" disabled={!selectedPhoto} onClick={() => void handlePrintPreviewImage()}>
+              <Printer size={15} /> 미리보기 인쇄
             </button>
           </div>
           <PreviewStage
@@ -2713,11 +3140,26 @@ function formatDateTime(value: string | null | undefined) {
 }
 
 function toUiError(error: unknown) {
-  if (error instanceof Error) return error.message;
-  if (typeof error === 'object' && error && 'message' in error) {
-    return String((error as { message: unknown }).message);
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === 'object' && error && 'message' in error
+        ? String((error as { message: unknown }).message)
+        : String(error ?? '알 수 없는 오류가 발생했습니다.');
+
+  if (/permission denied for table profiles/i.test(message)) {
+    return 'Supabase profiles 테이블 권한이 누락되었습니다. 관리자에게 supabase/migrations/20260611_auth_permission_repair.sql 적용을 요청하세요.';
   }
-  return String(error ?? '알 수 없는 오류가 발생했습니다.');
+
+  if (/permission denied for table (subscriptions|devices|audit_logs|app_admin_emails)/i.test(message)) {
+    return 'Supabase 로그인/관리 테이블 권한이 누락되었습니다. 관리자에게 supabase/migrations/20260611_auth_permission_repair.sql 적용을 요청하세요.';
+  }
+
+  if (/permission denied for (function|routine)/i.test(message)) {
+    return 'Supabase 로그인 RPC 실행 권한이 누락되었습니다. 관리자에게 supabase/migrations/20260611_auth_permission_repair.sql 적용을 요청하세요.';
+  }
+
+  return message;
 }
 
 function toAuthUiError(error: unknown, mode: AuthMode) {
@@ -2767,6 +3209,7 @@ async function getAuthDeviceIdentity() {
   return {
     ok: true,
     fingerprint: await sha256Hex(`browser-preview|${navigator.userAgent}|${navigator.language}|${location.origin}`),
+    knownFingerprints: [],
     deviceName: '브라우저 미리보기',
     appVersion: 'preview',
     skipDeviceClaim: true
@@ -3418,33 +3861,41 @@ function normalizeFileName(fileName: string) {
 }
 
 function normalizeColumnRatios(settings: BoardSettings) {
-  let labelColumnWidthRatio = Number.isFinite(settings.labelColumnWidthRatio)
+  const widthRatio = roundRatio(clampBoardWidthRatio(settings.widthRatio, boardSizeToWidthRatio(settings.boardSize)));
+  const fallbackLabelShare = DEFAULT_LABEL_COLUMN_WIDTH_RATIO / DEFAULT_BOARD_WIDTH_RATIO;
+  const rawLabelColumnWidthRatio = Number.isFinite(settings.labelColumnWidthRatio)
     ? Number(settings.labelColumnWidthRatio)
-    : DEFAULT_LABEL_COLUMN_WIDTH_RATIO;
-  let valueColumnWidthRatio = Number.isFinite(settings.valueColumnWidthRatio)
+    : widthRatio * fallbackLabelShare;
+  const rawValueColumnWidthRatio = Number.isFinite(settings.valueColumnWidthRatio)
     ? Number(settings.valueColumnWidthRatio)
-    : DEFAULT_VALUE_COLUMN_WIDTH_RATIO;
-
-  labelColumnWidthRatio = clamp(labelColumnWidthRatio, MIN_LABEL_COLUMN_WIDTH_RATIO, MAX_LABEL_COLUMN_WIDTH_RATIO);
-  valueColumnWidthRatio = clamp(valueColumnWidthRatio, MIN_VALUE_COLUMN_WIDTH_RATIO, MAX_VALUE_COLUMN_WIDTH_RATIO);
-
-  let widthRatio = labelColumnWidthRatio + valueColumnWidthRatio;
-  if (widthRatio < MIN_BOARD_WIDTH_RATIO) {
-    valueColumnWidthRatio += MIN_BOARD_WIDTH_RATIO - widthRatio;
-    widthRatio = MIN_BOARD_WIDTH_RATIO;
-  }
-  if (widthRatio > MAX_BOARD_WIDTH_RATIO) {
-    const scale = MAX_BOARD_WIDTH_RATIO / widthRatio;
-    labelColumnWidthRatio *= scale;
-    valueColumnWidthRatio *= scale;
-    widthRatio = MAX_BOARD_WIDTH_RATIO;
-  }
+    : widthRatio - rawLabelColumnWidthRatio;
+  const rawTotal = rawLabelColumnWidthRatio + rawValueColumnWidthRatio;
+  const labelShare = rawTotal > 0 ? rawLabelColumnWidthRatio / rawTotal : fallbackLabelShare;
+  const bounds = getColumnRatioBounds(widthRatio);
+  const labelColumnWidthRatio = roundRatio(clamp(widthRatio * labelShare, bounds.minLabel, bounds.maxLabel));
+  const valueColumnWidthRatio = roundRatio(widthRatio - labelColumnWidthRatio);
 
   return {
-    labelColumnWidthRatio: Number(labelColumnWidthRatio.toFixed(3)),
-    valueColumnWidthRatio: Number(valueColumnWidthRatio.toFixed(3)),
-    widthRatio: Number(clampBoardWidthRatio(widthRatio).toFixed(3))
+    labelColumnWidthRatio,
+    valueColumnWidthRatio,
+    widthRatio
   };
+}
+
+function getColumnRatioBounds(widthRatioValue: number) {
+  const widthRatio = clampBoardWidthRatio(widthRatioValue);
+  const minValue = Math.min(MIN_VALUE_COLUMN_WIDTH_RATIO, Math.max(0.01, widthRatio * 0.55));
+  const minLabel = Math.min(MIN_LABEL_COLUMN_WIDTH_RATIO, Math.max(0.01, widthRatio - minValue));
+  return {
+    minLabel,
+    minValue,
+    maxLabel: Math.max(minLabel, Math.min(MAX_LABEL_COLUMN_WIDTH_RATIO, widthRatio - minValue)),
+    maxValue: Math.max(minValue, Math.min(MAX_VALUE_COLUMN_WIDTH_RATIO, widthRatio - minLabel))
+  };
+}
+
+function roundRatio(value: number) {
+  return Number(value.toFixed(3));
 }
 
 function trimPath(value: string) {

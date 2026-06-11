@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron';
-import type { CopyPreviewImagePayload, ProcessImagesPayload } from '../src/shared/types';
+import type { CopyPreviewImagePayload, PrintPreviewImagePayload, ProcessImagesPayload } from '../src/shared/types';
 
 contextBridge.exposeInMainWorld('constructView', {
   selectPhotos: () => ipcRenderer.invoke('photos:select'),
@@ -13,10 +13,14 @@ contextBridge.exposeInMainWorld('constructView', {
   importDateTimeSheet: () => ipcRenderer.invoke('sheet:import-date-times'),
   processImages: (payload: ProcessImagesPayload) => ipcRenderer.invoke('images:process', payload),
   copyPreviewImage: (payload: CopyPreviewImagePayload) => ipcRenderer.invoke('images:copy-preview', payload),
+  printPreviewImage: (payload: PrintPreviewImagePayload) => ipcRenderer.invoke('images:print-preview', payload),
   resizeWindow: (size: { width: number; height: number }) => ipcRenderer.invoke('window:resize', size),
   getDeviceIdentity: () => ipcRenderer.invoke('auth:get-device-fingerprint'),
   getAppVersion: () => ipcRenderer.invoke('auth:get-app-version'),
   openOAuthUrl: (url: string) => ipcRenderer.invoke('auth:open-oauth-url', url),
+  getRememberedLogin: () => ipcRenderer.invoke('auth:get-remembered-login'),
+  saveRememberedLogin: (payload: { remember: boolean; email: string; password: string }) => ipcRenderer.invoke('auth:save-remembered-login', payload),
+  clearRememberedLogin: () => ipcRenderer.invoke('auth:clear-remembered-login'),
   onOAuthCallback: (callback: (url: string) => void) => {
     const listener = (_event: Electron.IpcRendererEvent, url: string) => callback(url);
     ipcRenderer.on('auth:oauth-callback', listener);

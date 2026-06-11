@@ -14,12 +14,19 @@ export interface PhotoHighlight {
   outsideGrayscale: boolean;
 }
 
+export interface PhotoLedgerInfo {
+  location: string;
+  content: string;
+  date: string;
+}
+
 export interface PhotoItem {
   id: string;
   path: string;
   name: string;
   selectedForProcessing: boolean;
   highlight?: PhotoHighlight;
+  photoLedger?: PhotoLedgerInfo;
 }
 
 export interface BoardField {
@@ -52,6 +59,10 @@ export interface BoardSettings {
   openFolderAfterProcessing: boolean;
   createPdf: boolean;
   pdfTitle: string;
+  photoLedgerUseBoardFields: boolean;
+  photoLedgerLocation: string;
+  photoLedgerContent: string;
+  photoLedgerDate: string;
 }
 
 export interface DateTimeValue {
@@ -95,6 +106,14 @@ export interface CopyPreviewImagePayload {
 
 export interface CopyImageResult {
   ok: boolean;
+  error?: string;
+}
+
+export type PrintPreviewImagePayload = CopyPreviewImagePayload;
+
+export interface PrintImageResult {
+  ok: boolean;
+  canceled?: boolean;
   error?: string;
 }
 

@@ -1,6 +1,6 @@
 {
   "name": "epyeonhan-board",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "건설 현장 사진 보드판 합성 로컬 데스크톱 프로그램",
   "author": "대성건설(주)",
   "main": "dist-electron/electron/main.js",
@@ -9,7 +9,7 @@
     "dev": "npm run build:electron && concurrently -k \"vite --host 127.0.0.1 --port 5180\" \"wait-on http://127.0.0.1:5180 && cross-env VITE_DEV_SERVER_URL=http://127.0.0.1:5180 electron .\"",
     "build:electron": "tsc -p tsconfig.electron.json",
     "build": "tsc -p tsconfig.json && npm run build:electron && vite build",
-    "verify:board": "npm run build && node scripts/verify-board-no-gap.cjs && node scripts/verify-preview-fit.cjs && node scripts/verify-output-settings.cjs && node scripts/verify-update-utils.cjs && node scripts/verify-auth-setup.cjs",
+    "verify:board": "npm run build && node scripts/verify-board-no-gap.cjs && node scripts/verify-preview-fit.cjs && node scripts/verify-output-settings.cjs && node scripts/verify-photo-ledger-pdf.cjs && node scripts/verify-update-utils.cjs && node scripts/verify-auth-setup.cjs",
     "verify:update": "npm run build:electron && node scripts/verify-update-utils.cjs",
     "verify:auth": "npm run build && node scripts/verify-auth-setup.cjs",
     "package:win": "npm run package:win:installer",

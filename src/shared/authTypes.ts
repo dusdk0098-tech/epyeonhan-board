@@ -62,6 +62,7 @@ export interface AuthGateState {
 export interface AuthDeviceIdentity {
   ok: boolean;
   fingerprint?: string;
+  knownFingerprints?: string[];
   deviceName?: string;
   appVersion?: string;
   error?: string;

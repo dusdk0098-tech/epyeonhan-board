@@ -77,6 +77,23 @@ function verifyBoardTypography() {
   const largeFont = Math.max(...extractFontSizes(large.svg));
   assert(largeFont >= smallFont + 10, `font size control is not reflected enough: ${smallFont} -> ${largeFont}`);
 
+  const normalTypography = buildBoardSvg(1200, 800, fields, {
+    ...baseSettings,
+    fontFamily: 'Gulim',
+    fontWeight: 'normal'
+  }).svg;
+  assert(normalTypography.includes('font-weight="400"'), 'normal font weight must be emitted to board SVG');
+  assert(!normalTypography.includes('font-weight="700"'), 'normal font weight must also apply to board labels');
+  assert(normalTypography.includes('font-family="Gulim,'), 'selected font family must be emitted first in board SVG');
+
+  const boldTypography = buildBoardSvg(1200, 800, fields, {
+    ...baseSettings,
+    fontFamily: 'Times New Roman',
+    fontWeight: 'bold'
+  }).svg;
+  assert(boldTypography.includes('font-weight="700"'), 'bold font weight must be emitted to board SVG');
+  assert(boldTypography.includes("font-family=\"'Times New Roman'"), 'font families with spaces must be quoted in board SVG');
+
   const labelWidth = extractLabelWidth(large.svg);
   const labelRatio = labelWidth / large.width;
   assert(labelRatio >= 0.255 && labelRatio <= 0.265, `label cell width ratio drifted: ${labelRatio}`);
@@ -97,7 +114,7 @@ function verifyBoardColumnControls() {
   const wideLabelWidth = extractLabelWidth(wideLabel.svg);
 
   assert(wideLabelWidth > narrowLabelWidth, 'label column width control must affect rendered SVG');
-  assert(wideLabel.width > narrowLabel.width, 'label/value column ratios must affect total board width');
+  assert(wideLabel.width === narrowLabel.width, 'label/value column controls must not change total board width');
 }
 
 function verifyBottomStripLayout() {
@@ -137,14 +154,17 @@ function verifyWorkspaceAndBridgeStatic() {
   const styles = fs.readFileSync(path.join(__dirname, '..', 'src', 'styles.css'), 'utf8');
 
   assert(app.includes('Record<WorkspaceScreen, BoardWorkspaceState>'), 'work tab state must be isolated per workspace');
-  assert(app.includes("label: '보드판 [간편]'"), 'basic tab label must be renamed');
+  assert(app.includes("label: 'LITE'"), 'basic tab label must be LITE');
   assert(app.includes('const workspaceKey = activeWorkspaceKey;') && app.includes('handleDroppedPhotoPaths(paths, workspaceKey)'), 'drop target workspace must be captured before async photo resolution');
   assert(app.includes('handleDrop') && styles.includes('.app.drag-active::after'), 'drag-and-drop UI must be wired');
   assert(preload.includes('webUtils') && preload.includes('getPathForFile'), 'dragged browser File objects must be resolved through Electron webUtils');
   assert(api.includes('getPathForFile') && api.includes('file: File'), 'getPathForFile must be exposed in renderer API types');
   assert(preload.includes('resolveDroppedPhotos') && main.includes("photos:resolve-dropped") && api.includes('resolveDroppedPhotos'), 'dropped photo IPC bridge is incomplete');
   assert(preload.includes('copyPreviewImage') && main.includes("images:copy-preview") && api.includes('copyPreviewImage'), 'preview copy IPC bridge is incomplete');
+  assert(preload.includes('printPreviewImage') && main.includes("images:print-preview") && api.includes('printPreviewImage'), 'preview print IPC bridge is incomplete');
   assert(app.includes('결과 이미지 복사'), 'preview copy button label should clearly indicate output image copy');
+  assert(app.includes('미리보기 인쇄') && app.includes('handlePrintPreviewImage'), 'preview print UI must be exposed');
+  assert(main.includes('webContents.print') && main.includes("title: 'e편한보드 인쇄'"), 'main process must print through an internal print window');
   assert(app.includes("boardLayoutMode: 'table'") && app.includes("value=\"bottom-strip\"") && app.includes('하부 띠'), 'board layout mode controls are missing');
   assert(app.includes('항목 정렬') && app.includes('내용 정렬'), 'advanced board alignment controls are missing');
   assert(app.includes('글자 굵기') && app.includes('테두리 굵기') && app.includes('글꼴'), 'advanced board typography controls are missing');
@@ -159,20 +179,35 @@ function verifyWorkspaceAndBridgeStatic() {
   assert(app.includes('commonOutputSettings') && app.includes('updateCommonOutputSettings'), 'common output settings must use shared state');
   assert(app.includes('결과물 흑백 저장') && app.includes('작업 완료 후 결과 폴더 열기'), 'common output settings are missing');
   assert(app.includes('activeOutputSettingsTab') && app.includes('renderPremiumSettingsCard'), 'premium tab must use a tabbed settings card');
+  assert(app.includes("activeOutputSettingsTab === 'datetime'") && app.includes('날짜/시간'), 'premium tab must expose datetime settings like the advanced tab');
+  assert(app.includes("activeOutputSettingsTab === 'ledger'") && app.includes('renderPremiumPhotoLedgerSettings'), 'photo ledger settings must live in the premium settings tabs');
+  assert(app.includes('사진대지 만들기') && app.includes("runProcess('all', { createPhotoLedgerPdf: true })"), 'premium tab must expose a photo ledger creation button');
+  assert(!app.includes('commonOutputSettings.createPdf') && !app.includes('commonOutputSettings.pdfTitle'), 'photo ledger PDF controls must not stay in common settings');
   assert(app.includes('보드 내용') && app.includes('renderBoardFieldEditor') && app.includes('premium-field-editor'), 'premium tab must allow editing board labels and values');
   assert(app.includes('크기/배치') && app.includes('renderBoardLayoutSettings()'), 'premium tab must expose detailed board size/layout settings');
   assert(app.includes('글자/테두리') && app.includes('renderPremiumTypographySettings'), 'premium tab must expose detailed typography settings');
+  assert(app.includes('output-photo-select-actions') && app.includes('setAllPhotoChecks(true)') && app.includes('invertPhotoChecks'), 'premium tab must expose loaded-photo bulk selection controls');
+  assert(app.includes('handleSelectPhotoFolder') && app.includes('handleOpenSaveFolder') && app.includes('handleClearPhotos'), 'premium tab must expose advanced photo/folder/list actions');
+  assert(app.includes('moveSelectedPhotoOrder') && app.includes('출력 순서'), 'premium photo ledger must allow output order changes');
+  assert(app.includes("label: 'LITE'") && app.includes("label: 'PRO'"), 'top navigation must expose LITE and PRO labels');
+  assert(!app.includes("label: '사용방법'") && !app.includes("label: '보드판 작성 [고급]'"), 'help and advanced tabs must be removed from top navigation');
+  assert(app.includes("useState<Screen>('start')") && app.includes('function renderStartScreen()'), 'the app must open to the button-style start screen');
+  assert(app.includes('boardFontOptions') && app.includes('Gulim') && app.includes('Times New Roman'), 'expanded board font options are missing');
+  assert(app.includes('className="admin-panel"') && app.includes('admin-overview'), 'admin layout must use the scroll-safe compact panel structure');
+  assert(styles.includes('.admin-table-wrap') && styles.includes('scrollbar-gutter: stable both-edges'), 'admin table must have stable scroll/sliding space');
+  assert(!app.includes('강조 미리보기'), 'premium preview title must not show the old emphasis preview label');
+  assert(app.includes("typeof patch.labelColumnWidthRatio === 'number'") && app.includes('widthRatio - labelColumnWidthRatio'), 'label column changes must preserve total board width');
+  assert(app.includes("typeof patch.valueColumnWidthRatio === 'number'") && app.includes('widthRatio - valueColumnWidthRatio'), 'value column changes must preserve total board width');
   assert(styles.includes('.premium-settings-tabs') && styles.includes('.premium-field-list'), 'premium settings layout styling is missing');
-  assert(app.includes('const processSettings = mergeCommonOutputSettings(settings);'), 'processing must merge common output settings for every work tab');
+  assert(styles.includes('.output-photo-select-actions') && styles.includes('.ledger-order-control'), 'premium selection/order styling is missing');
+  assert(app.includes('mergeCommonOutputSettings(settings)') && app.includes('createPdf: Boolean(options.createPhotoLedgerPdf)'), 'processing must merge common output settings and only create PDF from the premium ledger action');
   assert(app.includes('settings: processSettings'), 'process payload must use common output settings without per-tab overrides');
   assert(!app.includes("activeScreen === 'basic' ? { ...processSettings, createPdf: false }"), 'basic tab must not bypass common PDF settings');
   [
     'JPG 품질',
     '최대 긴 변',
     '결과물 흑백 저장',
-    '작업 완료 후 결과 폴더 열기',
-    'PDF 생성 (사진대지)',
-    'PDF 제목'
+    '작업 완료 후 결과 폴더 열기'
   ].forEach((label) => {
     const count = app.split(label).length - 1;
     assert(count === 1, `${label} control must only be rendered in the top-level common settings tab, found ${count}`);

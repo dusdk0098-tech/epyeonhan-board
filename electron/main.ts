@@ -1,15 +1,15 @@
-import { app, BrowserWindow, Menu, clipboard, dialog, ipcMain, nativeImage, shell, type WebContents } from 'electron';
+import { app, BrowserWindow, Menu, clipboard, dialog, ipcMain, nativeImage, safeStorage, shell, type WebContents } from 'electron';
 import * as fs from 'fs/promises';
 import { constants as fsConstants } from 'fs';
-import { spawn } from 'child_process';
+import { spawn, spawnSync } from 'child_process';
 import { createHash } from 'crypto';
 import path from 'path';
 import os from 'os';
 import sharp from 'sharp';
-import { PDFDocument } from 'pdf-lib';
 import * as exifr from 'exifr';
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
+import { createPhotoLedgerPdf, type PhotoLedgerPdfEntry } from './photoLedgerPdf';
 import type {
   BoardField,
   BoardSettings,
@@ -22,6 +22,8 @@ import type {
   ImportSheetResult,
   PhotoHighlight,
   PhotoItem,
+  PrintImageResult,
+  PrintPreviewImagePayload,
   ProcessImagesPayload,
   ProcessImagesResult,
   ReadDateTimeResult,
@@ -57,6 +59,21 @@ type UpdateStatusPayload = {
   downloadedBytes?: number;
   totalBytes?: number;
   message?: string;
+  error?: string;
+};
+
+type RememberedLoginPayload = {
+  remember: boolean;
+  email: string;
+  password: string;
+};
+
+type RememberedLoginResult = {
+  ok: boolean;
+  remember?: boolean;
+  email?: string;
+  password?: string;
+  passwordAvailable?: boolean;
   error?: string;
 };
 
@@ -404,10 +421,14 @@ function registerIpcHandlers() {
   ipcMain.handle('sheet:import-date-times', importDateTimeSheet);
   ipcMain.handle('images:process', (_event, payload: ProcessImagesPayload) => processImages(payload));
   ipcMain.handle('images:copy-preview', (_event, payload: CopyPreviewImagePayload) => copyPreviewImage(payload));
+  ipcMain.handle('images:print-preview', (_event, payload: PrintPreviewImagePayload) => printPreviewImage(payload));
   ipcMain.handle('window:resize', (event, size: { width: number; height: number }) => resizeWindow(event.sender, size));
   ipcMain.handle('auth:get-device-fingerprint', getDeviceIdentity);
   ipcMain.handle('auth:get-app-version', () => app.getVersion());
   ipcMain.handle('auth:open-oauth-url', (_event, url: string) => openOAuthUrl(url));
+  ipcMain.handle('auth:get-remembered-login', getRememberedLogin);
+  ipcMain.handle('auth:save-remembered-login', (_event, payload: RememberedLoginPayload) => saveRememberedLogin(payload));
+  ipcMain.handle('auth:clear-remembered-login', clearRememberedLogin);
 }
 
 function registerOAuthProtocol() {
@@ -429,6 +450,83 @@ async function openOAuthUrl(url: string): Promise<{ ok: boolean; error?: string 
   } catch (error) {
     return { ok: false, error: toErrorMessage(error) };
   }
+}
+
+async function getRememberedLogin(): Promise<RememberedLoginResult> {
+  try {
+    const raw = await fs.readFile(getRememberedLoginPath(), 'utf8').catch((error: NodeJS.ErrnoException) => {
+      if (error.code === 'ENOENT') return '';
+      throw error;
+    });
+    if (!raw) {
+      return { ok: true, remember: false, email: '', password: '', passwordAvailable: safeStorage.isEncryptionAvailable() };
+    }
+
+    const parsed = JSON.parse(raw) as { email?: string; encryptedPassword?: string };
+    if (!parsed.encryptedPassword || !safeStorage.isEncryptionAvailable()) {
+      return {
+        ok: true,
+        remember: Boolean(parsed.email),
+        email: parsed.email ?? '',
+        password: '',
+        passwordAvailable: false
+      };
+    }
+
+    const password = safeStorage.decryptString(Buffer.from(parsed.encryptedPassword, 'base64'));
+    return {
+      ok: true,
+      remember: true,
+      email: parsed.email ?? '',
+      password,
+      passwordAvailable: true
+    };
+  } catch (error) {
+    return { ok: false, remember: false, error: toErrorMessage(error), passwordAvailable: safeStorage.isEncryptionAvailable() };
+  }
+}
+
+async function saveRememberedLogin(payload: RememberedLoginPayload): Promise<RememberedLoginResult> {
+  try {
+    if (!payload.remember) {
+      return clearRememberedLogin();
+    }
+    if (!safeStorage.isEncryptionAvailable()) {
+      return {
+        ok: false,
+        remember: false,
+        error: '이 PC에서 비밀번호 암호화 저장소를 사용할 수 없습니다.',
+        passwordAvailable: false
+      };
+    }
+
+    const email = String(payload.email ?? '').trim();
+    const password = String(payload.password ?? '');
+    const encryptedPassword = safeStorage.encryptString(password).toString('base64');
+    await fs.mkdir(path.dirname(getRememberedLoginPath()), { recursive: true });
+    await fs.writeFile(
+      getRememberedLoginPath(),
+      JSON.stringify({ email, encryptedPassword, updatedAt: new Date().toISOString() }, null, 2),
+      'utf8'
+    );
+
+    return { ok: true, remember: true, email, password, passwordAvailable: true };
+  } catch (error) {
+    return { ok: false, remember: false, error: toErrorMessage(error), passwordAvailable: safeStorage.isEncryptionAvailable() };
+  }
+}
+
+async function clearRememberedLogin(): Promise<RememberedLoginResult> {
+  try {
+    await fs.rm(getRememberedLoginPath(), { force: true });
+    return { ok: true, remember: false, email: '', password: '', passwordAvailable: safeStorage.isEncryptionAvailable() };
+  } catch (error) {
+    return { ok: false, remember: false, error: toErrorMessage(error), passwordAvailable: safeStorage.isEncryptionAvailable() };
+  }
+}
+
+function getRememberedLoginPath() {
+  return path.join(app.getPath('userData'), 'remembered-login.json');
 }
 
 function findOAuthCallbackUrl(argv: string[]) {
@@ -477,16 +575,76 @@ function getDeviceIdentity() {
   try {
     const username = os.userInfo().username || 'unknown-user';
     const hostname = os.hostname() || 'unknown-host';
-    const rawIdentity = [hostname, username, app.getPath('userData'), app.getPath('exe')].join('|');
+    const machineGuid = readWindowsMachineGuid();
+    const stableIdentity = [
+      'epyeonhan-board-device-v2',
+      process.platform,
+      machineGuid ? `machine:${machineGuid}` : `host:${hostname}|user:${username}`
+    ].join('|');
+    const fingerprint = createHash('sha256').update(stableIdentity).digest('hex');
+    const knownFingerprints = uniqueValues([
+      fingerprint,
+      ...getLegacyDeviceFingerprints(hostname, username)
+    ]);
+
     return {
       ok: true,
-      fingerprint: createHash('sha256').update(rawIdentity).digest('hex'),
+      fingerprint,
+      knownFingerprints,
       deviceName: `${hostname} / ${username}`,
       appVersion: app.getVersion()
     };
   } catch (error) {
     return { ok: false, error: toErrorMessage(error) };
   }
+}
+
+function readWindowsMachineGuid() {
+  if (process.platform !== 'win32') return null;
+
+  try {
+    const result = spawnSync('reg', ['query', 'HKLM\\SOFTWARE\\Microsoft\\Cryptography', '/v', 'MachineGuid'], {
+      encoding: 'utf8',
+      windowsHide: true
+    });
+    const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
+    const match = output.match(/MachineGuid\s+REG_\w+\s+([^\r\n]+)/i);
+    return match?.[1]?.trim().toLowerCase() || null;
+  } catch {
+    return null;
+  }
+}
+
+function getLegacyDeviceFingerprints(hostname: string, username: string) {
+  const appDataPath = app.getPath('appData');
+  const programFiles = process.env.ProgramFiles || 'C:\\Program Files';
+  const localAppData = process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local');
+  const legacyUserDataPaths = uniqueValues([
+    app.getPath('userData'),
+    path.join(appDataPath, 'e편한보드'),
+    path.join(appDataPath, 'E편한보드 VER1.0'),
+    path.join(appDataPath, 'epyeonhan-board')
+  ]);
+  const legacyExePaths = uniqueValues([
+    app.getPath('exe'),
+    path.join(programFiles, 'epyeonhan-board', 'e편한보드.exe'),
+    path.join(programFiles, 'epyeonhan-board', 'E편한보드 VER1.0.exe'),
+    path.join(programFiles, 'e편한보드', 'e편한보드.exe'),
+    path.join(localAppData, 'Programs', 'epyeonhan-board', 'e편한보드.exe')
+  ]);
+
+  const fingerprints: string[] = [];
+  for (const userDataPath of legacyUserDataPaths) {
+    for (const exePath of legacyExePaths) {
+      const legacyIdentity = [hostname, username, userDataPath, exePath].join('|');
+      fingerprints.push(createHash('sha256').update(legacyIdentity).digest('hex'));
+    }
+  }
+  return uniqueValues(fingerprints);
+}
+
+function uniqueValues(values: string[]) {
+  return Array.from(new Set(values.filter((value) => value && value.trim())));
 }
 
 function resizeWindow(webContents: WebContents, size: { width: number; height: number }) {
@@ -686,19 +844,21 @@ async function processImages(payload: ProcessImagesPayload): Promise<ProcessImag
     }
 
     const savedFiles: string[] = [];
+    const pdfEntries: PhotoLedgerPdfEntry[] = [];
     for (let index = 0; index < photos.length; index += 1) {
       const photo = photos[index];
       const fields = await resolveFieldsForPhoto(photo, index, payload.fields, payload.timeOptions);
       const outputPath = await nextAvailablePath(payload.saveDir, path.basename(photo.name, path.extname(photo.name)), '_board.jpg');
       await renderBoardImage(photo, outputPath, fields, payload.settings);
       savedFiles.push(outputPath);
+      pdfEntries.push({ imagePath: outputPath, fields, photoLedger: photo.photoLedger });
     }
 
     let pdfPath: string | undefined;
     if (payload.settings.createPdf) {
       const pdfTitle = sanitizeFileName(payload.settings.pdfTitle || '사진대지');
       pdfPath = await nextAvailablePath(payload.saveDir, pdfTitle, '.pdf');
-      await createPdf(savedFiles, pdfPath, payload.settings.pdfTitle || '사진대지');
+      await createPhotoLedgerPdf(pdfEntries, pdfPath, payload.settings.pdfTitle || '사진대지', payload.settings);
     }
 
     if (payload.settings.openFolderAfterProcessing) {
@@ -728,6 +888,109 @@ async function copyPreviewImage(payload: CopyPreviewImagePayload): Promise<CopyI
   } catch (error) {
     return { ok: false, error: toErrorMessage(error) };
   }
+}
+
+async function printPreviewImage(payload: PrintPreviewImagePayload): Promise<PrintImageResult> {
+  try {
+    if (!payload.photo?.path) {
+      return { ok: false, error: '인쇄할 사진을 먼저 선택하세요.' };
+    }
+
+    const buffer = await renderBoardCompositeBuffer(payload.photo, payload.fields, payload.settings);
+    const metadata = await sharp(buffer).metadata();
+    return await printImageBuffer(buffer, metadata.width ?? 0, metadata.height ?? 0);
+  } catch (error) {
+    return { ok: false, error: toErrorMessage(error) };
+  }
+}
+
+async function printImageBuffer(buffer: Buffer, imageWidth: number, imageHeight: number): Promise<PrintImageResult> {
+  const printWindow = new BrowserWindow({
+    width: 900,
+    height: 700,
+    show: false,
+    parent: mainWindow ?? undefined,
+    title: 'e편한보드 인쇄',
+    backgroundColor: '#ffffff',
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      sandbox: false
+    }
+  });
+
+  try {
+    await printWindow.loadURL(buildPrintDataUrl(buffer, imageWidth, imageHeight));
+    await new Promise((resolve) => setTimeout(resolve, 120));
+
+    return await new Promise<PrintImageResult>((resolve) => {
+      printWindow.webContents.print(
+        {
+          silent: false,
+          printBackground: true,
+          color: true,
+          landscape: imageWidth >= imageHeight,
+          pageSize: 'A4',
+          margins: { marginType: 'default' }
+        },
+        (success, failureReason) => {
+          if (success) {
+            resolve({ ok: true });
+            return;
+          }
+          const reason = failureReason || '인쇄가 취소되었습니다.';
+          resolve({
+            ok: false,
+            canceled: /cancel/i.test(reason) || /취소/.test(reason),
+            error: reason
+          });
+        }
+      );
+    });
+  } finally {
+    if (!printWindow.isDestroyed()) {
+      printWindow.close();
+    }
+  }
+}
+
+function buildPrintDataUrl(buffer: Buffer, imageWidth: number, imageHeight: number) {
+  const orientation = imageWidth >= imageHeight ? 'landscape' : 'portrait';
+  const dataUrl = `data:image/png;base64,${buffer.toString('base64')}`;
+  const html = `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>e편한보드 인쇄</title>
+    <style>
+      @page { size: A4 ${orientation}; margin: 10mm; }
+      html, body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        background: #ffffff;
+      }
+      body {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      img {
+        display: block;
+        max-width: 100vw;
+        max-height: 100vh;
+        width: auto;
+        height: auto;
+        object-fit: contain;
+      }
+    </style>
+  </head>
+  <body>
+    <img src="${dataUrl}" alt="e편한보드 인쇄 이미지">
+  </body>
+</html>`;
+
+  return `data:text/html;charset=utf-8,${encodeURIComponent(html)}`;
 }
 
 function selectPhotosForProcessing(payload: ProcessImagesPayload): PhotoItem[] {
@@ -805,21 +1068,6 @@ function normalizeOutputMaxLongEdge(value: number | undefined) {
     return 0;
   }
   return Math.max(0, Math.round(Number(value)));
-}
-
-async function createPdf(imagePaths: string[], outputPath: string, title: string) {
-  const pdfDoc = await PDFDocument.create();
-  pdfDoc.setTitle(title);
-
-  for (const imagePath of imagePaths) {
-    const bytes = await fs.readFile(imagePath);
-    const jpg = await pdfDoc.embedJpg(bytes);
-    const page = pdfDoc.addPage([jpg.width, jpg.height]);
-    page.drawImage(jpg, { x: 0, y: 0, width: jpg.width, height: jpg.height });
-  }
-
-  const pdfBytes = await pdfDoc.save();
-  await fs.writeFile(outputPath, pdfBytes);
 }
 
 async function resolveFieldsForPhoto(

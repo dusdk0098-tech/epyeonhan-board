@@ -143,6 +143,56 @@ async function verifyCase(testCase, position, boardLayoutMode = 'table') {
   };
 }
 
+function verifyColumnChangesKeepBoardWidth() {
+  const imageWidth = 1600;
+  const imageHeight = 900;
+  const fixedWidthRatio = 0.675;
+  const base = buildBoardSvg(imageWidth, imageHeight, fields, {
+    ...baseSettings,
+    widthRatio: fixedWidthRatio,
+    boardSize: Math.round(fixedWidthRatio * 200),
+    labelColumnWidthRatio: 0.176,
+    valueColumnWidthRatio: 0.499
+  });
+  const widerLabel = buildBoardSvg(imageWidth, imageHeight, fields, {
+    ...baseSettings,
+    widthRatio: fixedWidthRatio,
+    boardSize: Math.round(fixedWidthRatio * 200),
+    labelColumnWidthRatio: 0.3,
+    valueColumnWidthRatio: 0.375
+  });
+  const widerValue = buildBoardSvg(imageWidth, imageHeight, fields, {
+    ...baseSettings,
+    widthRatio: fixedWidthRatio,
+    boardSize: Math.round(fixedWidthRatio * 200),
+    labelColumnWidthRatio: 0.1,
+    valueColumnWidthRatio: 0.575
+  });
+
+  const expectedWidth = Math.round(imageWidth * fixedWidthRatio);
+  const failures = [];
+  [
+    ['base', base],
+    ['widerLabel', widerLabel],
+    ['widerValue', widerValue]
+  ].forEach(([name, board]) => {
+    if (board.width !== expectedWidth) {
+      failures.push(`${name} board width changed with column settings: ${board.width} !== ${expectedWidth}`);
+    }
+  });
+
+  if (!widerLabel.svg.includes('x1="480"') || !widerValue.svg.includes('x1="160"')) {
+    failures.push('column divider must move while the outer board width stays fixed');
+  }
+
+  return {
+    case: 'column-widths-do-not-change-board-width',
+    board: { width: base.width, height: base.height },
+    position: { left: 0, top: 0 },
+    failures
+  };
+}
+
 async function main() {
   const results = [];
   for (const testCase of cases) {
@@ -151,6 +201,7 @@ async function main() {
     }
     results.push(await verifyCase(testCase, 'bottom-right', 'bottom-strip'));
   }
+  results.push(verifyColumnChangesKeepBoardWidth());
 
   const failures = results.filter((result) => result.failures.length > 0);
   if (failures.length > 0) {

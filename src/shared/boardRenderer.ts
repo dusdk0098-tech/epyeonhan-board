@@ -75,7 +75,7 @@ export function buildBoardSvg(imageWidth: number, imageHeight: number, fields: B
     parts.push(`<rect x="${scaledLabelWidth}" y="${y}" width="${boardWidth - scaledLabelWidth}" height="${rowHeight}" fill="#ffffff" fill-opacity="${backgroundOpacity}"/>`);
     parts.push(`<line x1="0" y1="${y}" x2="${boardWidth}" y2="${y}" stroke="#1f2937" stroke-width="${scaledBorderWidth}"/>`);
     parts.push(`<line x1="${scaledLabelWidth}" y1="${y}" x2="${scaledLabelWidth}" y2="${y + rowHeight}" stroke="#1f2937" stroke-width="${scaledBorderWidth}"/>`);
-    parts.push(renderTextLines(row.labelLines, 0, y, scaledLabelWidth, rowHeight, scaledFontSize, fontFamily, 700, settings.itemAlign, labelTextColor));
+    parts.push(renderTextLines(row.labelLines, 0, y, scaledLabelWidth, rowHeight, scaledFontSize, fontFamily, fontWeight, settings.itemAlign, labelTextColor));
     parts.push(
       renderTextLines(
         row.valueLines,
@@ -183,7 +183,7 @@ function buildBottomStripBoardSvg(imageWidth: number, imageHeight: number, field
     parts.push(
       `<line x1="${labelWidth}" y1="${y}" x2="${labelWidth}" y2="${y + rowHeight}" stroke="#1f2937" stroke-width="${scaledBorderWidth}"/>`
     );
-    parts.push(renderTextLines(row.labelLines, 0, y, labelWidth, rowHeight, scaledFontSize, fontFamily, 700, settings.itemAlign, labelTextColor));
+    parts.push(renderTextLines(row.labelLines, 0, y, labelWidth, rowHeight, scaledFontSize, fontFamily, fontWeight, settings.itemAlign, labelTextColor));
     parts.push(
       renderTextLines(
         row.valueLines,
@@ -265,7 +265,7 @@ function renderTextLines(
   const textX = align === 'center' ? x + width / 2 : x + padding;
   const totalTextHeight = (lines.length - 1) * lineHeight;
   const startY = y + height / 2 - totalTextHeight / 2 + fontSize * 0.36;
-  const escapedFamily = escapeXml(fontFamily);
+  const familyStack = formatSvgFontFamily(fontFamily);
   const tspans = lines
     .map((line, index) => {
       const dy = index === 0 ? 0 : lineHeight;
@@ -273,7 +273,14 @@ function renderTextLines(
     })
     .join('');
 
-  return `<text x="${textX}" y="${startY}" font-family="${escapedFamily}, Malgun Gothic, Arial, sans-serif" font-size="${fontSize}" font-weight="${fontWeight}" fill="${color}" text-anchor="${anchor}">${tspans}</text>`;
+  return `<text x="${textX}" y="${startY}" font-family="${familyStack}" font-size="${fontSize}" font-weight="${fontWeight}" fill="${color}" text-anchor="${anchor}">${tspans}</text>`;
+}
+
+function formatSvgFontFamily(fontFamily: string) {
+  const primary = String(fontFamily || 'Malgun Gothic Semilight').trim();
+  const families = [primary, 'Malgun Gothic', 'Gulim', 'Dotum', 'Arial', 'sans-serif'];
+  const uniqueFamilies = families.filter((family, index) => family && families.indexOf(family) === index);
+  return uniqueFamilies.map((family) => (family.includes(' ') ? `'${escapeXml(family)}'` : escapeXml(family))).join(', ');
 }
 
 function normalizeOpacity(value: number | undefined) {
@@ -312,27 +319,20 @@ function resolveColumnLayout(settings: BoardSettings) {
   const configuredValue = Number.isFinite(settings.valueColumnWidthRatio)
     ? Number(settings.valueColumnWidthRatio)
     : DEFAULT_VALUE_COLUMN_WIDTH_RATIO;
-  let labelRatio = clamp(configuredLabel, MIN_LABEL_COLUMN_WIDTH_RATIO, MAX_LABEL_COLUMN_WIDTH_RATIO);
-  let valueRatio = clamp(configuredValue, MIN_VALUE_COLUMN_WIDTH_RATIO, MAX_VALUE_COLUMN_WIDTH_RATIO);
-  let totalRatio = labelRatio + valueRatio;
+  const labelRatio = clamp(configuredLabel, MIN_LABEL_COLUMN_WIDTH_RATIO, MAX_LABEL_COLUMN_WIDTH_RATIO);
+  const valueRatio = clamp(configuredValue, MIN_VALUE_COLUMN_WIDTH_RATIO, MAX_VALUE_COLUMN_WIDTH_RATIO);
+  const configuredTotalRatio = labelRatio + valueRatio;
 
-  if (!Number.isFinite(totalRatio) || totalRatio <= 0) {
-    totalRatio = fallbackTotalRatio;
-    labelRatio = totalRatio * BOARD_LABEL_WIDTH_RATIO;
-    valueRatio = totalRatio - labelRatio;
-  }
-
-  const clampedTotal = clampBoardWidthRatio(totalRatio, fallbackTotalRatio);
-  if (clampedTotal !== totalRatio) {
-    const scale = clampedTotal / totalRatio;
-    labelRatio *= scale;
-    valueRatio *= scale;
-    totalRatio = clampedTotal;
+  if (!Number.isFinite(configuredTotalRatio) || configuredTotalRatio <= 0) {
+    return {
+      totalRatio: fallbackTotalRatio,
+      labelShare: BOARD_LABEL_WIDTH_RATIO
+    };
   }
 
   return {
-    totalRatio,
-    labelShare: labelRatio / totalRatio
+    totalRatio: fallbackTotalRatio,
+    labelShare: clamp(labelRatio / configuredTotalRatio, 0.05, 0.85)
   };
 }
 

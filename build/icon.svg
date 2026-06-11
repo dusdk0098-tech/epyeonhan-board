@@ -1,0 +1,111 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-label="Cute mint blue photo board app icon">
+  <defs>
+    <linearGradient id="bg" x1="120" y1="80" x2="900" y2="940" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFF8E8"/>
+      <stop offset="0.48" stop-color="#E6F7F2"/>
+      <stop offset="1" stop-color="#DDF5EE"/>
+    </linearGradient>
+    <linearGradient id="paper" x1="258" y1="160" x2="760" y2="826" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#FFFBF3"/>
+    </linearGradient>
+    <linearGradient id="photoA" x1="310" y1="282" x2="480" y2="468" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#C7ECFF"/>
+      <stop offset="1" stop-color="#DDF8E5"/>
+    </linearGradient>
+    <linearGradient id="photoB" x1="546" y1="282" x2="716" y2="468" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFE3B5"/>
+      <stop offset="1" stop-color="#DDF0FF"/>
+    </linearGradient>
+  </defs>
+
+  <!-- App tile -->
+  <rect x="64" y="64" width="896" height="896" rx="224" fill="url(#bg)"/>
+  <circle cx="214" cy="216" r="84" fill="#FFFFFF" opacity="0.28"/>
+  <circle cx="842" cy="776" r="132" fill="#FFFFFF" opacity="0.22"/>
+  <circle cx="822" cy="204" r="34" fill="#FFFFFF" opacity="0.32"/>
+
+  <!-- Decorative confetti -->
+  <g stroke="#5D718A" stroke-width="16" stroke-linecap="round" opacity="0.55">
+    <path d="M194 688 l-32 26"/>
+    <path d="M820 384 l42 -14"/>
+    <path d="M255 175 l17 -41"/>
+  </g>
+  <g fill="#FFD166" opacity="0.9">
+    <path d="M813 580c16 0 28-12 28-28 0 16 12 28 28 28-16 0-28 12-28 28 0-16-12-28-28-28Z"/>
+    <path d="M170 432c12 0 22-10 22-22 0 12 10 22 22 22-12 0-22 10-22 22 0-12-10-22-22-22Z"/>
+  </g>
+
+  <!-- Backing board -->
+  <g transform="rotate(-6 512 524)">
+    <rect x="248" y="176" width="528" height="668" rx="68" fill="#CFE8FF" opacity="0.62"/>
+  </g>
+
+  <!-- Photo sheet / paper -->
+  <g transform="rotate(-6 512 524)">
+    <rect x="226" y="150" width="548" height="684" rx="72" fill="url(#paper)"/>
+    <rect x="254" y="178" width="492" height="628" rx="50" fill="none" stroke="#5D718A" stroke-width="18" opacity="0.95"/>
+
+    <!-- Binder rings -->
+    <g fill="#FFFFFF" stroke="#5D718A" stroke-width="14">
+      <circle cx="380" cy="174" r="30"/>
+      <circle cx="500" cy="162" r="30"/>
+      <circle cx="620" cy="174" r="30"/>
+    </g>
+    <g stroke="#5D718A" stroke-width="16" stroke-linecap="round">
+      <path d="M380 130v54"/>
+      <path d="M500 118v54"/>
+      <path d="M620 130v54"/>
+    </g>
+
+    <!-- Photos -->
+    <g>
+      <rect x="304" y="270" width="180" height="174" rx="30" fill="#FFFFFF"/>
+      <rect x="328" y="294" width="132" height="126" rx="20" fill="url(#photoA)"/>
+      <circle cx="430" cy="326" r="20" fill="#FFD166"/>
+      <path d="M330 404c32-32 54-48 76-24 13 14 24 17 36 7 15-12 21-9 30 16v18H330Z" fill="#83D6A4"/>
+    </g>
+
+    <g>
+      <rect x="524" y="270" width="180" height="174" rx="30" fill="#FFFFFF"/>
+      <rect x="548" y="294" width="132" height="126" rx="20" fill="url(#photoB)"/>
+      <path d="M615 332c14-24 53-13 53 19 0 38-53 60-53 60s-53-22-53-60c0-32 39-43 53-19Z" fill="#74C7B8"/>
+    </g>
+
+    <g>
+      <rect x="304" y="484" width="400" height="174" rx="34" fill="#FFFFFF"/>
+      <rect x="330" y="510" width="348" height="122" rx="24" fill="#F0FAFF"/>
+      <g stroke="#5D718A" stroke-width="16" stroke-linecap="round" opacity="0.9">
+        <path d="M378 552h228"/>
+        <path d="M378 592h176"/>
+      </g>
+      <circle cx="632" cy="592" r="28" fill="#DDF5EE" stroke="#5D718A" stroke-width="14"/>
+      <path d="M619 591l12 12 27-32" fill="none" stroke="#5D718A" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+
+    <!-- Cute face on the sheet -->
+    <g transform="translate(0 6)">
+      <circle cx="446" cy="706" r="12" fill="#5D718A"/>
+      <circle cx="558" cy="706" r="12" fill="#5D718A"/>
+      <path d="M478 728c20 24 48 24 68 0" fill="none" stroke="#5D718A" stroke-width="15" stroke-linecap="round"/>
+      <ellipse cx="402" cy="728" rx="24" ry="13" fill="#FFD8A8" opacity="0.75"/>
+      <ellipse cx="602" cy="728" rx="24" ry="13" fill="#FFD8A8" opacity="0.75"/>
+    </g>
+  </g>
+
+  <!-- Small camera badge -->
+  <g transform="translate(642 654) rotate(7)">
+    <rect x="0" y="0" width="198" height="146" rx="48" fill="#FFFFFF"/>
+    <rect x="24" y="-18" width="66" height="42" rx="18" fill="#FFFFFF"/>
+    <circle cx="102" cy="76" r="42" fill="#DDF5EE" stroke="#5D718A" stroke-width="16"/>
+    <circle cx="102" cy="76" r="17" fill="#5D718A" opacity="0.85"/>
+    <circle cx="158" cy="42" r="11" fill="#FFD166"/>
+    <rect x="0" y="0" width="198" height="146" rx="48" fill="none" stroke="#5D718A" stroke-width="16"/>
+  </g>
+
+  <!-- Foreground sparkles -->
+  <g fill="#FFFFFF" stroke="#5D718A" stroke-width="12" stroke-linejoin="round">
+    <path d="M738 160c18 46 36 64 82 82-46 18-64 36-82 82-18-46-36-64-82-82 46-18 64-36 82-82Z"/>
+    <path d="M220 742c12 32 25 45 57 57-32 12-45 25-57 57-12-32-25-45-57-57 32-12 45-25 57-57Z"/>
+  </g>
+</svg>

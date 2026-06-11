@@ -144,6 +144,7 @@ export async function getCurrentUser() {
 
 interface ResolveAuthOptions {
   skipDeviceClaim?: boolean;
+  knownFingerprints?: string[];
 }
 
 export async function resolveAuthGateState(
@@ -196,9 +197,13 @@ export async function resolveAuthGateState(
     };
   }
 
+  const knownFingerprints = uniqueFingerprints([deviceFingerprint, ...(options.knownFingerprints ?? [])]);
+  const matchingKnownDevice = devices.find(
+    (device) => !device.revoked_at && knownFingerprints.includes(device.device_fingerprint)
+  );
   const shouldClaimDevice = profile.role !== 'admin' && !options.skipDeviceClaim;
   const deviceClaim = shouldClaimDevice
-    ? await claimCurrentDevice(deviceFingerprint, deviceName)
+    ? await claimCurrentDevice(deviceFingerprint, deviceName, knownFingerprints, matchingKnownDevice?.device_fingerprint)
     : { ok: true, reason: profile.role === 'admin' ? 'admin_unlimited' : 'preview' };
 
   if (!deviceClaim?.ok) {
@@ -218,14 +223,38 @@ export async function resolveAuthGateState(
   return { status: 'ready', profile, subscription, devices };
 }
 
-async function claimCurrentDevice(deviceFingerprint: string, deviceName: string) {
+async function claimCurrentDevice(
+  deviceFingerprint: string,
+  deviceName: string,
+  knownFingerprints: string[],
+  fallbackFingerprint?: string
+) {
   const client = requireSupabase();
   const deviceResult = await client.rpc('claim_current_device', {
     p_device_fingerprint: deviceFingerprint,
-    p_device_name: deviceName
+    p_device_name: deviceName,
+    p_known_fingerprints: knownFingerprints
   });
-  if (deviceResult.error) throw deviceResult.error;
+  if (deviceResult.error) {
+    if (!isKnownFingerprintRpcMissing(deviceResult.error)) throw deviceResult.error;
+
+    const legacyResult = await client.rpc('claim_current_device', {
+      p_device_fingerprint: fallbackFingerprint ?? deviceFingerprint,
+      p_device_name: deviceName
+    });
+    if (legacyResult.error) throw legacyResult.error;
+    return Array.isArray(legacyResult.data) ? legacyResult.data[0] : legacyResult.data;
+  }
   return Array.isArray(deviceResult.data) ? deviceResult.data[0] : deviceResult.data;
+}
+
+function uniqueFingerprints(values: string[]) {
+  return Array.from(new Set(values.filter((value) => /^[a-f0-9]{64}$/i.test(value))));
+}
+
+function isKnownFingerprintRpcMissing(error: unknown) {
+  const message = error instanceof Error ? error.message : String((error as { message?: unknown })?.message ?? error);
+  return /claim_current_device/i.test(message) && /p_known_fingerprints|schema cache|could not find/i.test(message);
 }
 
 export async function loadAdminUsers(): Promise<AdminUserRow[]> {
