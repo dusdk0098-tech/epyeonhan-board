@@ -120,6 +120,7 @@ export interface PrintImageResult {
 export interface DialogPhotoResult {
   canceled: boolean;
   photos: PhotoItem[];
+  error?: string;
 }
 
 export interface FolderResult {

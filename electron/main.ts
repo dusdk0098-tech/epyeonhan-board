@@ -48,6 +48,9 @@ const sheetExtensions = new Set(['.csv', '.xlsx', '.xls']);
 const maxDroppedPathCount = 500;
 const maxFolderImageCount = 2000;
 const maxImageInputBytes = 80 * 1024 * 1024;
+const maxClipboardImagePixels = 60_000_000;
+const maxClipboardImageBytes = maxImageInputBytes;
+const maxClipboardCacheFiles = 100;
 const maxSheetInputBytes = 10 * 1024 * 1024;
 const updateCheckDelayMs = 2500;
 const updateRequestTimeoutMs = 15000;
@@ -420,6 +423,7 @@ function registerIpcHandlers() {
   ipcMain.handle('photos:select', selectPhotos);
   ipcMain.handle('photos:select-folder', selectPhotoFolder);
   ipcMain.handle('photos:resolve-dropped', (_event, paths: string[]) => resolveDroppedPhotos(paths));
+  ipcMain.handle('clipboard:paste-image', pasteClipboardImage);
   ipcMain.handle('folder:select-save', selectSaveFolder);
   ipcMain.handle('folder:open', (_event, folderPath: string) => openFolder(folderPath));
   ipcMain.handle('image:data-url', (_event, photoPath: string) => getImageDataUrl(photoPath));
@@ -790,6 +794,60 @@ async function resolveDroppedPhotos(paths: string[]): Promise<DialogPhotoResult>
     canceled: false,
     photos: uniquePaths.map(toPhotoItem)
   };
+}
+
+async function pasteClipboardImage(): Promise<DialogPhotoResult> {
+  try {
+    const image = clipboard.readImage();
+    if (image.isEmpty()) {
+      return { canceled: false, photos: [], error: '클립보드에 붙여넣을 이미지가 없습니다.' };
+    }
+
+    const size = image.getSize();
+    if (size.width <= 0 || size.height <= 0 || size.width * size.height > maxClipboardImagePixels) {
+      return { canceled: false, photos: [], error: '클립보드 이미지가 너무 큽니다. 더 작은 이미지를 복사한 뒤 다시 시도하세요.' };
+    }
+
+    const buffer = image.toPNG();
+    if (buffer.byteLength > maxClipboardImageBytes) {
+      return { canceled: false, photos: [], error: '클립보드 이미지 용량이 너무 큽니다. 80MB 이하 이미지만 첨부할 수 있습니다.' };
+    }
+
+    const folderPath = path.join(app.getPath('userData'), 'clipboard-images');
+    await fs.mkdir(folderPath, { recursive: true });
+    await pruneClipboardImageCache(folderPath);
+    const timestamp = new Date()
+      .toISOString()
+      .replace(/[-:]/g, '')
+      .replace(/\..+$/, '')
+      .replace('T', '_');
+    const filePath = await nextAvailablePath(folderPath, `clipboard_${timestamp}`, '.png');
+    await fs.writeFile(filePath, buffer);
+    return { canceled: false, photos: [toPhotoItem(filePath)] };
+  } catch (error) {
+    return { canceled: false, photos: [], error: toErrorMessage(error) };
+  }
+}
+
+async function pruneClipboardImageCache(folderPath: string) {
+  try {
+    const entries = await fs.readdir(folderPath, { withFileTypes: true });
+    const files = await Promise.all(
+      entries
+        .filter((entry) => entry.isFile() && /^clipboard_.+\.(png|jpg|jpeg)$/i.test(entry.name))
+        .map(async (entry) => {
+          const filePath = path.join(folderPath, entry.name);
+          const stat = await fs.stat(filePath);
+          return { filePath, mtimeMs: stat.mtimeMs };
+        })
+    );
+    const staleFiles = files
+      .sort((left, right) => right.mtimeMs - left.mtimeMs)
+      .slice(maxClipboardCacheFiles);
+    await Promise.all(staleFiles.map((file) => fs.rm(file.filePath, { force: true })));
+  } catch {
+    // Cache cleanup is best-effort; failing cleanup should not block paste.
+  }
 }
 
 async function selectSaveFolder(): Promise<FolderResult> {

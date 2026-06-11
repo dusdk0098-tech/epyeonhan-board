@@ -5,6 +5,7 @@ import {
   ArrowUp,
   Camera,
   CheckSquare,
+  ClipboardPaste,
   Clock3,
   Copy,
   Eye,
@@ -28,6 +29,7 @@ import {
   Sun,
   Trash2,
   User,
+  Users,
   Zap,
   Code2,
   X
@@ -305,6 +307,9 @@ const assetBaseUrl = import.meta.env.BASE_URL;
 const authSessionMaxAgeMs = 30 * 24 * 60 * 60 * 1000;
 const authSessionStartedAtKey = 'epyeonhan-auth-started-at';
 const rememberedLoginStorageKey = 'epyeonhan-remembered-login';
+const oauthFlowStorageKey = 'pedit-oauth-flow';
+const oauthLinkExpectedUserIdKey = 'pedit-oauth-link-user-id';
+const oauthLinkExpectedEmailKey = 'pedit-oauth-link-email';
 const oauthRedirectUrl = 'epyeonhan-board://auth/callback';
 const socialAuthProviders: Array<{ id: SocialAuthProvider; label: string; badge: string }> = [
   { id: 'google', label: 'Google로 계속하기', badge: 'G' },
@@ -339,6 +344,7 @@ export default function App() {
   const [status, setStatus] = useState<StatusMessage | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isDragTargetActive, setIsDragTargetActive] = useState(false);
+  const [previewContextMenu, setPreviewContextMenu] = useState<{ x: number; y: number } | null>(null);
   const [showPhotoList, setShowPhotoList] = useState(false);
   const [showLargePreview, setShowLargePreview] = useState(false);
   const [updateStatus, setUpdateStatus] = useState<UpdateStatusPayload | null>(null);
@@ -640,6 +646,12 @@ export default function App() {
         return;
       }
 
+      if ((event.ctrlKey || event.metaKey) && key === 'v') {
+        event.preventDefault();
+        void handlePasteClipboardImage();
+        return;
+      }
+
       if (event.key === 'PageUp') {
         event.preventDefault();
         moveSelectedPhoto(-1);
@@ -665,6 +677,19 @@ export default function App() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   });
+
+  useEffect(() => {
+    if (!previewContextMenu) return;
+    const closeMenu = () => setPreviewContextMenu(null);
+    window.addEventListener('click', closeMenu);
+    window.addEventListener('scroll', closeMenu, true);
+    window.addEventListener('resize', closeMenu);
+    return () => {
+      window.removeEventListener('click', closeMenu);
+      window.removeEventListener('scroll', closeMenu, true);
+      window.removeEventListener('resize', closeMenu);
+    };
+  }, [previewContextMenu]);
 
   function setStatusMessage(kind: StatusKind, text: string) {
     setStatus({ kind, text });
@@ -755,7 +780,8 @@ export default function App() {
     try {
       setAuthBusy(true);
       setOauthBusyProvider(provider);
-      const redirectTo = getOAuthRedirectTo();
+      window.sessionStorage.setItem(oauthFlowStorageKey, 'signin');
+      const redirectTo = getOAuthRedirectTo('signin');
       const authUrl = await startSocialSignIn(provider, redirectTo);
       const nativeBridge = getNativeBridge();
 
@@ -772,6 +798,7 @@ export default function App() {
         window.location.assign(authUrl);
       }
     } catch (error) {
+      window.sessionStorage.removeItem(oauthFlowStorageKey);
       setAuthState({ status: 'unauthenticated', message: toSocialAuthUiError(error, provider) });
     } finally {
       setAuthBusy(false);
@@ -780,22 +807,40 @@ export default function App() {
   }
 
   async function handleOAuthCallback(callbackUrl: string) {
+    const linkCallback = isOAuthLinkCallback(callbackUrl);
     try {
       setAuthBusy(true);
-      setAuthState({
-        status: 'loading',
-        message: '소셜 계정 인증을 마무리하고 있습니다.'
-      });
+      if (linkCallback) {
+        setStatusMessage('info', '소셜 계정 연결을 마무리하고 있습니다.');
+      } else {
+        setAuthState({
+          status: 'loading',
+          message: '소셜 계정 인증을 마무리하고 있습니다.'
+        });
+      }
       const user = await exchangeOAuthSessionFromUrl(callbackUrl);
       const resolvedUser = user ?? (await getCurrentUser());
       if (!resolvedUser) {
         throw new Error('로그인된 사용자를 확인하지 못했습니다.');
       }
+      if (linkCallback) {
+        assertLinkedOAuthUserMatchesExpected(resolvedUser);
+      }
       window.localStorage.setItem(authSessionStartedAtKey, String(Date.now()));
       await loadAuthForUser(resolvedUser);
+      if (linkCallback) {
+        setStatusMessage('success', '소셜 로그인 연결을 완료했습니다.');
+      }
     } catch (error) {
-      setAuthState({ status: 'unauthenticated', message: toUiError(error) });
+      if (linkCallback) {
+        setStatusMessage('error', toSocialLinkUiError(error));
+      } else {
+        setAuthState({ status: 'unauthenticated', message: toUiError(error) });
+      }
     } finally {
+      window.sessionStorage.removeItem(oauthFlowStorageKey);
+      window.sessionStorage.removeItem(oauthLinkExpectedUserIdKey);
+      window.sessionStorage.removeItem(oauthLinkExpectedEmailKey);
       setAuthBusy(false);
     }
   }
@@ -804,7 +849,14 @@ export default function App() {
     try {
       setAuthBusy(true);
       setOauthBusyProvider(provider);
-      const authUrl = await linkSocialIdentity(provider, getOAuthRedirectTo());
+      const currentUser = await getCurrentUser();
+      if (!currentUser) {
+        throw new Error('로그인된 계정을 확인하지 못했습니다.');
+      }
+      window.sessionStorage.setItem(oauthFlowStorageKey, 'link');
+      window.sessionStorage.setItem(oauthLinkExpectedUserIdKey, currentUser.id);
+      window.sessionStorage.setItem(oauthLinkExpectedEmailKey, currentUser.email ?? '');
+      const authUrl = await linkSocialIdentity(provider, getOAuthRedirectTo('link'));
       const nativeBridge = getNativeBridge();
 
       if (nativeBridge?.openOAuthUrl) {
@@ -817,7 +869,10 @@ export default function App() {
         window.location.assign(authUrl);
       }
     } catch (error) {
-      setStatusMessage('error', toSocialAuthUiError(error, provider));
+      window.sessionStorage.removeItem(oauthFlowStorageKey);
+      window.sessionStorage.removeItem(oauthLinkExpectedUserIdKey);
+      window.sessionStorage.removeItem(oauthLinkExpectedEmailKey);
+      setStatusMessage('error', toSocialLinkUiError(error, provider));
     } finally {
       setAuthBusy(false);
       setOauthBusyProvider(null);
@@ -1094,6 +1149,10 @@ export default function App() {
     const workspaceKey = activeWorkspaceKey;
     const result = await window.constructView.selectPhotos();
     if (result.canceled) return;
+    if (result.error) {
+      setStatusMessage('error', result.error);
+      return;
+    }
     addPhotos(result.photos, workspaceKey);
   }
 
@@ -1101,13 +1160,55 @@ export default function App() {
     const workspaceKey = activeWorkspaceKey;
     const result = await window.constructView.selectPhotoFolder();
     if (result.canceled) return;
+    if (result.error) {
+      setStatusMessage('error', result.error);
+      return;
+    }
     addPhotos(result.photos, workspaceKey);
   }
 
   async function handleDroppedPhotoPaths(paths: string[], workspaceKey: WorkspaceScreen) {
     const result = await window.constructView.resolveDroppedPhotos(paths);
     if (result.canceled) return;
+    if (result.error) {
+      setStatusMessage('error', result.error);
+      return;
+    }
     addPhotos(result.photos, workspaceKey);
+  }
+
+  async function handlePasteClipboardImage(workspaceKey = activeWorkspaceKey) {
+    if (!isWorkspaceScreen(activeScreen)) {
+      setStatusMessage('info', '클립보드 사진은 LITE 또는 PRO 탭에서 첨부하세요.');
+      return;
+    }
+
+    const result = await window.constructView.pasteClipboardImage();
+    if (result.canceled) return;
+    if (result.error) {
+      setStatusMessage('error', result.error);
+      return;
+    }
+    addPhotos(result.photos, workspaceKey);
+  }
+
+  function handlePreviewContextMenu(event: React.MouseEvent<HTMLElement>) {
+    event.preventDefault();
+    if (!isWorkspaceScreen(activeScreen)) return;
+    setPreviewContextMenu({
+      x: Math.max(8, Math.min(event.clientX, window.innerWidth - 188)),
+      y: Math.max(8, Math.min(event.clientY, window.innerHeight - 84))
+    });
+  }
+
+  async function copyPreviewFromContextMenu() {
+    setPreviewContextMenu(null);
+    await handleCopyPreviewImage();
+  }
+
+  async function pasteImageFromContextMenu() {
+    setPreviewContextMenu(null);
+    await handlePasteClipboardImage();
   }
 
   function extractDroppedPaths(event: React.DragEvent<HTMLElement>) {
@@ -1980,6 +2081,7 @@ export default function App() {
                 emptyText="이미지 미리보기 캔버스"
                 highlight={selectedHighlight}
                 outputGrayscale={settings.outputGrayscale}
+                onContextMenu={handlePreviewContextMenu}
               />
               <div className="form-row">
                 <label>대상 사진</label>
@@ -2431,6 +2533,31 @@ export default function App() {
     );
   }
 
+  function renderPremiumFieldActions() {
+    return (
+      <div className="premium-field-action-panel">
+        <div className="premium-field-action-title">
+          <Play size={15} />
+          <span>사진 작업</span>
+        </div>
+        <div className="premium-field-action-grid">
+          <button className="small-btn primary" type="button" disabled={isProcessing} onClick={() => void runProcess('selected')}>
+            <Play size={15} /> 선택 작업
+          </button>
+          <button className="small-btn blue" type="button" disabled={isProcessing} onClick={() => void runProcess('checked')}>
+            <CheckSquare size={15} /> 체크 작업
+          </button>
+          <button className="small-btn outline" type="button" onClick={openLargePreview}>
+            <RefreshCw size={15} /> 미리보기
+          </button>
+          <button className="small-btn outline" type="button" onClick={() => void handlePasteClipboardImage()}>
+            <ClipboardPaste size={15} /> 클립보드 첨부
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   function renderPremiumPhotoLedgerSettings() {
     const manualLedgerDisabled = settings.photoLedgerUseBoardFields || !selectedPhoto;
     return (
@@ -2594,6 +2721,7 @@ export default function App() {
                 </button>
               </div>
               {renderBoardFieldEditor('advanced-field-list premium-field-list')}
+              {renderPremiumFieldActions()}
             </div>
           )}
           {activeOutputSettingsTab === 'datetime' && (
@@ -2739,6 +2867,7 @@ export default function App() {
                 emptyText="왼쪽 목록에서 미리보기할 사진을 선택하세요"
                 highlight={selectedHighlight}
                 outputGrayscale={settings.outputGrayscale}
+                onContextMenu={handlePreviewContextMenu}
                 large
               />
             </Card>
@@ -2827,6 +2956,9 @@ export default function App() {
               <button className="btn ghost wide" type="button" onClick={handleSelectPhotoFolder}>
                 <FolderOpen size={17} /> 폴더 불러오기
               </button>
+              <button className="btn ghost wide" type="button" onClick={() => void handlePasteClipboardImage()}>
+                <ClipboardPaste size={17} /> 클립보드 첨부
+              </button>
               <button className="btn ghost wide" type="button" onClick={handleSelectSaveFolder}>
                 <Save size={17} /> 저장 경로
               </button>
@@ -2847,11 +2979,23 @@ export default function App() {
                 <button className="small-btn outline" type="button" onClick={openLargePreview}>
                   <Eye size={15} /> 크게 보기
                 </button>
-                <button className="small-btn outline" type="button" disabled={!selectedPhoto} onClick={() => void handleCopyPreviewImage()}>
-                  <Copy size={15} /> 결과 이미지 복사
+                <button
+                  className="small-btn outline"
+                  type="button"
+                  title="결과 이미지 복사"
+                  disabled={!selectedPhoto}
+                  onClick={() => void handleCopyPreviewImage()}
+                >
+                  <Copy size={15} /> 이미지 복사
                 </button>
-                <button className="small-btn outline" type="button" disabled={!selectedPhoto} onClick={() => void handlePrintPreviewImage()}>
-                  <Printer size={15} /> 미리보기 인쇄
+                <button
+                  className="small-btn outline"
+                  type="button"
+                  title="미리보기 인쇄"
+                  disabled={!selectedPhoto}
+                  onClick={() => void handlePrintPreviewImage()}
+                >
+                  <Printer size={15} /> 인쇄
                 </button>
               </div>
             }
@@ -2869,8 +3013,10 @@ export default function App() {
               outputGrayscale={settings.outputGrayscale}
               editableHighlight={Boolean(selectedHighlight?.enabled)}
               onHighlightChange={updateSelectedPhotoHighlight}
+              onContextMenu={handlePreviewContextMenu}
               large
             />
+            <div className="preview-context-hint">우클릭: 복사 / 클립보드 첨부</div>
           </Card>
 
           {renderPremiumSettingsCard()}
@@ -2910,23 +3056,33 @@ export default function App() {
         >
           <div className="admin-overview">
             <div className="admin-summary">
-              <div>
-                <strong>{adminRows.length}</strong>
-                <span>사용자</span>
+              <div className="admin-summary-card users">
+                <span className="admin-summary-icon"><Users size={18} /></span>
+                <div>
+                  <strong>{adminRows.length}</strong>
+                  <span>전체 사용자</span>
+                </div>
               </div>
-              <div>
-                <strong>{adminRows.filter((row) => row.profile.role === 'admin').length}</strong>
-                <span>관리자</span>
+              <div className="admin-summary-card admins">
+                <span className="admin-summary-icon"><ShieldCheck size={18} /></span>
+                <div>
+                  <strong>{adminRows.filter((row) => row.profile.role === 'admin').length}</strong>
+                  <span>관리자 계정</span>
+                </div>
               </div>
-              <div>
-                <strong>{adminRows.filter((row) => row.subscription?.status === 'manual_active' || row.subscription?.status === 'active').length}</strong>
-                <span>활성 구독</span>
+              <div className="admin-summary-card active">
+                <span className="admin-summary-icon"><CheckSquare size={18} /></span>
+                <div>
+                  <strong>{adminRows.filter((row) => row.subscription?.status === 'manual_active' || row.subscription?.status === 'active').length}</strong>
+                  <span>활성 구독</span>
+                </div>
               </div>
             </div>
             <div className="admin-oauth-link">
               <div>
                 <strong>소셜 계정 연결</strong>
-                <span>기존 관리자 이메일 계정에 소셜 로그인을 추가합니다.</span>
+                <span>현재 로그인된 이메일 계정에 Google 로그인을 추가합니다.</span>
+                <small>같은 이메일로 이미 소셜 가입된 계정이 있으면 Supabase에서 계정 정리가 필요합니다.</small>
               </div>
               <div className="admin-oauth-actions">
                 {visibleSocialAuthProviders.map((provider) => (
@@ -2937,7 +3093,8 @@ export default function App() {
                     onClick={() => void handleSocialIdentityLink(provider.id)}
                     disabled={authBusy}
                   >
-                    {oauthBusyProvider === provider.id ? '연결 중...' : `${provider.badge} 연결`}
+                    <span aria-hidden>{provider.badge}</span>
+                    {oauthBusyProvider === provider.id ? '연결 중...' : `${getSocialProviderName(provider.id)} 연결`}
                   </button>
                 ))}
               </div>
@@ -2968,8 +3125,13 @@ export default function App() {
                   adminRows.map((row) => (
                     <tr key={row.profile.id}>
                       <td>
-                        <strong>{row.profile.email}</strong>
-                        <small>{[row.profile.display_name, row.profile.company].filter(Boolean).join(' / ') || '프로필 정보 없음'}</small>
+                        <div className="admin-user-cell">
+                          <span className="admin-user-avatar">{(row.profile.display_name || row.profile.email || 'U').slice(0, 1).toUpperCase()}</span>
+                          <div>
+                            <strong>{row.profile.email}</strong>
+                            <small>{[row.profile.display_name, row.profile.company].filter(Boolean).join(' / ') || '프로필 정보 없음'}</small>
+                          </div>
+                        </div>
                       </td>
                       <td>
                         <select
@@ -3131,21 +3293,64 @@ export default function App() {
             emptyText="왼쪽 목록에서 미리보기할 사진을 선택하세요"
             highlight={selectedHighlight}
             outputGrayscale={settings.outputGrayscale}
+            onContextMenu={handlePreviewContextMenu}
             large
           />
         </Modal>
+      )}
+      {previewContextMenu && (
+        <div
+          className="preview-context-menu"
+          style={{ left: previewContextMenu.x, top: previewContextMenu.y }}
+          onClick={(event) => event.stopPropagation()}
+        >
+          <button type="button" disabled={!selectedPhoto} onClick={() => void copyPreviewFromContextMenu()}>
+            <Copy size={15} /> 미리보기 복사
+          </button>
+          <button type="button" onClick={() => void pasteImageFromContextMenu()}>
+            <ClipboardPaste size={15} /> 클립보드 사진 첨부
+          </button>
+        </div>
       )}
       {updateStatus && <UpdateOverlay status={updateStatus} />}
     </div>
   );
 }
 
-function getOAuthRedirectTo() {
+function getOAuthRedirectTo(_flow: 'signin' | 'link' = 'signin') {
   return getNativeBridge()?.openOAuthUrl ? oauthRedirectUrl : `${window.location.origin}/auth/callback`;
+}
+
+function isOAuthLinkCallback(callbackUrl: string) {
+  try {
+    const url = new URL(callbackUrl);
+    const params = new URLSearchParams(url.search);
+    if (url.hash) {
+      const hashParams = new URLSearchParams(url.hash.replace(/^#/, ''));
+      hashParams.forEach((paramValue, key) => params.set(key, paramValue));
+    }
+    return params.get('flow') === 'link' || window.sessionStorage.getItem(oauthFlowStorageKey) === 'link';
+  } catch {
+    return window.sessionStorage.getItem(oauthFlowStorageKey) === 'link';
+  }
 }
 
 function getNativeBridge() {
   return Reflect.get(window, 'constructView') as Partial<Window['constructView']> | undefined;
+}
+
+function assertLinkedOAuthUserMatchesExpected(user: SupabaseUser) {
+  const expectedUserId = window.sessionStorage.getItem(oauthLinkExpectedUserIdKey);
+  const expectedEmail = window.sessionStorage.getItem(oauthLinkExpectedEmailKey);
+  const actualEmail = user.email ?? '';
+
+  if (expectedUserId && user.id !== expectedUserId) {
+    throw new Error('소셜 연결 결과가 현재 관리자 계정과 다릅니다. 같은 이메일로 이미 소셜 가입된 계정이 있는지 확인하세요.');
+  }
+
+  if (expectedEmail && actualEmail && expectedEmail.toLowerCase() !== actualEmail.toLowerCase()) {
+    throw new Error('연결하려는 소셜 계정 이메일이 현재 관리자 이메일과 다릅니다. 같은 이메일의 Google 계정으로 다시 시도하세요.');
+  }
 }
 
 function hasOAuthCallbackParams(value: string) {
@@ -3230,6 +3435,20 @@ function toSocialAuthUiError(error: unknown, provider: SocialAuthProvider) {
   const message = toUiError(error);
   if (/unsupported provider|provider is not enabled|validation_failed/i.test(message)) {
     return `${getSocialProviderName(provider)} 로그인이 Supabase에서 아직 활성화되지 않았습니다. Supabase Dashboard > Authentication > Sign In / Providers에서 해당 Provider를 켠 뒤 Client ID/Secret과 Redirect URL을 등록하세요. 지금은 이메일 로그인/회원가입을 사용할 수 있습니다.`;
+  }
+  return message;
+}
+
+function toSocialLinkUiError(error: unknown, provider?: SocialAuthProvider) {
+  const message = provider ? toSocialAuthUiError(error, provider) : toUiError(error);
+  if (/already.*linked|identity.*linked|user already registered|already registered/i.test(message)) {
+    return '이미 다른 계정에 연결된 소셜 계정입니다. Supabase 사용자 목록에서 같은 이메일의 중복 계정이 있는지 확인한 뒤 다시 연결하세요.';
+  }
+  if (/현재 관리자 계정과 다릅니다|소셜 계정 이메일이 현재 관리자 이메일과 다릅니다/i.test(message)) {
+    return message;
+  }
+  if (/not logged in|session.*missing|auth session missing/i.test(message)) {
+    return '현재 관리자 로그인 세션을 확인하지 못했습니다. 이메일로 다시 로그인한 뒤 소셜 계정 연결을 시도하세요.';
   }
   return message;
 }
@@ -3481,6 +3700,7 @@ function PreviewStage({
   outputGrayscale = false,
   editableHighlight = false,
   onHighlightChange,
+  onContextMenu,
   large = false
 }: {
   imageDataUrl: string;
@@ -3494,6 +3714,7 @@ function PreviewStage({
   outputGrayscale?: boolean;
   editableHighlight?: boolean;
   onHighlightChange?: (highlight: PhotoHighlight | undefined) => void;
+  onContextMenu?: (event: React.MouseEvent<HTMLElement>) => void;
   large?: boolean;
 }) {
   const [loadedImage, setLoadedImage] = useState<{ src: string; width: number; height: number } | null>(null);
@@ -3607,6 +3828,7 @@ function PreviewStage({
   }
 
   function handleHighlightPointerDown(event: React.PointerEvent<HTMLDivElement>) {
+    if (event.button !== 0) return;
     if (!editableHighlight || !onHighlightChange || !containedSize || !imageDataUrl || !activeHighlight) return;
     event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
@@ -3675,7 +3897,7 @@ function PreviewStage({
   }
 
   return (
-    <div ref={stageRef} className={large ? 'preview-stage large' : 'preview-stage'}>
+    <div ref={stageRef} className={large ? 'preview-stage large' : 'preview-stage'} onContextMenu={onContextMenu}>
       {imageDataUrl ? (
         <div
           className={editableHighlight ? 'preview-image-shell editable-highlight' : 'preview-image-shell'}

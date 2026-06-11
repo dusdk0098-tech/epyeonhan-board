@@ -71,6 +71,8 @@ function verifyRenderer() {
   assert(app.includes('socialAuthProviders'), 'social auth provider buttons are missing');
   assert(app.includes('handleSocialAuth'), 'social auth handler is missing');
   assert(app.includes('handleOAuthCallback'), 'OAuth callback handler is missing');
+  assert(app.includes('oauthFlowStorageKey') && app.includes("getOAuthRedirectTo('link')"), 'OAuth identity-link flow marker is missing');
+  assert(app.includes('toSocialLinkUiError'), 'social identity link error guidance is missing');
   assert(app.includes('toSocialAuthUiError'), 'social auth provider setup error guidance is missing');
   assert(app.includes('Supabase Dashboard > Authentication > Sign In / Providers'), 'provider disabled error must tell the operator where to fix it');
   assert(app.includes("status: 'profile_incomplete'"), 'profile completion gate is missing');
@@ -88,6 +90,8 @@ function verifyRenderer() {
   assert(app.includes("type Screen = 'start'") && app.includes("useState<Screen>('start')"), 'program start screen must be the default ready screen');
   assert(app.includes('function renderStartScreen()') && app.includes("setActiveScreen('basic')") && app.includes("setActiveScreen('output')"), 'program start screen mode buttons are missing');
   assert(app.includes("activeScreen === 'start' && renderStartScreen()"), 'program start screen is not rendered');
+  assert(app.includes('handlePasteClipboardImage') && app.includes('preview-context-menu'), 'preview context menu clipboard workflow is missing');
+  assert(app.includes('renderPremiumFieldActions'), 'PRO board content tab action buttons are missing');
 }
 
 function verifyElectronBridge() {
@@ -103,6 +107,7 @@ function verifyElectronBridge() {
   assert(main.includes("ipcMain.handle('auth:get-remembered-login'"), 'remembered login read IPC handler missing');
   assert(main.includes("ipcMain.handle('auth:save-remembered-login'"), 'remembered login save IPC handler missing');
   assert(main.includes("ipcMain.handle('auth:clear-remembered-login'"), 'remembered login clear IPC handler missing');
+  assert(main.includes("ipcMain.handle('clipboard:paste-image'") && main.includes('clipboard.readImage()'), 'clipboard image paste IPC handler missing');
   assert(main.includes('safeStorage.encryptString') && main.includes('safeStorage.decryptString'), 'remembered password must use Electron safeStorage');
   assert(main.includes('isAllowedOAuthHost') && main.includes("parsed.protocol !== 'https:'"), 'OAuth external opener must restrict URLs to HTTPS Supabase hosts');
   assert(main.includes('sandbox: true') && !main.includes('sandbox: false'), 'Electron windows must run with sandbox enabled');
@@ -116,9 +121,11 @@ function verifyElectronBridge() {
   assert(preload.includes('getDeviceIdentity'), 'preload device identity API missing');
   assert(preload.includes('openOAuthUrl'), 'preload OAuth URL opener missing');
   assert(preload.includes('getRememberedLogin') && preload.includes('saveRememberedLogin') && preload.includes('clearRememberedLogin'), 'preload remembered login API missing');
+  assert(preload.includes('pasteClipboardImage'), 'preload clipboard image paste API missing');
   assert(preload.includes('onOAuthCallback'), 'preload OAuth callback listener missing');
   assert(types.includes('AuthDeviceIdentity'), 'renderer device identity type missing');
   assert(types.includes('RememberedLoginPayload') && types.includes('RememberedLoginResult'), 'renderer remembered login types missing');
+  assert(types.includes('pasteClipboardImage'), 'renderer clipboard image paste type missing');
   assert(types.includes('openOAuthUrl'), 'renderer OAuth URL type missing');
   assert(types.includes('onOAuthCallback'), 'renderer OAuth callback type missing');
 }

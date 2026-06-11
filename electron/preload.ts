@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld('constructView', {
   selectPhotoFolder: () => ipcRenderer.invoke('photos:select-folder'),
   getPathForFile: (file: File) => webUtils.getPathForFile(file),
   resolveDroppedPhotos: (paths: string[]) => ipcRenderer.invoke('photos:resolve-dropped', paths),
+  pasteClipboardImage: () => ipcRenderer.invoke('clipboard:paste-image'),
   selectSaveFolder: () => ipcRenderer.invoke('folder:select-save'),
   openFolder: (folderPath: string) => ipcRenderer.invoke('folder:open', folderPath),
   getImageDataUrl: (photoPath: string) => ipcRenderer.invoke('image:data-url', photoPath),

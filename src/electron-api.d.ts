@@ -52,6 +52,7 @@ export interface ConstructViewApi {
   selectPhotoFolder: () => Promise<DialogPhotoResult>;
   getPathForFile: (file: File) => string;
   resolveDroppedPhotos: (paths: string[]) => Promise<DialogPhotoResult>;
+  pasteClipboardImage: () => Promise<DialogPhotoResult>;
   selectSaveFolder: () => Promise<FolderResult>;
   openFolder: (folderPath: string) => Promise<{ ok: boolean; error?: string }>;
   getImageDataUrl: (photoPath: string) => Promise<ImageDataResult>;

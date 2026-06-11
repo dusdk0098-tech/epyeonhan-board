@@ -9,6 +9,7 @@ site
 .env.*.local
 *.zip
 /stitch_local_program_design*/
+/stitch_exports/
 /epyeonhan_board_icon_assets/
 /constructview_codex_spec*.md
 /*.png
