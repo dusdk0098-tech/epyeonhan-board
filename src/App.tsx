@@ -7,12 +7,12 @@ import {
   CheckSquare,
   Clock3,
   Copy,
-  Gauge,
   Eye,
   EyeOff,
   FileSpreadsheet,
   FolderOpen,
   Image as ImageIcon,
+  Info,
   ListChecks,
   LogOut,
   Monitor,
@@ -24,9 +24,12 @@ import {
   Save,
   Settings,
   ShieldCheck,
-  SlidersHorizontal,
+  Sparkles,
+  Sun,
   Trash2,
   User,
+  Zap,
+  Code2,
   X
 } from 'lucide-react';
 import {
@@ -1502,7 +1505,7 @@ export default function App() {
     }
 
     return (
-      <header className="top-nav">
+      <header className={activeScreen === 'start' ? 'top-nav start-top-nav' : 'top-nav'}>
         <div className="nav-main">
           <button
             type="button"
@@ -1510,7 +1513,14 @@ export default function App() {
             onClick={() => setActiveScreen('start')}
             aria-label="시작 화면으로 이동"
           >
-            <img className="nav-brand-logo" src={`${assetBaseUrl}pedit-logo-horizontal-blue.png`} alt="PEDIT" />
+            {activeScreen === 'start' ? (
+              <>
+                <Sparkles className="start-nav-brand-icon" size={30} aria-hidden />
+                <span className="start-nav-brand-text">PEDIT</span>
+              </>
+            ) : (
+              <img className="nav-brand-logo" src={`${assetBaseUrl}pedit-logo-horizontal-blue.png`} alt="PEDIT" />
+            )}
           </button>
           <nav className="nav-links">
             {navItems.map((item) => (
@@ -1724,36 +1734,55 @@ export default function App() {
   function renderStartScreen() {
     return (
       <main className="start-shell" aria-label="프로그램 시작 화면">
-        <div className="start-pattern" aria-hidden />
+        <div className="start-mesh" aria-hidden>
+          <span className="mesh-blob blob-cyan" />
+          <span className="mesh-blob blob-fuchsia" />
+          <span className="mesh-blob blob-blue" />
+          <span className="mesh-blob blob-violet" />
+        </div>
+        <aside className="start-side-help" aria-label="도움말 및 예시">
+          <h3>도움말 및 예시</h3>
+          <button type="button" onClick={() => setActiveScreen('contact')}>
+            <Info size={22} aria-hidden />
+            사용방법 안내
+          </button>
+          <button type="button" onClick={() => setActiveScreen('output')}>
+            <Code2 size={22} aria-hidden />
+            결과 예시 보기
+          </button>
+        </aside>
+
         <section className="start-content">
-          <div className="start-title-card">
-            <img className="start-brand-logo" src={`${assetBaseUrl}pedit-logo-vertical-transparent.png`} alt="PEDIT Picture Edit" />
+          <div className="start-hero-title">
+            <span aria-hidden />
+            <h1>PEDIT</h1>
+            <p>스마트한 업무를 위한 최고의 선택</p>
           </div>
 
           <div className="start-mode-grid">
             <button type="button" className="start-mode-card lite" onClick={() => setActiveScreen('basic')}>
               <span className="start-mode-icon" aria-hidden>
-                <Gauge size={54} strokeWidth={1.9} />
+                <Zap size={66} strokeWidth={2.1} />
               </span>
               <strong>LITE</strong>
-              <small>간편 보드 작성</small>
+              <small>가볍고 빠른 시작</small>
+              <em>라이트모드 설명</em>
             </button>
 
             <button type="button" className="start-mode-card pro" onClick={() => setActiveScreen('output')}>
               <span className="start-mode-icon" aria-hidden>
-                <SlidersHorizontal size={54} strokeWidth={1.9} />
+                <Sun size={76} strokeWidth={2.1} />
               </span>
               <strong>PRO</strong>
-              <small>사진대지 및 상세 설정</small>
-            </button>
-          </div>
-
-          <div className="start-actions">
-            <button type="button" className="start-settings-button" onClick={() => setActiveScreen('commonSettings')} aria-label="통합 설정">
-              <Settings size={34} aria-hidden />
+              <small>전문가를 위한 강력한 기능</small>
+              <em>프로모드 설명</em>
             </button>
           </div>
         </section>
+
+        <button type="button" className="start-settings-button" onClick={() => setActiveScreen('commonSettings')} aria-label="통합 설정">
+          <Settings size={38} aria-hidden />
+        </button>
       </main>
     );
   }
@@ -3042,7 +3071,7 @@ export default function App() {
 
   return (
     <div
-      className={isDragTargetActive ? 'app drag-active' : 'app'}
+      className={`${activeScreen === 'start' ? 'app start-active' : 'app'}${isDragTargetActive ? ' drag-active' : ''}`}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
