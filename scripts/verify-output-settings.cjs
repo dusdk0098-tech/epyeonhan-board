@@ -21,7 +21,7 @@ const baseSettings = {
   boardSize: 135,
   labelColumnWidthRatio: 0.176,
   valueColumnWidthRatio: 0.499,
-  fontFamily: 'Malgun Gothic Semilight',
+  fontFamily: '맑은 고딕',
   fontSize: 16,
   itemAlign: 'center',
   contentAlign: 'left',
@@ -76,23 +76,25 @@ function verifyBoardTypography() {
   const smallFont = Math.max(...extractFontSizes(small.svg));
   const largeFont = Math.max(...extractFontSizes(large.svg));
   assert(largeFont >= smallFont + 10, `font size control is not reflected enough: ${smallFont} -> ${largeFont}`);
+  assert(large.width === small.width, `font size must not change board width: ${small.width} -> ${large.width}`);
+  assert(large.height === small.height, `font size must not change board height: ${small.height} -> ${large.height}`);
 
   const normalTypography = buildBoardSvg(1200, 800, fields, {
     ...baseSettings,
-    fontFamily: 'Gulim',
+    fontFamily: '굴림',
     fontWeight: 'normal'
   }).svg;
   assert(normalTypography.includes('font-weight="400"'), 'normal font weight must be emitted to board SVG');
   assert(!normalTypography.includes('font-weight="700"'), 'normal font weight must also apply to board labels');
-  assert(normalTypography.includes('font-family="Gulim,'), 'selected font family must be emitted first in board SVG');
+  assert(normalTypography.includes('font-family="굴림, Gulim,'), 'selected Korean font family must be emitted first with a Windows fallback');
 
   const boldTypography = buildBoardSvg(1200, 800, fields, {
     ...baseSettings,
-    fontFamily: 'Times New Roman',
+    fontFamily: '맑은 고딕',
     fontWeight: 'bold'
   }).svg;
   assert(boldTypography.includes('font-weight="700"'), 'bold font weight must be emitted to board SVG');
-  assert(boldTypography.includes("font-family=\"'Times New Roman'"), 'font families with spaces must be quoted in board SVG');
+  assert(boldTypography.includes("font-family=\"'맑은 고딕', 'Malgun Gothic'"), 'Korean font families with spaces must be quoted in board SVG');
 
   const labelWidth = extractLabelWidth(large.svg);
   const labelRatio = labelWidth / large.width;
@@ -164,7 +166,7 @@ function verifyWorkspaceAndBridgeStatic() {
   assert(preload.includes('printPreviewImage') && main.includes("images:print-preview") && api.includes('printPreviewImage'), 'preview print IPC bridge is incomplete');
   assert(app.includes('결과 이미지 복사'), 'preview copy button label should clearly indicate output image copy');
   assert(app.includes('미리보기 인쇄') && app.includes('handlePrintPreviewImage'), 'preview print UI must be exposed');
-  assert(main.includes('webContents.print') && main.includes("title: 'e편한보드 인쇄'"), 'main process must print through an internal print window');
+  assert(main.includes('webContents.print') && main.includes("title: 'PEDIT (페딧) 인쇄'"), 'main process must print through an internal print window');
   assert(app.includes("boardLayoutMode: 'table'") && app.includes("value=\"bottom-strip\"") && app.includes('하부 띠'), 'board layout mode controls are missing');
   assert(app.includes('항목 정렬') && app.includes('내용 정렬'), 'advanced board alignment controls are missing');
   assert(app.includes('글자 굵기') && app.includes('테두리 굵기') && app.includes('글꼴'), 'advanced board typography controls are missing');
@@ -192,7 +194,13 @@ function verifyWorkspaceAndBridgeStatic() {
   assert(app.includes("label: 'LITE'") && app.includes("label: 'PRO'"), 'top navigation must expose LITE and PRO labels');
   assert(!app.includes("label: '사용방법'") && !app.includes("label: '보드판 작성 [고급]'"), 'help and advanced tabs must be removed from top navigation');
   assert(app.includes("useState<Screen>('start')") && app.includes('function renderStartScreen()'), 'the app must open to the button-style start screen');
-  assert(app.includes('boardFontOptions') && app.includes('Gulim') && app.includes('Times New Roman'), 'expanded board font options are missing');
+  assert(app.includes('boardFontOptions') && app.includes('나눔고딕') && app.includes('HY견고딕') && app.includes('맑은 고딕'), 'Korean board font options are missing');
+  assert(
+    app.includes('editableHighlight={Boolean(selectedHighlight?.enabled)}') &&
+      app.includes('|| !activeHighlight') &&
+      !app.includes('activeHighlight ?? {'),
+    'premium preview clicks must not auto-enable highlight when the highlight option is off'
+  );
   assert(app.includes('className="admin-panel"') && app.includes('admin-overview'), 'admin layout must use the scroll-safe compact panel structure');
   assert(styles.includes('.admin-table-wrap') && styles.includes('scrollbar-gutter: stable both-edges'), 'admin table must have stable scroll/sliding space');
   assert(!app.includes('강조 미리보기'), 'premium preview title must not show the old emphasis preview label');

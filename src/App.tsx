@@ -152,7 +152,7 @@ const defaultSettings: BoardSettings = {
   boardSize: widthRatioToBoardSize(DEFAULT_BOARD_WIDTH_RATIO),
   labelColumnWidthRatio: DEFAULT_LABEL_COLUMN_WIDTH_RATIO,
   valueColumnWidthRatio: DEFAULT_VALUE_COLUMN_WIDTH_RATIO,
-  fontFamily: 'Malgun Gothic Semilight',
+  fontFamily: '맑은 고딕',
   fontSize: 16,
   itemAlign: 'center',
   contentAlign: 'left',
@@ -229,22 +229,42 @@ const boardTextColorOptions: Array<[BoardTextColor, string]> = [
   ['green', '녹색']
 ];
 
-const boardFontOptions = [
-  'Malgun Gothic Semilight',
-  'Malgun Gothic',
-  'Gulim',
-  'Dotum',
-  'Batang',
-  'Gungsuh',
-  'Arial',
-  'Helvetica',
-  'Verdana',
-  'Tahoma',
-  'Georgia',
-  'Times New Roman',
-  'Consolas',
-  'Courier New'
+const boardFontOptions: Array<{ label: string; value: string }> = [
+  { label: '맑은 고딕', value: '맑은 고딕' },
+  { label: '맑은 고딕 Semilight', value: '맑은 고딕 Semilight' },
+  { label: '굴림', value: '굴림' },
+  { label: '돋움', value: '돋움' },
+  { label: '바탕', value: '바탕' },
+  { label: '궁서', value: '궁서' },
+  { label: '나눔고딕', value: '나눔고딕' },
+  { label: '나눔명조', value: '나눔명조' },
+  { label: '본고딕', value: '본고딕' },
+  { label: '본명조', value: '본명조' },
+  { label: '프리텐다드', value: '프리텐다드' },
+  { label: '수트', value: '수트' },
+  { label: '함초롬돋움', value: '함초롬돋움' },
+  { label: '함초롬바탕', value: '함초롬바탕' },
+  { label: 'HY견고딕', value: 'HY견고딕' },
+  { label: 'HY헤드라인M', value: 'HY헤드라인M' },
+  { label: '휴먼고딕', value: '휴먼고딕' },
+  { label: '휴먼명조', value: '휴먼명조' }
 ];
+
+function normalizeBoardFontFamily(fontFamily: string | undefined) {
+  const value = String(fontFamily ?? '').trim();
+  const legacyMap: Record<string, string> = {
+    'Malgun Gothic Semilight': '맑은 고딕 Semilight',
+    'Malgun Gothic': '맑은 고딕',
+    Gulim: '굴림',
+    Dotum: '돋움',
+    Batang: '바탕',
+    Gungsuh: '궁서',
+    SUIT: '수트',
+    Pretendard: '프리텐다드'
+  };
+  const normalized = legacyMap[value] ?? value;
+  return boardFontOptions.some((font) => font.value === normalized) ? normalized : defaultSettings.fontFamily;
+}
 
 const roleOptions: Array<[UserRole, string]> = [
   ['user', '일반'],
@@ -987,6 +1007,7 @@ export default function App() {
       boardSize: widthRatioToBoardSize(widthRatio),
       labelColumnWidthRatio: columnRatios.labelColumnWidthRatio,
       valueColumnWidthRatio: columnRatios.valueColumnWidthRatio,
+      fontFamily: normalizeBoardFontFamily(nextSettings.fontFamily),
       jpgQuality: clamp(Math.round(jpgQuality), 1, 100),
       boardBackgroundOpacity: clamp(Math.round(boardBackgroundOpacity), 0, 100),
       outputMaxLongEdge: Math.max(0, Math.round(outputMaxLongEdge)),
@@ -1492,7 +1513,7 @@ export default function App() {
             aria-label="시작 화면으로 이동"
           >
             <Monitor size={18} aria-hidden />
-            <span>e편한보드</span>
+            <span>PEDIT</span>
           </button>
           <nav className="nav-links">
             {navItems.map((item) => (
@@ -1709,7 +1730,8 @@ export default function App() {
         <div className="start-pattern" aria-hidden />
         <section className="start-content">
           <div className="start-title-card">
-            <h1>e편한보드</h1>
+            <h1>PEDIT</h1>
+            <p>PICTURE EDIT</p>
           </div>
 
           <div className="start-mode-grid">
@@ -1816,8 +1838,8 @@ export default function App() {
                 <label>글꼴 선택</label>
                 <select value={settings.fontFamily} onChange={(event) => updateSettings({ fontFamily: event.target.value })}>
                   {boardFontOptions.map((font) => (
-                    <option key={font} value={font}>
-                      {font}
+                    <option key={font.value} value={font.value}>
+                      {font.label}
                     </option>
                   ))}
                 </select>
@@ -2163,8 +2185,8 @@ export default function App() {
         <label>글꼴</label>
         <select value={settings.fontFamily} onChange={(event) => updateSettings({ fontFamily: event.target.value })}>
           {boardFontOptions.map((font) => (
-            <option key={font} value={font}>
-              {font}
+            <option key={font.value} value={font.value}>
+              {font.label}
             </option>
           ))}
         </select>
@@ -2817,7 +2839,7 @@ export default function App() {
               emptyText="왼쪽 목록에서 사진을 선택하세요"
               highlight={selectedHighlight}
               outputGrayscale={settings.outputGrayscale}
-              editableHighlight
+              editableHighlight={Boolean(selectedHighlight?.enabled)}
               onHighlightChange={updateSelectedPhotoHighlight}
               large
             />
@@ -3557,18 +3579,13 @@ function PreviewStage({
   }
 
   function handleHighlightPointerDown(event: React.PointerEvent<HTMLDivElement>) {
-    if (!editableHighlight || !onHighlightChange || !containedSize || !imageDataUrl) return;
+    if (!editableHighlight || !onHighlightChange || !containedSize || !imageDataUrl || !activeHighlight) return;
     event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
     const point = getHighlightPoint(event);
     const radiusBase = Math.min(containedSize.width, containedSize.height);
-    let mode: 'create' | 'move' | 'resize' = 'create';
-    let startHighlight = activeHighlight ?? {
-      ...defaultHighlight,
-      xRatio: point.x / containedSize.width,
-      yRatio: point.y / containedSize.height,
-      radiusRatio: 0.02
-    };
+    let mode: 'create' | 'move' | 'resize' = 'move';
+    let startHighlight = activeHighlight;
 
     if (highlightCircle && activeHighlight) {
       const distance = Math.hypot(point.x - highlightCircle.x, point.y - highlightCircle.y);
@@ -3777,7 +3794,7 @@ function UpdateOverlay({ status }: { status: UpdateStatusPayload }) {
         </div>
         <div className="update-copy">
           <span className="update-kicker">자동 업데이트</span>
-          <h2 id="update-title">e편한보드 업데이트 중</h2>
+          <h2 id="update-title">PEDIT (페딧) 업데이트 중</h2>
           <p>{status.message ?? updatePhaseMessages[status.phase]}</p>
           <em>{updatePhaseDescriptions[status.phase]}</em>
           {detail && <small>{detail}</small>}

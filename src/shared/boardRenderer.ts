@@ -37,7 +37,7 @@ export function buildBoardSvg(imageWidth: number, imageHeight: number, fields: B
   const borderBase = settings.borderWeight === 'bold' ? 2 : 1;
   const borderWidth = Math.max(1, Math.round((baseBoardWidth / 1300) * borderBase));
   const fontWeight = settings.fontWeight === 'bold' ? 700 : 400;
-  const fontFamily = settings.fontFamily || 'Malgun Gothic Semilight';
+  const fontFamily = settings.fontFamily || '맑은 고딕';
   const backgroundOpacity = normalizeOpacity(settings.boardBackgroundOpacity);
   const labelTextColor = resolveBoardTextColor(settings.labelTextColor);
   const valueTextColor = resolveBoardTextColor(settings.valueTextColor);
@@ -139,26 +139,21 @@ function buildBottomStripBoardSvg(imageWidth: number, imageHeight: number, field
   const borderBase = settings.borderWeight === 'bold' ? 2 : 1;
   const borderWidth = Math.max(1, Math.round((baseBoardWidth / 1300) * borderBase));
   const fontWeight = settings.fontWeight === 'bold' ? 700 : 400;
-  const fontFamily = settings.fontFamily || 'Malgun Gothic Semilight';
+  const fontFamily = settings.fontFamily || '맑은 고딕';
   const backgroundOpacity = normalizeOpacity(settings.boardBackgroundOpacity);
   const labelTextColor = resolveBoardTextColor(settings.labelTextColor);
   const valueTextColor = resolveBoardTextColor(settings.valueTextColor);
   const baseFontSize = Math.max(8, Math.round(baseBoardWidth * (settings.fontSize / 640)));
   const padding = calculateBoardTextPadding(baseFontSize);
-  const lineHeight = Math.round(baseFontSize * 1.38);
-  const baseRowHeight = Math.max(
-    Math.round(baseFontSize * 2.4),
-    Math.round(settings.rowHeight * (baseBoardWidth / 720))
-  );
+  const baseRowHeight = Math.max(1, Math.round(settings.rowHeight * (baseBoardWidth / 720)));
   const labelWidth = Math.max(1, Math.round(boardWidth * columnLayout.labelShare));
   const layoutRows = rows.map((field) => {
     const valueTextWidth = Math.max(4, boardWidth - labelWidth - padding * 2);
     const valueLines = wrapText(field.value || ' ', valueTextWidth, baseFontSize, false);
-    const lineCount = Math.max(valueLines.length, 1);
     return {
       labelLines: [field.label || ' '],
       valueLines,
-      height: Math.max(baseRowHeight, lineCount * lineHeight + padding * 2)
+      height: baseRowHeight
     };
   });
   const preferredBoardHeight = layoutRows.reduce((sum, row) => sum + row.height, 0);
@@ -223,21 +218,16 @@ function createBoardLayout(
 ) {
   const rows = fields.length > 0 ? fields : [{ id: 'empty', label: '항목', value: '' }];
   const padding = calculateBoardTextPadding(fontSize);
-  const lineHeight = Math.round(fontSize * 1.38);
-  const baseRowHeight = Math.max(
-    Math.round(fontSize * 2.35),
-    Math.round(settings.rowHeight * (boardWidth / 720))
-  );
+  const baseRowHeight = Math.max(1, Math.round(settings.rowHeight * (boardWidth / 720)));
 
   const layoutRows = rows.map((field) => {
     const valueTextWidth = Math.max(4, boardWidth - labelWidth - padding * 2);
     const labelLines = [field.label || ' '];
     const valueLines = wrapText(field.value || ' ', valueTextWidth, fontSize, false);
-    const lineCount = Math.max(labelLines.length, valueLines.length, 1);
     return {
       labelLines,
       valueLines,
-      height: Math.max(baseRowHeight, lineCount * lineHeight + padding * 2)
+      height: baseRowHeight
     };
   });
 
@@ -261,12 +251,23 @@ function renderTextLines(
 ) {
   const padding = calculateBoardTextPadding(fontSize);
   const lineHeight = Math.round(fontSize * 1.38);
+  const availableWidth = Math.max(1, width - padding * 2);
+  const availableHeight = Math.max(1, height - padding * 2);
+  const maxLineCount = Math.max(1, Math.floor((availableHeight + lineHeight * 0.2) / lineHeight));
+  const sourceLines = lines.length > 0 ? lines : [' '];
+  const displayLines = sourceLines.slice(0, maxLineCount).map((line) => truncateTextToFit(line, availableWidth, fontSize, false));
+
+  if (sourceLines.length > maxLineCount) {
+    const lastVisibleSourceLine = sourceLines[maxLineCount - 1] ?? '';
+    displayLines[displayLines.length - 1] = truncateTextToFit(`${lastVisibleSourceLine}...`, availableWidth, fontSize, false);
+  }
+
   const anchor = align === 'center' ? 'middle' : 'start';
   const textX = align === 'center' ? x + width / 2 : x + padding;
-  const totalTextHeight = (lines.length - 1) * lineHeight;
+  const totalTextHeight = (displayLines.length - 1) * lineHeight;
   const startY = y + height / 2 - totalTextHeight / 2 + fontSize * 0.36;
   const familyStack = formatSvgFontFamily(fontFamily);
-  const tspans = lines
+  const tspans = displayLines
     .map((line, index) => {
       const dy = index === 0 ? 0 : lineHeight;
       return `<tspan x="${textX}" dy="${dy}">${escapeXml(line)}</tspan>`;
@@ -277,8 +278,39 @@ function renderTextLines(
 }
 
 function formatSvgFontFamily(fontFamily: string) {
-  const primary = String(fontFamily || 'Malgun Gothic Semilight').trim();
-  const families = [primary, 'Malgun Gothic', 'Gulim', 'Dotum', 'Arial', 'sans-serif'];
+  const primary = String(fontFamily || '맑은 고딕').trim();
+  const fallbackMap: Record<string, string[]> = {
+    '맑은 고딕': ['Malgun Gothic'],
+    '맑은 고딕 Semilight': ['Malgun Gothic Semilight', 'Malgun Gothic'],
+    굴림: ['Gulim'],
+    돋움: ['Dotum'],
+    바탕: ['Batang'],
+    궁서: ['Gungsuh'],
+    나눔고딕: ['NanumGothic', 'Nanum Gothic'],
+    나눔명조: ['NanumMyeongjo', 'Nanum Myeongjo'],
+    본고딕: ['Noto Sans KR', 'Noto Sans CJK KR'],
+    본명조: ['Noto Serif KR', 'Noto Serif CJK KR'],
+    프리텐다드: ['Pretendard'],
+    수트: ['SUIT'],
+    함초롬돋움: ['HCR Dotum'],
+    함초롬바탕: ['HCR Batang'],
+    HY견고딕: ['HY견고딕'],
+    HY헤드라인M: ['HYHeadLine-M'],
+    휴먼고딕: ['Human Gothic'],
+    휴먼명조: ['Human Myeongjo']
+  };
+  const families = [
+    primary,
+    ...(fallbackMap[primary] ?? []),
+    '맑은 고딕',
+    'Malgun Gothic',
+    '굴림',
+    'Gulim',
+    '돋움',
+    'Dotum',
+    'Arial',
+    'sans-serif'
+  ];
   const uniqueFamilies = families.filter((family, index) => family && families.indexOf(family) === index);
   return uniqueFamilies.map((family) => (family.includes(' ') ? `'${escapeXml(family)}'` : escapeXml(family))).join(', ');
 }
@@ -387,6 +419,28 @@ function splitLongText(text: string, maxWidth: number, fontSize: number, compact
     fit += char;
   }
   return { fit, rest: '' };
+}
+
+function truncateTextToFit(text: string, maxWidth: number, fontSize: number, compact: boolean) {
+  if (measureTextWidth(text, fontSize, compact) <= maxWidth) {
+    return text;
+  }
+
+  const ellipsis = '...';
+  const ellipsisWidth = measureTextWidth(ellipsis, fontSize, compact);
+  if (ellipsisWidth >= maxWidth) {
+    return '';
+  }
+
+  let next = '';
+  for (const char of text) {
+    if (measureTextWidth(next + char, fontSize, compact) + ellipsisWidth > maxWidth) {
+      break;
+    }
+    next += char;
+  }
+
+  return `${next}${ellipsis}`;
 }
 
 function measureTextWidth(text: string, fontSize: number, compact: boolean) {

@@ -19,7 +19,7 @@ const baseSettings = {
   boardSize: 135,
   labelColumnWidthRatio: 0.176,
   valueColumnWidthRatio: 0.499,
-  fontFamily: 'Malgun Gothic Semilight',
+  fontFamily: '맑은 고딕',
   fontSize: 16,
   itemAlign: 'center',
   contentAlign: 'left',

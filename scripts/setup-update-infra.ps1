@@ -63,7 +63,7 @@ try {
 }
 if ($originExitCode -ne 0 -or -not $origin) {
   Write-Host "Creating public GitHub repository: $repoName"
-  Invoke-RequiredCommand gh repo create $repoName --public --source . --remote origin --description 'e편한보드 Windows updater distribution'
+  Invoke-RequiredCommand gh repo create $repoName --public --source . --remote origin --description 'PEDIT Windows updater distribution'
 } else {
   Write-Host "Using existing origin: $origin"
 }

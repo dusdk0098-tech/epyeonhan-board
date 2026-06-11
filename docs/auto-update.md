@@ -21,8 +21,8 @@
   "version": "1.0.1",
   "pub_date": "2026-06-10T00:00:00.000Z",
   "platform": "windows",
-  "download_url": "https://github.com/dusdk0098-tech/epyeonhan-board/releases/download/v1.0.1/epyeonhan-board-1.0.1-setup.exe",
-  "file_name": "epyeonhan-board-1.0.1-setup.exe",
+  "download_url": "https://github.com/dusdk0098-tech/epyeonhan-board/releases/download/v1.0.1/PEDIT-1.0.1-setup.exe",
+  "file_name": "PEDIT-1.0.1-setup.exe",
   "sha256": "64자리 SHA256",
   "size_bytes": 12345678,
   "mandatory": false,
@@ -65,7 +65,7 @@ git push origin v1.0.1
 
 태그 배포는 기본적으로 `mandatory=false`, `prerelease=false`로 manifest를 생성합니다.
 
-GitHub Release에 올라가는 설치 파일 자산명은 Windows CI의 한글 파일명 인코딩 문제를 피하기 위해 `epyeonhan-board-{version}-setup.exe` 형식을 사용합니다. 설치된 앱 이름과 바로가기 이름은 계속 `e편한보드`로 표시됩니다.
+GitHub Release와 로컬 배포 설치 파일명은 `PEDIT-{version}-setup.exe` 형식을 사용합니다. 업데이트 저장소 URL과 내부 저장소명은 기존 사용자 호환을 위해 `epyeonhan-board`를 유지하지만, 설치된 앱 이름과 바로가기 이름은 `PEDIT (페딧)`으로 표시됩니다.
 
 로컬에서 직접 설치 파일을 만들 때는 아래 명령을 사용합니다.
 
@@ -75,8 +75,8 @@ npm run package:win:versioned -- 1.0.2
 
 이 명령은 `package.json`의 앱 버전을 먼저 `1.0.2`로 변경한 뒤 설치 파일을 만들기 때문에, 앱 내부 버전과 배포 파일명이 함께 맞춰집니다.
 
-- 사용자 전달용 로컬 파일명: `e편한보드-1.0.2-setup.exe`
-- GitHub 업데이트 자산용 파일명: `epyeonhan-board-1.0.2-setup.exe`
+- 사용자 전달용 로컬 파일명: `PEDIT-1.0.2-setup.exe`
+- GitHub 업데이트 자산용 파일명: `PEDIT-1.0.2-setup.exe`
 
 ## 기존 사용자 안내
 

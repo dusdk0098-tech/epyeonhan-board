@@ -87,7 +87,7 @@ function createWindow() {
     maxHeight: 826,
     resizable: false,
     maximizable: false,
-    title: 'e편한보드',
+    title: 'PEDIT (페딧)',
     icon: getWindowIconPath(),
     autoHideMenuBar: true,
     backgroundColor: '#f8f9ff',
@@ -621,12 +621,18 @@ function getLegacyDeviceFingerprints(hostname: string, username: string) {
   const localAppData = process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local');
   const legacyUserDataPaths = uniqueValues([
     app.getPath('userData'),
+    path.join(appDataPath, 'PEDIT (페딧)'),
+    path.join(appDataPath, 'PEDIT'),
     path.join(appDataPath, 'e편한보드'),
     path.join(appDataPath, 'E편한보드 VER1.0'),
     path.join(appDataPath, 'epyeonhan-board')
   ]);
   const legacyExePaths = uniqueValues([
     app.getPath('exe'),
+    path.join(programFiles, 'epyeonhan-board', 'PEDIT (페딧).exe'),
+    path.join(programFiles, 'epyeonhan-board', 'PEDIT.exe'),
+    path.join(programFiles, 'PEDIT (페딧)', 'PEDIT (페딧).exe'),
+    path.join(programFiles, 'PEDIT', 'PEDIT.exe'),
     path.join(programFiles, 'epyeonhan-board', 'e편한보드.exe'),
     path.join(programFiles, 'epyeonhan-board', 'E편한보드 VER1.0.exe'),
     path.join(programFiles, 'e편한보드', 'e편한보드.exe'),
@@ -910,7 +916,7 @@ async function printImageBuffer(buffer: Buffer, imageWidth: number, imageHeight:
     height: 700,
     show: false,
     parent: mainWindow ?? undefined,
-    title: 'e편한보드 인쇄',
+    title: 'PEDIT (페딧) 인쇄',
     backgroundColor: '#ffffff',
     webPreferences: {
       nodeIntegration: false,
@@ -961,7 +967,7 @@ function buildPrintDataUrl(buffer: Buffer, imageWidth: number, imageHeight: numb
 <html>
   <head>
     <meta charset="utf-8">
-    <title>e편한보드 인쇄</title>
+    <title>PEDIT (페딧) 인쇄</title>
     <style>
       @page { size: A4 ${orientation}; margin: 10mm; }
       html, body {
@@ -986,7 +992,7 @@ function buildPrintDataUrl(buffer: Buffer, imageWidth: number, imageHeight: numb
     </style>
   </head>
   <body>
-    <img src="${dataUrl}" alt="e편한보드 인쇄 이미지">
+    <img src="${dataUrl}" alt="PEDIT (페딧) 인쇄 이미지">
   </body>
 </html>`;
 

@@ -338,6 +338,15 @@ input[type="radio"] {
   font-weight: 900;
 }
 
+.start-title-card p {
+  margin: 8px 0 0;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 14px;
+  line-height: 1.2;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
 .start-mode-grid {
   width: min(100%, 760px);
   display: grid;
@@ -3612,6 +3621,10 @@ body {
 
 .start-title-card h1 {
   font-size: 38px;
+}
+
+.start-title-card p {
+  font-size: 13px;
 }
 
 .start-mode-grid {

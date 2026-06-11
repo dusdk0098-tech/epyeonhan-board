@@ -121,7 +121,7 @@ jobs:
             throw 'NSIS installer was not found under release/.'
           }
 
-          $uploadName = "epyeonhan-board-$env:VERSION-setup.exe"
+          $uploadName = "PEDIT-$env:VERSION-setup.exe"
           $uploadPath = Join-Path $installer.DirectoryName $uploadName
           Copy-Item -LiteralPath $installer.FullName -Destination $uploadPath -Force
           $uploadFile = Get-Item -LiteralPath $uploadPath
@@ -141,7 +141,7 @@ jobs:
           PRERELEASE: ${{ steps.meta.outputs.prerelease }}
           RELEASE_NOTES: ${{ steps.meta.outputs.notes }}
         run: |
-          $title = "e편한보드 v$env:VERSION"
+          $title = "PEDIT (페딧) v$env:VERSION"
           gh release view $env:TAG *> $null
           if ($LASTEXITCODE -eq 0) {
             gh release upload $env:TAG $env:INSTALLER_PATH --clobber
@@ -193,10 +193,10 @@ jobs:
           <html lang="ko">
           <head>
             <meta charset="utf-8">
-            <title>e편한보드 업데이트</title>
+            <title>PEDIT (페딧) 업데이트</title>
           </head>
           <body>
-            <h1>e편한보드 업데이트</h1>
+            <h1>PEDIT (페딧) 업데이트</h1>
             <p>Windows manifest: <a href="./updates/win/latest.json">latest.json</a></p>
           </body>
           </html>

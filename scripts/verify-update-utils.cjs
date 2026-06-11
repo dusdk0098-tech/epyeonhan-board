@@ -26,8 +26,8 @@ function validManifest(overrides = {}) {
     pub_date: '2026-06-10T00:00:00.000Z',
     platform: 'windows',
     download_url:
-      'https://github.com/dusdk0098-tech/epyeonhan-board/releases/download/v1.0.1/epyeonhan-board-1.0.1-setup.exe',
-    file_name: 'epyeonhan-board-1.0.1-setup.exe',
+      'https://github.com/dusdk0098-tech/epyeonhan-board/releases/download/v1.0.1/PEDIT-1.0.1-setup.exe',
+    file_name: 'PEDIT-1.0.1-setup.exe',
     sha256: 'a'.repeat(64),
     size_bytes: 12345,
     mandatory: false,
@@ -107,7 +107,7 @@ async function verifyMainProcessAutoUpdateSource() {
   assert(mainSource.includes("phase: 'restarting'"), 'restart preparation update status is missing');
   assert(preloadSource.includes('onUpdateStatus'), 'preload update status listener is missing');
   assert(apiTypes.includes('UpdateStatusPayload') && apiTypes.includes("'restarting'") && apiTypes.includes('onUpdateStatus'), 'renderer update status types are missing');
-  assert(appSource.includes('UpdateOverlay') && appSource.includes('e편한보드 업데이트 중'), 'update progress overlay is missing');
+  assert(appSource.includes('UpdateOverlay') && appSource.includes('PEDIT (페딧) 업데이트 중'), 'update progress overlay is missing');
   assert(appSource.includes('updatePhaseDescriptions') && appSource.includes('설치 화면을 띄우지 않고 업데이트를 적용합니다.'), 'dedicated update UI copy is missing');
   assert(mainSource.includes('업데이트 설치 준비') && mainSource.includes('앱 재시작 준비'), 'update install/restart copy is missing');
   assert(installerInclude.includes('!macro customInit'), 'NSIS custom init macro is missing');
@@ -123,7 +123,7 @@ async function verifyVersionedPackagingConfig() {
   const packageScript = await fs.readFile(path.join(__dirname, 'package-win-version.cjs'), 'utf8');
 
   assert(
-    packageJson.build.nsis.artifactName === 'e편한보드-${version}-setup.${ext}',
+    packageJson.build.nsis.artifactName === 'PEDIT-${version}-setup.${ext}',
     'local installer artifact name must include package version'
   );
   assert(packageJson.build.nsis.oneClick === false, 'installer should remain assisted for predictable NSIS update behavior');
@@ -138,7 +138,7 @@ async function verifyVersionedPackagingConfig() {
     'versioned local packaging script is missing'
   );
   assert(
-    workflow.includes('$uploadName = "epyeonhan-board-$env:VERSION-setup.exe"'),
+    workflow.includes('$uploadName = "PEDIT-$env:VERSION-setup.exe"'),
     'GitHub release asset name must include release version'
   );
   assert(
@@ -147,8 +147,7 @@ async function verifyVersionedPackagingConfig() {
   );
   assert(
     packageScript.includes('npm run package:win:versioned -- 1.0.2') &&
-      packageScript.includes('e편한보드-${version}-setup.exe') &&
-      packageScript.includes('epyeonhan-board-${version}-setup.exe'),
+      packageScript.includes('PEDIT-${version}-setup.exe'),
     'versioned local packaging script must create versioned installer names'
   );
 }

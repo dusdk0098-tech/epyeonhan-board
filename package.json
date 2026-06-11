@@ -1,7 +1,7 @@
 {
   "name": "epyeonhan-board",
-  "version": "1.0.10",
-  "description": "건설 현장 사진 보드판 합성 로컬 데스크톱 프로그램",
+  "version": "1.0.11",
+  "description": "PICTURE EDIT 현장 사진 편집 로컬 데스크톱 프로그램",
   "author": "대성건설(주)",
   "main": "dist-electron/electron/main.js",
   "private": true,
@@ -22,7 +22,7 @@
   },
   "build": {
     "appId": "com.daesung.epyeonhanboard",
-    "productName": "e편한보드",
+    "productName": "PEDIT (페딧)",
     "directories": {
       "output": "release"
     },
@@ -52,20 +52,20 @@
           ]
         }
       ],
-      "artifactName": "e편한보드-${version}-${target}.${ext}"
+      "artifactName": "PEDIT-${version}-${target}.${ext}"
     },
     "nsis": {
-      "artifactName": "e편한보드-${version}-setup.${ext}",
+      "artifactName": "PEDIT-${version}-setup.${ext}",
       "oneClick": false,
       "perMachine": true,
       "allowToChangeInstallationDirectory": false,
       "include": "build/installer.nsh",
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "e편한보드"
+      "shortcutName": "PEDIT (페딧)"
     },
     "portable": {
-      "artifactName": "e편한보드-${version}-portable.${ext}"
+      "artifactName": "PEDIT-${version}-portable.${ext}"
     }
   },
   "dependencies": {

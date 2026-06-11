@@ -35,14 +35,14 @@ run('npm', ['version', version, '--no-git-tag-version', '--allow-same-version'])
 run('npm', ['run', 'package:win:installer']);
 
 const releaseDir = path.join(rootDir, 'release');
-const localInstallerName = `e편한보드-${version}-setup.exe`;
+const localInstallerName = `PEDIT-${version}-setup.exe`;
 const localInstallerPath = path.join(releaseDir, localInstallerName);
 
 if (!fs.existsSync(localInstallerPath)) {
   fail(`Expected installer was not created: ${localInstallerPath}`);
 }
 
-const updaterAssetName = `epyeonhan-board-${version}-setup.exe`;
+const updaterAssetName = `PEDIT-${version}-setup.exe`;
 const updaterAssetPath = path.join(releaseDir, updaterAssetName);
 fs.copyFileSync(localInstallerPath, updaterAssetPath);
 

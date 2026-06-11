@@ -1,6 +1,6 @@
 # 소셜 가입/로그인 설정
 
-`e편한보드`는 Supabase Auth를 통해 Google, Kakao, Naver 로그인을 사용한다. 앱에는 Supabase public client key만 포함하고, 각 provider의 client secret이나 service role key는 넣지 않는다.
+`PEDIT (페딧)`은 Supabase Auth를 통해 Google, Kakao, Naver 로그인을 사용한다. 앱에는 Supabase public client key만 포함하고, 각 provider의 client secret이나 service role key는 넣지 않는다.
 
 ## Supabase Redirect URL
 
