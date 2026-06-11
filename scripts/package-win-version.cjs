@@ -44,7 +44,9 @@ if (!fs.existsSync(localInstallerPath)) {
 
 const updaterAssetName = `PEDIT-${version}-setup.exe`;
 const updaterAssetPath = path.join(releaseDir, updaterAssetName);
-fs.copyFileSync(localInstallerPath, updaterAssetPath);
+if (path.resolve(localInstallerPath) !== path.resolve(updaterAssetPath)) {
+  fs.copyFileSync(localInstallerPath, updaterAssetPath);
+}
 
 console.log(JSON.stringify({
   ok: true,
