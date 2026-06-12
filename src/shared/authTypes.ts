@@ -39,6 +39,7 @@ export interface AdminUserRow {
   profile: UserProfile;
   subscription: SubscriptionState | null;
   devices: RegisteredDevice[];
+  linkedProviders: string[];
 }
 
 export type AuthGateStatus =

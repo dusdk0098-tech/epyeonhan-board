@@ -1,2 +1,11 @@
 [functions.naver-userinfo]
 verify_jwt = false
+
+[functions.admin-users]
+verify_jwt = false
+
+[functions.admin-delete-user]
+verify_jwt = false
+
+[functions.admin-set-password]
+verify_jwt = false

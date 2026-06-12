@@ -3,6 +3,7 @@ import type { User as SupabaseUser } from '@supabase/supabase-js';
 import {
   ArrowDown,
   ArrowUp,
+  CalendarDays,
   Camera,
   CheckSquare,
   ClipboardPaste,
@@ -13,6 +14,8 @@ import {
   FileSpreadsheet,
   FolderOpen,
   Image as ImageIcon,
+  KeyRound,
+  Link2,
   ListChecks,
   LogOut,
   Monitor,
@@ -26,12 +29,14 @@ import {
   ShieldCheck,
   Trash2,
   User,
+  UserX,
   Users,
   Zap,
   X
 } from 'lucide-react';
 import {
   completeCurrentProfile,
+  deleteUserByAdmin,
   exchangeOAuthSessionFromUrl,
   INITIAL_ADMIN_EMAIL,
   getCurrentUser,
@@ -43,6 +48,7 @@ import {
   signOut,
   signUpWithPassword,
   startSocialSignIn,
+  setUserPasswordByAdmin,
   updateAccountStatus,
   updateSubscriptionByAdmin,
   updateUserRole
@@ -103,6 +109,8 @@ type Screen = 'start' | 'help' | 'basic' | 'advanced' | 'output' | 'commonSettin
 type WorkspaceScreen = 'basic' | 'advanced' | 'output';
 type StatusKind = 'info' | 'success' | 'error';
 type AuthMode = 'signin' | 'signup';
+type AdminView = 'all' | 'new' | 'social' | 'devices';
+type AdminNewUserWindow = 7 | 30 | 0;
 type StateAction<T> = T | ((current: T) => T);
 type CommonOutputSettings = Pick<
   BoardSettings,
@@ -303,6 +311,18 @@ const subscriptionStatusOptions: Array<[SubscriptionStatus, string]> = [
   ['canceled', '해지'],
   ['suspended', '정지']
 ];
+const adminViewOptions: Array<[AdminView, string]> = [
+  ['all', '전체'],
+  ['new', '신규가입'],
+  ['social', '소셜연동'],
+  ['devices', '기기/구독']
+];
+const adminProviderBadges: Array<{ id: 'password' | SocialAuthProvider; label: string }> = [
+  { id: 'password', label: 'Email' },
+  { id: 'google', label: 'Google' },
+  { id: 'kakao', label: 'Kakao' },
+  { id: 'naver', label: 'Naver' }
+];
 
 const defaultHighlight: PhotoHighlight = {
   enabled: true,
@@ -351,6 +371,8 @@ export default function App() {
   const [adminRows, setAdminRows] = useState<AdminUserRow[]>([]);
   const [adminBusy, setAdminBusy] = useState(false);
   const [adminError, setAdminError] = useState('');
+  const [adminView, setAdminView] = useState<AdminView>('all');
+  const [adminNewUserWindow, setAdminNewUserWindow] = useState<AdminNewUserWindow>(7);
   const [activeScreen, setActiveScreen] = useState<Screen>('start');
   const [workspaces, setWorkspaces] = useState<Record<WorkspaceScreen, BoardWorkspaceState>>(() => createWorkspaceMap());
   const [commonOutputSettings, setCommonOutputSettings] = useState<CommonOutputSettings>(() => createCommonOutputSettings());
@@ -393,6 +415,27 @@ export default function App() {
     () => normalizeSettings(mergeCommonOutputSettings(settings)),
     [settings, commonOutputSettings]
   );
+  const adminStats = useMemo(() => {
+    return {
+      total: adminRows.length,
+      admins: adminRows.filter((row) => row.profile.role === 'admin').length,
+      activeSubscriptions: adminRows.filter((row) => row.subscription?.status === 'manual_active' || row.subscription?.status === 'active').length,
+      newUsers: adminRows.filter((row) => isNewAdminUser(row, adminNewUserWindow)).length,
+      socialLinked: adminRows.filter(hasLinkedSocialProvider).length
+    };
+  }, [adminRows, adminNewUserWindow]);
+  const adminVisibleRows = useMemo(() => {
+    switch (adminView) {
+      case 'new':
+        return adminRows.filter((row) => isNewAdminUser(row, adminNewUserWindow));
+      case 'social':
+        return adminRows.filter(hasLinkedSocialProvider);
+      case 'devices':
+        return adminRows.filter((row) => row.devices.length > 0 || row.subscription);
+      default:
+        return adminRows;
+    }
+  }, [adminRows, adminView, adminNewUserWindow]);
 
   const previewFields = useMemo(
     () => applyTimeMode(fields, selectedPhoto, selectedIndex, timeOptions, exifMap),
@@ -1041,6 +1084,37 @@ export default function App() {
 
   async function handleAdminDeviceRevoke(userId: string, deviceId: string) {
     await runAdminMutation(async () => revokeDeviceByAdmin(userId, deviceId));
+  }
+
+  async function handleAdminPasswordChange(row: AdminUserRow) {
+    const password = window.prompt(`${row.profile.email} 계정에 설정할 임시 비밀번호를 입력하세요. (8자 이상)`);
+    if (!password) return;
+    if (password.length < 8) {
+      setAdminError('임시 비밀번호는 8자 이상이어야 합니다.');
+      return;
+    }
+    const confirmPassword = window.prompt('임시 비밀번호를 한 번 더 입력하세요.');
+    if (password !== confirmPassword) {
+      setAdminError('비밀번호와 확인 입력이 일치하지 않습니다.');
+      return;
+    }
+    await runAdminMutation(async () => setUserPasswordByAdmin(row.profile.id, password));
+  }
+
+  async function handleAdminDeleteUser(row: AdminUserRow) {
+    if (row.profile.email === INITIAL_ADMIN_EMAIL) {
+      setAdminError('초기 관리자 계정은 삭제할 수 없습니다.');
+      return;
+    }
+    if (row.profile.id === authState.profile?.id) {
+      setAdminError('현재 로그인한 관리자 계정은 삭제할 수 없습니다.');
+      return;
+    }
+    const confirmed = window.confirm(
+      `${row.profile.email} 회원을 영구 삭제합니다.\n\n이 작업은 Supabase Auth 계정과 앱 데이터를 삭제하며 되돌릴 수 없습니다. 계속할까요?`
+    );
+    if (!confirmed) return;
+    await runAdminMutation(async () => deleteUserByAdmin(row.profile.id));
   }
 
   async function runAdminMutation(action: () => Promise<void>) {
@@ -3208,22 +3282,36 @@ export default function App() {
               <div className="admin-summary-card users">
                 <span className="admin-summary-icon"><Users size={18} /></span>
                 <div>
-                  <strong>{adminRows.length}</strong>
+                  <strong>{adminStats.total}</strong>
                   <span>전체 사용자</span>
                 </div>
               </div>
               <div className="admin-summary-card admins">
                 <span className="admin-summary-icon"><ShieldCheck size={18} /></span>
                 <div>
-                  <strong>{adminRows.filter((row) => row.profile.role === 'admin').length}</strong>
+                  <strong>{adminStats.admins}</strong>
                   <span>관리자 계정</span>
                 </div>
               </div>
               <div className="admin-summary-card active">
                 <span className="admin-summary-icon"><CheckSquare size={18} /></span>
                 <div>
-                  <strong>{adminRows.filter((row) => row.subscription?.status === 'manual_active' || row.subscription?.status === 'active').length}</strong>
+                  <strong>{adminStats.activeSubscriptions}</strong>
                   <span>활성 구독</span>
+                </div>
+              </div>
+              <div className="admin-summary-card new">
+                <span className="admin-summary-icon"><CalendarDays size={18} /></span>
+                <div>
+                  <strong>{adminStats.newUsers}</strong>
+                  <span>신규가입</span>
+                </div>
+              </div>
+              <div className="admin-summary-card social">
+                <span className="admin-summary-icon"><Link2 size={18} /></span>
+                <div>
+                  <strong>{adminStats.socialLinked}</strong>
+                  <span>소셜연동</span>
                 </div>
               </div>
             </div>
@@ -3249,29 +3337,52 @@ export default function App() {
               </div>
             </div>
           </div>
+          <div className="admin-view-bar" aria-label="관리자 보기 필터">
+            {adminViewOptions.map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                className={adminView === value ? 'active' : ''}
+                onClick={() => setAdminView(value)}
+              >
+                {label}
+              </button>
+            ))}
+            <label className="admin-new-window">
+              신규 기준
+              <select value={adminNewUserWindow} onChange={(event) => setAdminNewUserWindow(Number(event.currentTarget.value) as AdminNewUserWindow)}>
+                <option value={7}>최근 7일</option>
+                <option value={30}>최근 30일</option>
+                <option value={0}>전체</option>
+              </select>
+            </label>
+          </div>
           {adminError && <div className="admin-error">{adminError}</div>}
           <div className="admin-table-wrap">
             <table className="admin-table">
               <thead>
                 <tr>
                   <th>사용자</th>
+                  <th>가입일</th>
+                  <th>소셜</th>
                   <th>역할</th>
                   <th>계정</th>
                   <th>구독</th>
                   <th>만료일</th>
                   <th>기기</th>
                   <th>최근 접속</th>
+                  <th>관리</th>
                 </tr>
               </thead>
               <tbody>
-                {adminRows.length === 0 ? (
+                {adminVisibleRows.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="admin-empty">
+                    <td colSpan={10} className="admin-empty">
                       {adminBusy ? '사용자 정보를 불러오는 중입니다.' : '조회된 사용자가 없습니다.'}
                     </td>
                   </tr>
                 ) : (
-                  adminRows.map((row) => (
+                  adminVisibleRows.map((row) => (
                     <tr key={row.profile.id}>
                       <td>
                         <div className="admin-user-cell">
@@ -3280,6 +3391,20 @@ export default function App() {
                             <strong>{row.profile.email}</strong>
                             <small>{[row.profile.display_name, row.profile.company].filter(Boolean).join(' / ') || '프로필 정보 없음'}</small>
                           </div>
+                        </div>
+                      </td>
+                      <td>{formatDateTime(row.profile.created_at)}</td>
+                      <td>
+                        <div className="admin-provider-list" aria-label="소셜 연동 상태">
+                          {adminProviderBadges.map((provider) => (
+                            <span
+                              key={provider.id}
+                              className={isProviderLinked(row, provider.id) ? 'linked' : 'not-linked'}
+                              title={isProviderLinked(row, provider.id) ? `${provider.label} 연동됨` : `${provider.label} 미연동`}
+                            >
+                              {provider.label}
+                            </span>
+                          ))}
                         </div>
                       </td>
                       <td>
@@ -3360,6 +3485,28 @@ export default function App() {
                         </div>
                       </td>
                       <td>{formatDateTime(row.profile.last_seen_at)}</td>
+                      <td>
+                        <div className="admin-actions-cell">
+                          <button
+                            type="button"
+                            className="secondary-button small"
+                            onClick={() => void handleAdminPasswordChange(row)}
+                            disabled={adminBusy}
+                          >
+                            <KeyRound size={14} aria-hidden />
+                            비밀번호
+                          </button>
+                          <button
+                            type="button"
+                            className="text-danger-button admin-delete-button"
+                            onClick={() => void handleAdminDeleteUser(row)}
+                            disabled={adminBusy || row.profile.email === INITIAL_ADMIN_EMAIL || row.profile.id === authState.profile?.id}
+                          >
+                            <UserX size={14} aria-hidden />
+                            삭제
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))
                 )}
@@ -3567,6 +3714,29 @@ function formatDateTime(value: string | null | undefined) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '-';
   return `${date.getFullYear()}.${pad2(date.getMonth() + 1)}.${pad2(date.getDate())} ${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
+}
+
+function isNewAdminUser(row: AdminUserRow, windowDays: AdminNewUserWindow) {
+  if (windowDays === 0) return true;
+  const createdAt = new Date(row.profile.created_at).getTime();
+  if (!Number.isFinite(createdAt)) return false;
+  return Date.now() - createdAt <= windowDays * 24 * 60 * 60 * 1000;
+}
+
+function normalizeLinkedProviders(row: AdminUserRow) {
+  return new Set((row.linkedProviders ?? []).map((provider) => provider.toLowerCase().replace(/^custom:/, '')));
+}
+
+function isProviderLinked(row: AdminUserRow, provider: 'password' | SocialAuthProvider) {
+  const providers = normalizeLinkedProviders(row);
+  if (provider === 'password') {
+    return providers.has('password') || providers.has('email') || row.profile.auth_provider === 'password';
+  }
+  return providers.has(provider);
+}
+
+function hasLinkedSocialProvider(row: AdminUserRow) {
+  return (['google', 'kakao', 'naver'] as SocialAuthProvider[]).some((provider) => isProviderLinked(row, provider));
 }
 
 function toUiError(error: unknown) {

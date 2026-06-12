@@ -87,6 +87,14 @@ type RememberedLoginResult = {
   error?: string;
 };
 
+type UpdateAttemptRecord = {
+  version: string;
+  attempts: number;
+  downloadUrl?: string;
+  installerPath?: string;
+  updatedAt: string;
+};
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 998,
@@ -200,6 +208,8 @@ async function checkForUpdates(win: BrowserWindow) {
       return;
     }
 
+    await clearResolvedUpdateAttemptRecord();
+
     const manifestUrl = buildLatestManifestUrl(UPDATE_BASE_URL);
     const response = await fetchWithTimeout(manifestUrl);
     if (!response.ok) {
@@ -213,6 +223,12 @@ async function checkForUpdates(win: BrowserWindow) {
 
     const currentVersion = app.getVersion();
     if (!isNewerVersion(validation.manifest.version, currentVersion)) {
+      return;
+    }
+
+    const previousAttempt = await readUpdateAttemptRecord();
+    if (previousAttempt?.version === validation.manifest.version && previousAttempt.attempts >= 2) {
+      await showRepeatedUpdateFailureGuide(win, validation.manifest, previousAttempt);
       return;
     }
 
@@ -270,6 +286,7 @@ async function downloadAndInstallUpdate(win: BrowserWindow, manifest: UpdateMani
     await fs.mkdir(updateDir, { recursive: true });
     const installerPath = path.join(updateDir, sanitizeFileName(manifest.file_name) || 'epyeonhan-board-setup.exe');
     await fs.writeFile(installerPath, buffer);
+    await recordUpdateAttempt(manifest, installerPath);
 
     sendUpdateStatus(win, {
       phase: 'installing',
@@ -313,6 +330,80 @@ async function downloadAndInstallUpdate(win: BrowserWindow, manifest: UpdateMani
     });
     updateInstallInProgress = false;
   }
+}
+
+async function clearResolvedUpdateAttemptRecord() {
+  const previousAttempt = await readUpdateAttemptRecord();
+  if (!previousAttempt) {
+    return;
+  }
+  if (!isNewerVersion(previousAttempt.version, app.getVersion())) {
+    await fs.rm(getUpdateAttemptRecordPath(), { force: true }).catch(() => undefined);
+  }
+}
+
+async function showRepeatedUpdateFailureGuide(win: BrowserWindow, manifest: UpdateManifest, attempt: UpdateAttemptRecord) {
+  sendUpdateStatus(win, {
+    phase: 'failed',
+    version: manifest.version,
+    percent: 100,
+    message: '자동 업데이트 반복 실패',
+    error: '같은 버전 업데이트가 반복 실행되었습니다. 관리자 권한 승인 또는 수동 설치가 필요합니다.'
+  });
+
+  const response = await dialog.showMessageBox(win, {
+    type: 'warning',
+    title: '자동 업데이트 확인 필요',
+    message: `PEDIT ${manifest.version} 업데이트가 ${attempt.attempts}회 반복되었습니다.`,
+    detail: [
+      '설치 권한 승인 없이 종료되었거나 Windows 보안 정책으로 설치가 적용되지 않았을 수 있습니다.',
+      '다운로드 페이지를 열어 설치 파일을 직접 실행한 뒤 UAC 창이 표시되면 승인해 주세요.',
+      attempt.installerPath ? `최근 다운로드 위치: ${attempt.installerPath}` : '',
+      `다운로드 주소: ${manifest.download_url}`
+    ].filter(Boolean).join('\n'),
+    buttons: ['다운로드 페이지 열기', '닫기'],
+    noLink: true
+  });
+
+  if (response.response === 0) {
+    await shell.openExternal(manifest.download_url);
+  }
+}
+
+async function readUpdateAttemptRecord(): Promise<UpdateAttemptRecord | null> {
+  try {
+    const raw = await fs.readFile(getUpdateAttemptRecordPath(), 'utf8');
+    const parsed = JSON.parse(raw) as Partial<UpdateAttemptRecord>;
+    if (!parsed.version || typeof parsed.attempts !== 'number') {
+      return null;
+    }
+    return {
+      version: parsed.version,
+      attempts: parsed.attempts,
+      downloadUrl: parsed.downloadUrl,
+      installerPath: parsed.installerPath,
+      updatedAt: parsed.updatedAt ?? ''
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function recordUpdateAttempt(manifest: UpdateManifest, installerPath: string) {
+  const previousAttempt = await readUpdateAttemptRecord();
+  const attempts = previousAttempt?.version === manifest.version ? previousAttempt.attempts + 1 : 1;
+  const record: UpdateAttemptRecord = {
+    version: manifest.version,
+    attempts,
+    downloadUrl: manifest.download_url,
+    installerPath,
+    updatedAt: new Date().toISOString()
+  };
+  await fs.writeFile(getUpdateAttemptRecordPath(), JSON.stringify(record, null, 2), 'utf8');
+}
+
+function getUpdateAttemptRecordPath() {
+  return path.join(app.getPath('userData'), 'update-attempt.json');
 }
 
 function buildSilentUpdateInstallArgs() {

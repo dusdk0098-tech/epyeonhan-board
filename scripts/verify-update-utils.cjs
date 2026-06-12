@@ -64,6 +64,26 @@ function verifyManifestParsing() {
   assert(!parseUpdateManifest(validManifest({ sha256: 'bad' })).ok, 'invalid SHA256 should fail');
   assert(!parseUpdateManifest(validManifest({ size_bytes: '12345' })).ok, 'string size should fail');
   assert(!parseUpdateManifest(validManifest({ mandatory: 'false' })).ok, 'string mandatory should fail');
+  assert(
+    !parseUpdateManifest(
+      validManifest({
+        file_name: 'PEDIT-1.0.1-full-setup.exe',
+        download_url:
+          'https://github.com/dusdk0098-tech/epyeonhan-board/releases/download/v1.0.1/PEDIT-1.0.1-full-setup.exe'
+      })
+    ).ok,
+    'manifest must reject full installer assets'
+  );
+  assert(
+    !parseUpdateManifest(
+      validManifest({
+        file_name: 'PEDIT-1.0.1-setup.exe',
+        download_url:
+          'https://github.com/dusdk0098-tech/epyeonhan-board/releases/download/v1.0.1/PEDIT-1.0.1-full-setup.exe'
+      })
+    ).ok,
+    'manifest download URL must match file_name'
+  );
   assert(!parseUpdateManifest({}).ok, 'missing fields should fail');
 }
 
@@ -112,6 +132,11 @@ async function verifyMainProcessAutoUpdateSource() {
   assert(mainSource.includes('update-launcher.log'), 'update launcher log is missing');
   assert(mainSource.includes('app.exit(0)'), 'update flow must force app exit after launcher starts');
   assert(mainSource.includes("phase: 'restarting'"), 'restart preparation update status is missing');
+  assert(mainSource.includes('type UpdateAttemptRecord'), 'update attempt record type is missing');
+  assert(mainSource.includes('recordUpdateAttempt(manifest, installerPath)'), 'update attempts must be recorded before app exit');
+  assert(mainSource.includes('showRepeatedUpdateFailureGuide'), 'repeated update failure guide is missing');
+  assert(mainSource.includes('update-attempt.json'), 'update attempt persistence path is missing');
+  assert(mainSource.includes('다운로드 페이지 열기'), 'repeated failure guide must offer manual download');
   assert(preloadSource.includes('onUpdateStatus'), 'preload update status listener is missing');
   assert(apiTypes.includes('UpdateStatusPayload') && apiTypes.includes("'restarting'") && apiTypes.includes('onUpdateStatus'), 'renderer update status types are missing');
   assert(appSource.includes('UpdateOverlay') && appSource.includes('PEDIT (페딧) 업데이트 중'), 'update progress overlay is missing');

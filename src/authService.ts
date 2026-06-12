@@ -259,30 +259,11 @@ function isKnownFingerprintRpcMissing(error: unknown) {
 
 export async function loadAdminUsers(): Promise<AdminUserRow[]> {
   const client = requireSupabase();
-  const [{ data: profiles, error: profilesError }, { data: subscriptions, error: subscriptionsError }, { data: devices, error: devicesError }] =
-    await Promise.all([
-      client.from('profiles').select('*').order('created_at', { ascending: false }).returns<UserProfile[]>(),
-      client.from('subscriptions').select('*').returns<SubscriptionState[]>(),
-      client.from('devices').select('*').order('last_seen_at', { ascending: false }).returns<RegisteredDevice[]>()
-    ]);
-
-  if (profilesError) throw profilesError;
-  if (subscriptionsError) throw subscriptionsError;
-  if (devicesError) throw devicesError;
-
-  const subscriptionsByUser = new Map((subscriptions ?? []).map((subscription) => [subscription.user_id, subscription]));
-  const devicesByUser = new Map<string, RegisteredDevice[]>();
-  (devices ?? []).forEach((device) => {
-    const current = devicesByUser.get(device.user_id) ?? [];
-    current.push(device);
-    devicesByUser.set(device.user_id, current);
+  const { data, error } = await client.functions.invoke<{ rows: AdminUserRow[] }>('admin-users', {
+    method: 'GET'
   });
-
-  return (profiles ?? []).map((profile) => ({
-    profile,
-    subscription: subscriptionsByUser.get(profile.id) ?? null,
-    devices: devicesByUser.get(profile.id) ?? []
-  }));
+  if (error) throw error;
+  return data?.rows ?? [];
 }
 
 export async function updateUserRole(userId: string, role: UserRole) {
@@ -315,6 +296,24 @@ export async function revokeDeviceByAdmin(userId: string, deviceId: string) {
     .eq('user_id', userId);
   if (error) throw error;
   await insertAuditLog(userId, 'device.revoked', { deviceId });
+}
+
+export async function deleteUserByAdmin(userId: string) {
+  const client = requireSupabase();
+  const { error } = await client.functions.invoke('admin-delete-user', {
+    method: 'POST',
+    body: { userId }
+  });
+  if (error) throw error;
+}
+
+export async function setUserPasswordByAdmin(userId: string, password: string) {
+  const client = requireSupabase();
+  const { error } = await client.functions.invoke('admin-set-password', {
+    method: 'POST',
+    body: { userId, password }
+  });
+  if (error) throw error;
 }
 
 async function updateProfileByAdmin(userId: string, patch: Partial<Pick<UserProfile, 'role' | 'status'>>, action: string, metadata: unknown) {
