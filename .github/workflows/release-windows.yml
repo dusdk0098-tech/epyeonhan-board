@@ -114,6 +114,7 @@ jobs:
           VERSION: ${{ steps.meta.outputs.version }}
         run: |
           $installer = Get-ChildItem -Path release -Filter '*setup.exe' -File |
+            Where-Object { $_.Name -notlike '*-full-setup.exe' } |
             Sort-Object LastWriteTime -Descending |
             Select-Object -First 1
 

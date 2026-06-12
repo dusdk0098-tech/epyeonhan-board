@@ -1,6 +1,6 @@
 {
   "name": "epyeonhan-board",
-  "version": "1.0.18",
+  "version": "1.0.19",
   "description": "PICTURE EDIT 현장 사진 편집 로컬 데스크톱 프로그램",
   "author": "대성건설(주)",
   "main": "dist-electron/electron/main.js",
@@ -14,7 +14,7 @@
     "verify:auth": "npm run build && node scripts/verify-auth-setup.cjs",
     "package:win": "npm run package:win:installer",
     "package:win:fast": "npm run build && electron-builder --win dir --x64 --publish never",
-    "package:win:installer": "npm run build && electron-builder --win nsis --x64 --publish never",
+    "package:win:installer": "npm run build && electron-builder --win nsis --x64 --publish never && node scripts/build-update-bridge.cjs",
     "package:win:versioned": "node scripts/package-win-version.cjs",
     "package:win:portable": "npm run build && electron-builder --win portable --x64 --publish never",
     "preview": "vite preview --host 127.0.0.1",

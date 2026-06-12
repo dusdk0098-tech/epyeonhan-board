@@ -86,6 +86,8 @@ async function verifyMainProcessAutoUpdateSource() {
   const apiTypes = await fs.readFile(path.join(__dirname, '..', 'src', 'electron-api.d.ts'), 'utf8');
   const appSource = await fs.readFile(path.join(__dirname, '..', 'src', 'App.tsx'), 'utf8');
   const installerInclude = await fs.readFile(path.join(__dirname, '..', 'build', 'installer.nsh'), 'utf8');
+  const bridgeNsi = await fs.readFile(path.join(__dirname, '..', 'build', 'update-bridge.nsi'), 'utf8');
+  const bridgeScript = await fs.readFile(path.join(__dirname, 'build-update-bridge.cjs'), 'utf8');
   assert(!mainSource.includes('업데이트 알림'), 'update confirmation alert must not be shown');
   assert(!mainSource.includes('다운로드 및 설치'), 'update confirmation button must not remain');
   assert(!mainSource.includes('나중에'), 'defer update button must not remain');
@@ -124,6 +126,12 @@ async function verifyMainProcessAutoUpdateSource() {
   assert(installerInclude.includes('$newDesktopLink') && installerInclude.includes('$newStartMenuLink'), 'NSIS update mode must ensure shortcuts');
   assert(installerInclude.includes('${ifNot} ${isForceRun}'), 'NSIS custom restart must avoid duplicating the legacy /force-run restart path');
   assert(installerInclude.includes('StdUtils.ExecShellAsUser'), 'NSIS update mode must restart the app after silent updates');
+  assert(bridgeNsi.includes('RequestExecutionLevel user'), 'update bridge must be runnable by legacy non-elevated updaters');
+  assert(bridgeNsi.includes('File "/oname=$PLUGINSDIR\\PEDIT-full-setup.exe" "${FULL_INSTALLER}"'), 'update bridge must embed the full installer');
+  assert(bridgeNsi.includes('ExecShellWait "runas"'), 'update bridge must elevate the full installer through UAC');
+  assert(bridgeNsi.includes('${GetParameters} $R0'), 'update bridge must forward legacy updater arguments');
+  assert(bridgeScript.includes('PEDIT-${version}-full-setup.exe'), 'bridge builder must preserve the full installer');
+  assert(bridgeScript.includes('makensis.exe'), 'bridge builder must compile the NSIS bridge');
 }
 
 async function verifyVersionedPackagingConfig() {
@@ -143,8 +151,16 @@ async function verifyVersionedPackagingConfig() {
   );
   assert(packageJson.build.nsis.include === 'build/installer.nsh', 'NSIS installer include must be wired');
   assert(
+    packageJson.scripts['package:win:installer'].includes('node scripts/build-update-bridge.cjs'),
+    'local installer packaging must build the update bridge'
+  );
+  assert(
     packageJson.scripts['package:win:versioned'] === 'node scripts/package-win-version.cjs',
     'versioned local packaging script is missing'
+  );
+  assert(
+    workflow.includes("Where-Object { $_.Name -notlike '*-full-setup.exe' }"),
+    'GitHub release workflow must upload the bridge installer, not the full installer'
   );
   assert(
     workflow.includes('$uploadName = "PEDIT-$env:VERSION-setup.exe"'),
@@ -156,7 +172,8 @@ async function verifyVersionedPackagingConfig() {
   );
   assert(
     packageScript.includes('npm run package:win:versioned -- 1.0.2') &&
-      packageScript.includes('PEDIT-${version}-setup.exe'),
+      packageScript.includes('PEDIT-${version}-setup.exe') &&
+      packageScript.includes('PEDIT-${version}-full-setup.exe'),
     'versioned local packaging script must create versioned installer names'
   );
 }

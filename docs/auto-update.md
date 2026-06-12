@@ -5,12 +5,13 @@
 ## 구조
 
 - 앱 업데이트 확인 URL: `https://dusdk0098-tech.github.io/epyeonhan-board/updates/win/latest.json`
-- 설치 파일 위치: GitHub Releases의 `.exe` 자산
+- 설치 파일 위치: GitHub Releases의 업데이트 브릿지 `.exe` 자산
 - 앱 동작:
   - 설치된 앱 실행 후 약 2.5초 뒤 `latest.json?t={timestamp}`를 확인합니다.
   - `latest.json.version`이 현재 앱 버전보다 높으면 확인 팝업 없이 설치 파일을 자동 다운로드합니다.
-  - 파일 크기와 SHA256을 검증한 뒤 업데이트 런처를 실행합니다.
-  - 런처는 현재 앱이 종료될 때까지 기다린 뒤 silent NSIS 설치를 실행하고 설치 완료 후 앱을 다시 시작합니다.
+  - 파일 크기와 SHA256을 검증한 뒤 업데이트 브릿지를 실행합니다.
+  - 브릿지는 구버전 앱에서도 실행 가능한 비관리자 EXE이며, 내부에 포함된 실제 설치 파일을 UAC `runas`로 실행합니다.
+  - 최신 앱의 런처는 현재 앱이 종료될 때까지 기다린 뒤 브릿지를 실행하고, 브릿지는 실제 silent NSIS 설치를 진행합니다.
   - 네트워크 오류나 manifest 오류는 조용히 무시합니다.
   - 다운로드, 검증, 설치 파일 실행 실패만 오류창으로 알립니다.
   - `mandatory` 값과 무관하게 현재 버전보다 높으면 자동 업데이트 대상입니다.
@@ -66,7 +67,7 @@ git push origin v1.0.1
 
 태그 배포는 기본적으로 `mandatory=false`, `prerelease=false`로 manifest를 생성합니다.
 
-GitHub Release와 로컬 배포 설치 파일명은 `PEDIT-{version}-setup.exe` 형식을 사용합니다. 업데이트 저장소 URL과 내부 저장소명은 기존 사용자 호환을 위해 `epyeonhan-board`를 유지하지만, 설치된 앱 이름과 바로가기 이름은 `PEDIT (페딧)`으로 표시됩니다.
+GitHub Release와 로컬 배포 설치 파일명은 `PEDIT-{version}-setup.exe` 형식을 사용합니다. 이 파일은 업데이트 브릿지이며, 실제 관리자 권한 설치 파일은 빌드 산출물에 `PEDIT-{version}-full-setup.exe`로 함께 보관됩니다. 업데이트 manifest에는 항상 브릿지 파일의 해시와 크기를 기록합니다. 업데이트 저장소 URL과 내부 저장소명은 기존 사용자 호환을 위해 `epyeonhan-board`를 유지하지만, 설치된 앱 이름과 바로가기 이름은 `PEDIT (페딧)`으로 표시됩니다.
 
 로컬에서 직접 설치 파일을 만들 때는 아래 명령을 사용합니다.
 
@@ -78,6 +79,7 @@ npm run package:win:versioned -- 1.0.2
 
 - 사용자 전달용 로컬 파일명: `PEDIT-1.0.2-setup.exe`
 - GitHub 업데이트 자산용 파일명: `PEDIT-1.0.2-setup.exe`
+- 실제 내부 설치 파일명: `PEDIT-1.0.2-full-setup.exe`
 
 ## 기존 사용자 안내
 
@@ -105,4 +107,5 @@ npm run verify:board
 - 자동 업데이트가 시작되지 않으면 `package.json`의 현재 버전보다 `latest.json.version`이 높은지 확인합니다.
 - 설치 실패가 뜨면 `sha256`, `size_bytes`, `download_url`이 Release 자산과 일치하는지 확인합니다.
 - 내부 업데이트 창이 `업데이트 설치 준비`에서 멈춘 경우 `%TEMP%\epyeonhan-board-updates\update-launcher.log`를 확인합니다.
+- 업데이트가 진행된 것처럼 보이지만 버전이 그대로면 UAC 승인 여부와 `latest.json`이 `PEDIT-{version}-setup.exe` 브릿지 파일을 가리키는지 확인합니다. `*-full-setup.exe`를 직접 manifest에 올리면 구버전 앱에서 실행되지 않을 수 있습니다.
 - private 저장소는 현재 기본 구성에서 지원하지 않습니다. public Releases + public Pages를 사용하거나 별도 public 업데이트 저장소를 분리해야 합니다.

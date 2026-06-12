@@ -37,9 +37,14 @@ run('npm', ['run', 'package:win:installer']);
 const releaseDir = path.join(rootDir, 'release');
 const localInstallerName = `PEDIT-${version}-setup.exe`;
 const localInstallerPath = path.join(releaseDir, localInstallerName);
+const fullInstallerPath = path.join(releaseDir, `PEDIT-${version}-full-setup.exe`);
 
 if (!fs.existsSync(localInstallerPath)) {
   fail(`Expected installer was not created: ${localInstallerPath}`);
+}
+
+if (!fs.existsSync(fullInstallerPath)) {
+  fail(`Expected full installer was not created: ${fullInstallerPath}`);
 }
 
 const updaterAssetName = `PEDIT-${version}-setup.exe`;
@@ -52,5 +57,6 @@ console.log(JSON.stringify({
   ok: true,
   version,
   installer: localInstallerPath,
+  fullInstaller: fullInstallerPath,
   updaterAsset: updaterAssetPath
 }, null, 2));
