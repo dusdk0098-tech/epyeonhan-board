@@ -4,6 +4,8 @@ export type FontWeight = 'normal' | 'bold';
 export type BorderWeight = 'normal' | 'bold';
 export type TimeMode = 'manual' | 'exif' | 'sequence' | 'sheet';
 export type BoardTextColor = 'black' | 'blue' | 'red' | 'green';
+export type BoardLineColor = BoardTextColor;
+export type HighlightColor = BoardTextColor | 'yellow';
 export type BoardLayoutMode = 'table' | 'bottom-strip';
 
 export interface PhotoHighlight {
@@ -12,6 +14,7 @@ export interface PhotoHighlight {
   yRatio: number;
   radiusRatio: number;
   outsideGrayscale: boolean;
+  color: HighlightColor;
 }
 
 export interface PhotoLedgerInfo {
@@ -36,7 +39,9 @@ export interface BoardField {
 }
 
 export interface BoardSettings {
+  showBoard: boolean;
   boardLayoutMode: BoardLayoutMode;
+  bottomStripShowLabels: boolean;
   position: BoardPosition;
   widthRatio: number;
   margin: number;
@@ -50,6 +55,7 @@ export interface BoardSettings {
   fontWeight: FontWeight;
   rowHeight: number;
   borderWeight: BorderWeight;
+  borderColor: BoardLineColor;
   jpgQuality: number;
   boardBackgroundOpacity: number;
   labelTextColor: BoardTextColor;
@@ -60,6 +66,7 @@ export interface BoardSettings {
   createPdf: boolean;
   pdfTitle: string;
   photoLedgerUseBoardFields: boolean;
+  photoLedgerUsePhotoDate: boolean;
   photoLedgerLocation: string;
   photoLedgerContent: string;
   photoLedgerDate: string;
@@ -110,6 +117,7 @@ export interface CopyImageResult {
 }
 
 export type PrintPreviewImagePayload = CopyPreviewImagePayload;
+export type RenderPreviewImagePayload = CopyPreviewImagePayload;
 
 export interface PrintImageResult {
   ok: boolean;
@@ -133,6 +141,8 @@ export interface ImageDataResult {
   dataUrl?: string;
   error?: string;
 }
+
+export type RenderPreviewImageResult = ImageDataResult;
 
 export interface ReadDateTimeResult {
   ok: boolean;

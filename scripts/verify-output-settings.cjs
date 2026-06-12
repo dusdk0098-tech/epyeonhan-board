@@ -14,7 +14,9 @@ const fields = [
 ];
 
 const baseSettings = {
+  showBoard: true,
   boardLayoutMode: 'table',
+  bottomStripShowLabels: true,
   position: 'bottom-right',
   widthRatio: 0.675,
   margin: 0,
@@ -28,6 +30,7 @@ const baseSettings = {
   fontWeight: 'bold',
   rowHeight: 70,
   borderWeight: 'bold',
+  borderColor: 'black',
   jpgQuality: 92,
   boardBackgroundOpacity: 100,
   labelTextColor: 'black',
@@ -36,7 +39,12 @@ const baseSettings = {
   outputGrayscale: false,
   openFolderAfterProcessing: false,
   createPdf: false,
-  pdfTitle: '사진대지'
+  pdfTitle: '사진대지',
+  photoLedgerUseBoardFields: true,
+  photoLedgerUsePhotoDate: false,
+  photoLedgerLocation: '',
+  photoLedgerContent: '',
+  photoLedgerDate: ''
 };
 
 function assert(condition, message) {
@@ -50,12 +58,14 @@ function verifyBoardOptions() {
     ...baseSettings,
     boardBackgroundOpacity: 50,
     labelTextColor: 'blue',
-    valueTextColor: 'red'
+    valueTextColor: 'red',
+    borderColor: 'green'
   }).svg;
 
   assert(transparent.includes('fill-opacity="0.5"'), 'board background opacity 50% was not reflected');
   assert(transparent.includes('fill="#0052b8"'), 'label text blue color was not reflected');
   assert(transparent.includes('fill="#d00000"'), 'value text red color was not reflected');
+  assert(transparent.includes('stroke="#008060"'), 'board border color was not reflected');
 
   const opaque = buildBoardSvg(1200, 800, fields, baseSettings).svg;
   assert(opaque.includes('fill-opacity="1"'), 'default board background opacity must stay opaque');
@@ -141,6 +151,14 @@ function verifyBottomStripLayout() {
   assert(strip.svg.includes('공사명') && strip.svg.includes('154kV'), 'bottom strip must render label and value cells');
   assert(/<line x1="31[0-9]" y1="0" x2="31[0-9]" y2="/.test(strip.svg), 'bottom strip must draw a separator between label and value cells');
   assert((strip.svg.match(/x1="0" y1="/g) || []).length >= stripFields.length, 'bottom strip must stack one horizontal row per field');
+
+  const stripWithoutLabels = buildBoardSvg(1200, 800, stripFields, {
+    ...baseSettings,
+    boardLayoutMode: 'bottom-strip',
+    bottomStripShowLabels: false
+  });
+  assert(!stripWithoutLabels.svg.includes('공사명'), 'bottom strip label cells must be removable');
+  assert(!/<line x1="31[0-9]" y1="0" x2="31[0-9]" y2="/.test(stripWithoutLabels.svg), 'bottom strip label separator must be removed with labels');
 }
 
 function verifyInputTableLayout() {
@@ -163,6 +181,7 @@ function verifyWorkspaceAndBridgeStatic() {
   assert(api.includes('getPathForFile') && api.includes('file: File'), 'getPathForFile must be exposed in renderer API types');
   assert(preload.includes('resolveDroppedPhotos') && main.includes("photos:resolve-dropped") && api.includes('resolveDroppedPhotos'), 'dropped photo IPC bridge is incomplete');
   assert(preload.includes('copyPreviewImage') && main.includes("images:copy-preview") && api.includes('copyPreviewImage'), 'preview copy IPC bridge is incomplete');
+  assert(preload.includes('renderPreviewImage') && main.includes("images:render-preview") && api.includes('renderPreviewImage'), 'preview render IPC bridge is incomplete');
   assert(preload.includes('printPreviewImage') && main.includes("images:print-preview") && api.includes('printPreviewImage'), 'preview print IPC bridge is incomplete');
   assert(main.includes('validateImageFilePath') && main.includes('maxImageInputBytes'), 'image IPC paths must be validated and size-limited');
   assert(main.includes('validateSheetFilePath') && main.includes('maxSheetInputBytes'), 'sheet import paths must be validated and size-limited');
@@ -171,6 +190,9 @@ function verifyWorkspaceAndBridgeStatic() {
   assert(app.includes('결과 이미지 복사'), 'preview copy button label should clearly indicate output image copy');
   assert(app.includes('미리보기 인쇄') && app.includes('handlePrintPreviewImage'), 'preview print UI must be exposed');
   assert(main.includes('webContents.print') && main.includes("title: 'PEDIT (페딧) 인쇄'"), 'main process must print through an internal print window');
+  assert(main.includes("show: true") && main.includes('waitForPrintableImage(printWindow)'), 'print window must be visible and wait for image readiness before printing');
+  assert(main.includes("fs.mkdtemp(path.join(os.tmpdir(), 'pedit-print-'))") && main.includes('buildPrintHtml(pathToFileURL(imagePath).href'), 'printing must use temporary files instead of oversized data URLs');
+  assert(!main.includes('buildPrintDataUrl') && !main.includes('data:text/html;charset=utf-8'), 'printing must not use data URL HTML payloads');
   assert(app.includes("boardLayoutMode: 'table'") && app.includes("value=\"bottom-strip\"") && app.includes('하부 띠'), 'board layout mode controls are missing');
   assert(app.includes('항목 정렬') && app.includes('내용 정렬'), 'advanced board alignment controls are missing');
   assert(app.includes('글자 굵기') && app.includes('테두리 굵기') && app.includes('글꼴'), 'advanced board typography controls are missing');
@@ -188,8 +210,14 @@ function verifyWorkspaceAndBridgeStatic() {
   assert(app.includes("activeOutputSettingsTab === 'datetime'") && app.includes('날짜/시간'), 'premium tab must expose datetime settings like the advanced tab');
   assert(app.includes("activeOutputSettingsTab === 'ledger'") && app.includes('renderPremiumPhotoLedgerSettings'), 'photo ledger settings must live in the premium settings tabs');
   assert(app.includes('사진대지 만들기') && app.includes("runProcess('all', { createPhotoLedgerPdf: true })"), 'premium tab must expose a photo ledger creation button');
+  assert(app.includes('사진대지 미리보기') && app.includes('PhotoLedgerPreviewPage'), 'premium tab must expose a photo ledger preview modal');
+  assert(app.includes('사진정보 촬영일자 사용') && app.includes('photoLedgerUsePhotoDate'), 'photo ledger photo-date option is missing');
   assert(!app.includes('commonOutputSettings.createPdf') && !app.includes('commonOutputSettings.pdfTitle'), 'photo ledger PDF controls must not stay in common settings');
   assert(app.includes('보드 내용') && app.includes('renderBoardFieldEditor') && app.includes('premium-field-editor'), 'premium tab must allow editing board labels and values');
+  assert(app.includes('보드판 삽입') && app.includes('settings.showBoard'), 'premium board insert toggle is missing');
+  assert(app.includes('항목칸 표시') && app.includes('bottomStripShowLabels'), 'bottom strip label toggle is missing');
+  assert(app.includes('테두리 색상') && app.includes('borderColor'), 'board border color control is missing');
+  assert(app.includes('원형 색상') && app.includes('HighlightColorSelectRow'), 'highlight color control is missing');
   assert(app.includes('크기/배치') && app.includes('renderBoardLayoutSettings()'), 'premium tab must expose detailed board size/layout settings');
   assert(app.includes('글자/테두리') && app.includes('renderPremiumTypographySettings'), 'premium tab must expose detailed typography settings');
   assert(app.includes('output-photo-select-actions') && app.includes('setAllPhotoChecks(true)') && app.includes('invertPhotoChecks'), 'premium tab must expose loaded-photo bulk selection controls');
@@ -236,7 +264,8 @@ function verifyHighlightGeometry() {
     xRatio: 0.25,
     yRatio: 0.5,
     radiusRatio: 0.2,
-    outsideGrayscale: true
+    outsideGrayscale: true,
+    color: 'blue'
   };
   const circle = resolveHighlightCircle(400, 300, highlight);
   assert(circle.x === 100, `highlight x mismatch: ${circle.x}`);
@@ -244,7 +273,7 @@ function verifyHighlightGeometry() {
   assert(circle.radius === 60, `highlight radius mismatch: ${circle.radius}`);
 
   const svg = buildHighlightSvg(400, 300, highlight);
-  assert(svg.includes('stroke="#ff0000"'), 'highlight circle must be red');
+  assert(svg.includes('stroke="#0052b8"'), 'highlight circle color option must be reflected');
   assert(svg.includes('stroke-dasharray='), 'highlight circle must be dashed');
 }
 
@@ -263,7 +292,7 @@ async function verifyOutsideGrayscaleMask() {
 
   const input = await sharp(raw, { raw: { width, height, channels: 3 } }).png().toBuffer();
   const gray = await sharp(input).grayscale().toBuffer();
-  const highlight = { enabled: true, xRatio: 0.5, yRatio: 0.5, radiusRatio: 0.25, outsideGrayscale: true };
+  const highlight = { enabled: true, xRatio: 0.5, yRatio: 0.5, radiusRatio: 0.25, outsideGrayscale: true, color: 'red' };
   const maskedColor = await sharp(input)
     .ensureAlpha()
     .composite([{ input: Buffer.from(buildHighlightMaskSvg(width, height, highlight), 'utf8'), blend: 'dest-in' }])

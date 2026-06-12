@@ -9,7 +9,9 @@ import type {
   PrintPreviewImagePayload,
   ProcessImagesPayload,
   ProcessImagesResult,
-  ReadDateTimeResult
+  ReadDateTimeResult,
+  RenderPreviewImagePayload,
+  RenderPreviewImageResult
 } from './shared/types';
 import type { AuthDeviceIdentity } from './shared/authTypes';
 
@@ -59,6 +61,7 @@ export interface ConstructViewApi {
   readPhotoDateTimes: (photoPaths: string[]) => Promise<ReadDateTimeResult>;
   importDateTimeSheet: () => Promise<ImportSheetResult>;
   processImages: (payload: ProcessImagesPayload) => Promise<ProcessImagesResult>;
+  renderPreviewImage: (payload: RenderPreviewImagePayload) => Promise<RenderPreviewImageResult>;
   copyPreviewImage: (payload: CopyPreviewImagePayload) => Promise<CopyImageResult>;
   printPreviewImage: (payload: PrintPreviewImagePayload) => Promise<PrintImageResult>;
   resizeWindow: (size: { width: number; height: number }) => Promise<{ ok: boolean; error?: string }>;

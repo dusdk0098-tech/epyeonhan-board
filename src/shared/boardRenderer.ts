@@ -1,4 +1,4 @@
-import type { BoardField, BoardSettings, BoardTextColor } from './types';
+import type { BoardField, BoardLineColor, BoardSettings, BoardTextColor } from './types';
 import {
   BOARD_LABEL_WIDTH_RATIO,
   DEFAULT_LABEL_COLUMN_WIDTH_RATIO,
@@ -41,6 +41,7 @@ export function buildBoardSvg(imageWidth: number, imageHeight: number, fields: B
   const backgroundOpacity = normalizeOpacity(settings.boardBackgroundOpacity);
   const labelTextColor = resolveBoardTextColor(settings.labelTextColor);
   const valueTextColor = resolveBoardTextColor(settings.valueTextColor);
+  const borderColor = resolveBoardLineColor(settings.borderColor);
   const effectiveFontSize = Math.max(8, Math.round(baseBoardWidth * (settings.fontSize / 640)));
   const layout = createBoardLayout(fields, settings, baseBoardWidth, labelWidth, effectiveFontSize);
   const availableWidth = Math.max(1, imageWidth);
@@ -73,8 +74,8 @@ export function buildBoardSvg(imageWidth: number, imageHeight: number, fields: B
     const rowHeight = Math.max(1, nextY - y);
     parts.push(`<rect x="0" y="${y}" width="${scaledLabelWidth}" height="${rowHeight}" fill="#ffffff" fill-opacity="${backgroundOpacity}"/>`);
     parts.push(`<rect x="${scaledLabelWidth}" y="${y}" width="${boardWidth - scaledLabelWidth}" height="${rowHeight}" fill="#ffffff" fill-opacity="${backgroundOpacity}"/>`);
-    parts.push(`<line x1="0" y1="${y}" x2="${boardWidth}" y2="${y}" stroke="#1f2937" stroke-width="${scaledBorderWidth}"/>`);
-    parts.push(`<line x1="${scaledLabelWidth}" y1="${y}" x2="${scaledLabelWidth}" y2="${y + rowHeight}" stroke="#1f2937" stroke-width="${scaledBorderWidth}"/>`);
+    parts.push(`<line x1="0" y1="${y}" x2="${boardWidth}" y2="${y}" stroke="${borderColor}" stroke-width="${scaledBorderWidth}"/>`);
+    parts.push(`<line x1="${scaledLabelWidth}" y1="${y}" x2="${scaledLabelWidth}" y2="${y + rowHeight}" stroke="${borderColor}" stroke-width="${scaledBorderWidth}"/>`);
     parts.push(renderTextLines(row.labelLines, 0, y, scaledLabelWidth, rowHeight, scaledFontSize, fontFamily, fontWeight, settings.itemAlign, labelTextColor));
     parts.push(
       renderTextLines(
@@ -92,16 +93,16 @@ export function buildBoardSvg(imageWidth: number, imageHeight: number, fields: B
     );
 
     if (isLast) {
-      parts.push(`<line x1="0" y1="${y + rowHeight}" x2="${boardWidth}" y2="${y + rowHeight}" stroke="#1f2937" stroke-width="${scaledBorderWidth}"/>`);
+      parts.push(`<line x1="0" y1="${y + rowHeight}" x2="${boardWidth}" y2="${y + rowHeight}" stroke="${borderColor}" stroke-width="${scaledBorderWidth}"/>`);
     }
 
     y = nextY;
     baseY += row.height;
   });
 
-  parts.push(`<line x1="${scaledLabelWidth}" y1="0" x2="${scaledLabelWidth}" y2="${boardHeight}" stroke="#1f2937" stroke-width="${scaledBorderWidth}"/>`);
+  parts.push(`<line x1="${scaledLabelWidth}" y1="0" x2="${scaledLabelWidth}" y2="${boardHeight}" stroke="${borderColor}" stroke-width="${scaledBorderWidth}"/>`);
   parts.push(
-    `<rect x="${scaledBorderWidth / 2}" y="${scaledBorderWidth / 2}" width="${boardWidth - scaledBorderWidth}" height="${boardHeight - scaledBorderWidth}" fill="none" stroke="#1f2937" stroke-width="${scaledBorderWidth}"/>`
+    `<rect x="${scaledBorderWidth / 2}" y="${scaledBorderWidth / 2}" width="${boardWidth - scaledBorderWidth}" height="${boardHeight - scaledBorderWidth}" fill="none" stroke="${borderColor}" stroke-width="${scaledBorderWidth}"/>`
   );
   parts.push('</svg>');
 
@@ -143,10 +144,12 @@ function buildBottomStripBoardSvg(imageWidth: number, imageHeight: number, field
   const backgroundOpacity = normalizeOpacity(settings.boardBackgroundOpacity);
   const labelTextColor = resolveBoardTextColor(settings.labelTextColor);
   const valueTextColor = resolveBoardTextColor(settings.valueTextColor);
+  const borderColor = resolveBoardLineColor(settings.borderColor);
   const baseFontSize = Math.max(8, Math.round(baseBoardWidth * (settings.fontSize / 640)));
   const padding = calculateBoardTextPadding(baseFontSize);
   const baseRowHeight = Math.max(1, Math.round(settings.rowHeight * (baseBoardWidth / 720)));
-  const labelWidth = Math.max(1, Math.round(boardWidth * columnLayout.labelShare));
+  const showLabels = settings.bottomStripShowLabels !== false;
+  const labelWidth = showLabels ? Math.max(1, Math.round(boardWidth * columnLayout.labelShare)) : 0;
   const layoutRows = rows.map((field) => {
     const valueTextWidth = Math.max(4, boardWidth - labelWidth - padding * 2);
     const valueLines = wrapText(field.value || ' ', valueTextWidth, baseFontSize, false);
@@ -174,11 +177,13 @@ function buildBottomStripBoardSvg(imageWidth: number, imageHeight: number, field
     const isLast = index === layoutRows.length - 1;
     const nextY = isLast ? boardHeight : Math.round((baseY + row.height) * heightScale);
     const rowHeight = Math.max(1, nextY - y);
-    parts.push(`<line x1="0" y1="${y}" x2="${boardWidth}" y2="${y}" stroke="#1f2937" stroke-width="${scaledBorderWidth}"/>`);
-    parts.push(
-      `<line x1="${labelWidth}" y1="${y}" x2="${labelWidth}" y2="${y + rowHeight}" stroke="#1f2937" stroke-width="${scaledBorderWidth}"/>`
-    );
-    parts.push(renderTextLines(row.labelLines, 0, y, labelWidth, rowHeight, scaledFontSize, fontFamily, fontWeight, settings.itemAlign, labelTextColor));
+    parts.push(`<line x1="0" y1="${y}" x2="${boardWidth}" y2="${y}" stroke="${borderColor}" stroke-width="${scaledBorderWidth}"/>`);
+    if (showLabels) {
+      parts.push(
+        `<line x1="${labelWidth}" y1="${y}" x2="${labelWidth}" y2="${y + rowHeight}" stroke="${borderColor}" stroke-width="${scaledBorderWidth}"/>`
+      );
+      parts.push(renderTextLines(row.labelLines, 0, y, labelWidth, rowHeight, scaledFontSize, fontFamily, fontWeight, settings.itemAlign, labelTextColor));
+    }
     parts.push(
       renderTextLines(
         row.valueLines,
@@ -194,15 +199,17 @@ function buildBottomStripBoardSvg(imageWidth: number, imageHeight: number, field
       )
     );
     if (isLast) {
-      parts.push(`<line x1="0" y1="${y + rowHeight}" x2="${boardWidth}" y2="${y + rowHeight}" stroke="#1f2937" stroke-width="${scaledBorderWidth}"/>`);
+      parts.push(`<line x1="0" y1="${y + rowHeight}" x2="${boardWidth}" y2="${y + rowHeight}" stroke="${borderColor}" stroke-width="${scaledBorderWidth}"/>`);
     }
     y = nextY;
     baseY += row.height;
   });
 
-  parts.push(`<line x1="${labelWidth}" y1="0" x2="${labelWidth}" y2="${boardHeight}" stroke="#1f2937" stroke-width="${scaledBorderWidth}"/>`);
+  if (showLabels) {
+    parts.push(`<line x1="${labelWidth}" y1="0" x2="${labelWidth}" y2="${boardHeight}" stroke="${borderColor}" stroke-width="${scaledBorderWidth}"/>`);
+  }
   parts.push(
-    `<rect x="${scaledBorderWidth / 2}" y="${scaledBorderWidth / 2}" width="${boardWidth - scaledBorderWidth}" height="${boardHeight - scaledBorderWidth}" fill="none" stroke="#1f2937" stroke-width="${scaledBorderWidth}"/>`
+    `<rect x="${scaledBorderWidth / 2}" y="${scaledBorderWidth / 2}" width="${boardWidth - scaledBorderWidth}" height="${boardHeight - scaledBorderWidth}" fill="none" stroke="${borderColor}" stroke-width="${scaledBorderWidth}"/>`
   );
   parts.push('</svg>');
 
@@ -332,6 +339,10 @@ function resolveBoardTextColor(color: BoardTextColor | undefined) {
     default:
       return '#111827';
   }
+}
+
+function resolveBoardLineColor(color: BoardLineColor | undefined) {
+  return resolveBoardTextColor(color);
 }
 
 function resolveColumnLayout(settings: BoardSettings) {

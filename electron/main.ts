@@ -5,6 +5,7 @@ import { spawn, spawnSync } from 'child_process';
 import { createHash } from 'crypto';
 import path from 'path';
 import os from 'os';
+import { pathToFileURL } from 'url';
 import sharp from 'sharp';
 import * as exifr from 'exifr';
 import Papa from 'papaparse';
@@ -27,6 +28,7 @@ import type {
   ProcessImagesPayload,
   ProcessImagesResult,
   ReadDateTimeResult,
+  RenderPreviewImageResult,
   TimeOptions
 } from '../src/shared/types';
 import {
@@ -430,6 +432,7 @@ function registerIpcHandlers() {
   ipcMain.handle('photos:read-date-times', (_event, photoPaths: string[]) => readPhotoDateTimes(photoPaths));
   ipcMain.handle('sheet:import-date-times', importDateTimeSheet);
   ipcMain.handle('images:process', (_event, payload: ProcessImagesPayload) => processImages(payload));
+  ipcMain.handle('images:render-preview', (_event, payload: CopyPreviewImagePayload) => renderPreviewImage(payload));
   ipcMain.handle('images:copy-preview', (_event, payload: CopyPreviewImagePayload) => copyPreviewImage(payload));
   ipcMain.handle('images:print-preview', (_event, payload: PrintPreviewImagePayload) => printPreviewImage(payload));
   ipcMain.handle('window:resize', (event, size: { width: number; height: number }) => resizeWindow(event.sender, size));
@@ -692,11 +695,21 @@ function resizeWindow(webContents: WebContents, size: { width: number; height: n
 }
 
 function hardenWebContents(win: BrowserWindow) {
-  win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    if (isAllowedExternalContactUrl(url)) {
+      void shell.openExternal(url);
+    }
+    return { action: 'deny' };
+  });
   win.webContents.session.setPermissionRequestHandler((_webContents, _permission, callback) => {
     callback(false);
   });
   win.webContents.on('will-navigate', (event, navigationUrl) => {
+    if (isAllowedExternalContactUrl(navigationUrl)) {
+      event.preventDefault();
+      void shell.openExternal(navigationUrl);
+      return;
+    }
     if (!isAllowedAppNavigationUrl(navigationUrl)) {
       event.preventDefault();
     }
@@ -718,6 +731,18 @@ function isAllowedAppNavigationUrl(navigationUrl: string) {
 
 function hasSameOrigin(left: URL, right: URL) {
   return left.protocol === right.protocol && left.hostname === right.hostname && left.port === right.port;
+}
+
+function isAllowedExternalContactUrl(navigationUrl: string) {
+  try {
+    const parsed = new URL(navigationUrl);
+    if (parsed.protocol === 'mailto:') {
+      return true;
+    }
+    return parsed.protocol === 'https:' && parsed.hostname === 'open.kakao.com';
+  } catch {
+    return false;
+  }
 }
 
 async function selectPhotos(): Promise<DialogPhotoResult> {
@@ -967,7 +992,11 @@ async function processImages(payload: ProcessImagesPayload): Promise<ProcessImag
       const outputPath = await nextAvailablePath(saveDir, path.basename(photo.name, path.extname(photo.name)), '_board.jpg');
       await renderBoardImage(photo, outputPath, fields, payload.settings);
       savedFiles.push(outputPath);
-      pdfEntries.push({ imagePath: outputPath, fields, photoLedger: photo.photoLedger });
+      pdfEntries.push({
+        imagePath: outputPath,
+        fields,
+        photoLedger: await resolvePhotoLedgerForPdf(photo, payload.settings)
+      });
     }
 
     let pdfPath: string | undefined;
@@ -984,6 +1013,19 @@ async function processImages(payload: ProcessImagesPayload): Promise<ProcessImag
     return { ok: true, savedFiles, pdfPath };
   } catch (error) {
     return { ok: false, savedFiles: [], error: toErrorMessage(error) };
+  }
+}
+
+async function renderPreviewImage(payload: CopyPreviewImagePayload): Promise<RenderPreviewImageResult> {
+  try {
+    if (!payload.photo?.path) {
+      return { ok: false, error: '미리보기할 사진을 먼저 선택하세요.' };
+    }
+
+    const buffer = await renderBoardCompositeBuffer(payload.photo, payload.fields, payload.settings);
+    return { ok: true, dataUrl: `data:image/png;base64,${buffer.toString('base64')}` };
+  } catch (error) {
+    return { ok: false, error: toErrorMessage(error) };
   }
 }
 
@@ -1021,13 +1063,15 @@ async function printPreviewImage(payload: PrintPreviewImagePayload): Promise<Pri
 }
 
 async function printImageBuffer(buffer: Buffer, imageWidth: number, imageHeight: number): Promise<PrintImageResult> {
+  let tempDir: string | undefined;
   const printWindow = new BrowserWindow({
     width: 900,
     height: 700,
-    show: false,
+    show: true,
     parent: mainWindow ?? undefined,
     title: 'PEDIT (페딧) 인쇄',
     backgroundColor: '#ffffff',
+    autoHideMenuBar: true,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -1037,43 +1081,94 @@ async function printImageBuffer(buffer: Buffer, imageWidth: number, imageHeight:
   hardenWebContents(printWindow);
 
   try {
-    await printWindow.loadURL(buildPrintDataUrl(buffer, imageWidth, imageHeight));
-    await new Promise((resolve) => setTimeout(resolve, 120));
+    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'pedit-print-'));
+    const imagePath = path.join(tempDir, 'preview.png');
+    const htmlPath = path.join(tempDir, 'print.html');
+    await fs.writeFile(imagePath, buffer);
+    await fs.writeFile(htmlPath, buildPrintHtml(pathToFileURL(imagePath).href, imageWidth, imageHeight), 'utf8');
+
+    await printWindow.loadFile(htmlPath);
+    printWindow.show();
+    printWindow.focus();
+    await waitForPrintableImage(printWindow);
 
     return await new Promise<PrintImageResult>((resolve) => {
-      printWindow.webContents.print(
-        {
-          silent: false,
-          printBackground: true,
-          color: true,
-          landscape: imageWidth >= imageHeight,
-          pageSize: 'A4',
-          margins: { marginType: 'default' }
-        },
-        (success, failureReason) => {
-          if (success) {
-            resolve({ ok: true });
-            return;
+      let settled = false;
+      const settle = (result: PrintImageResult) => {
+        if (settled) return;
+        settled = true;
+        resolve(result);
+      };
+
+      printWindow.once('closed', () => {
+        settle({ ok: false, canceled: true, error: '인쇄 창이 닫혔습니다.' });
+      });
+
+      try {
+        printWindow.webContents.print(
+          {
+            silent: false,
+            printBackground: true,
+            color: true,
+            landscape: imageWidth >= imageHeight,
+            pageSize: 'A4',
+            margins: { marginType: 'default' }
+          },
+          (success, failureReason) => {
+            if (success) {
+              settle({ ok: true });
+              return;
+            }
+            const reason = failureReason || '인쇄가 취소되었습니다.';
+            settle({
+              ok: false,
+              canceled: /cancel/i.test(reason) || /취소/.test(reason),
+              error: reason
+            });
           }
-          const reason = failureReason || '인쇄가 취소되었습니다.';
-          resolve({
-            ok: false,
-            canceled: /cancel/i.test(reason) || /취소/.test(reason),
-            error: reason
-          });
-        }
-      );
+        );
+      } catch (error) {
+        settle({ ok: false, error: toErrorMessage(error) });
+      }
     });
   } finally {
     if (!printWindow.isDestroyed()) {
       printWindow.close();
     }
+    if (tempDir) {
+      await fs.rm(tempDir, { recursive: true, force: true }).catch(() => undefined);
+    }
   }
 }
 
-function buildPrintDataUrl(buffer: Buffer, imageWidth: number, imageHeight: number) {
+async function waitForPrintableImage(printWindow: BrowserWindow) {
+  await printWindow.webContents.executeJavaScript(
+    `new Promise((resolve, reject) => {
+      const image = document.querySelector('img[data-print-image]');
+      if (!image) {
+        reject(new Error('인쇄 이미지를 찾지 못했습니다.'));
+        return;
+      }
+      if (image.complete && image.naturalWidth > 0) {
+        resolve(true);
+        return;
+      }
+      const timer = setTimeout(() => reject(new Error('인쇄 이미지 로딩 시간이 초과되었습니다.')), 15000);
+      image.addEventListener('load', () => {
+        clearTimeout(timer);
+        resolve(true);
+      }, { once: true });
+      image.addEventListener('error', () => {
+        clearTimeout(timer);
+        reject(new Error('인쇄 이미지를 불러오지 못했습니다.'));
+      }, { once: true });
+    })`
+  );
+}
+
+function buildPrintHtml(imageUrl: string, imageWidth: number, imageHeight: number) {
   const orientation = imageWidth >= imageHeight ? 'landscape' : 'portrait';
-  const dataUrl = `data:image/png;base64,${buffer.toString('base64')}`;
+  const safeImageUrl = escapeHtmlAttribute(imageUrl);
   const html = `<!doctype html>
 <html>
   <head>
@@ -1081,33 +1176,84 @@ function buildPrintDataUrl(buffer: Buffer, imageWidth: number, imageHeight: numb
     <title>PEDIT (페딧) 인쇄</title>
     <style>
       @page { size: A4 ${orientation}; margin: 10mm; }
+      * {
+        box-sizing: border-box;
+      }
       html, body {
         width: 100%;
-        height: 100%;
+        min-height: 100%;
         margin: 0;
         background: #ffffff;
       }
       body {
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        display: grid;
+        place-items: center;
+        padding: 10mm;
+        color: #111827;
+        font-family: "Malgun Gothic", Arial, sans-serif;
+      }
+      .print-ready {
+        position: fixed;
+        top: 12px;
+        left: 12px;
+        z-index: 2;
+        padding: 8px 12px;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.92);
+        font-size: 12px;
+        font-weight: 800;
+      }
+      .print-canvas {
+        width: 100%;
+        min-height: calc(100vh - 20mm);
+        display: grid;
+        place-items: center;
       }
       img {
         display: block;
-        max-width: 100vw;
-        max-height: 100vh;
+        max-width: 100%;
+        max-height: calc(100vh - 20mm);
         width: auto;
         height: auto;
         object-fit: contain;
       }
+      @media print {
+        body {
+          padding: 0;
+        }
+        .print-ready {
+          display: none;
+        }
+        .print-canvas {
+          min-height: auto;
+          width: 100%;
+          height: 100vh;
+        }
+        img {
+          max-width: 100%;
+          max-height: 100%;
+        }
+      }
     </style>
   </head>
   <body>
-    <img src="${dataUrl}" alt="PEDIT (페딧) 인쇄 이미지">
+    <div class="print-ready">인쇄 대화상자를 준비하고 있습니다.</div>
+    <main class="print-canvas">
+      <img data-print-image src="${safeImageUrl}" alt="PEDIT (페딧) 인쇄 이미지">
+    </main>
   </body>
 </html>`;
 
-  return `data:text/html;charset=utf-8,${encodeURIComponent(html)}`;
+  return html;
+}
+
+function escapeHtmlAttribute(value: string) {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
 }
 
 function selectPhotosForProcessing(payload: ProcessImagesPayload): PhotoItem[] {
@@ -1149,8 +1295,6 @@ async function renderBoardCompositeBuffer(photo: PhotoItem, fields: BoardField[]
   const oriented = await imagePipeline.toBuffer({ resolveWithObject: true });
   const imageWidth = oriented.info.width;
   const imageHeight = oriented.info.height;
-  const board = buildSharedBoardSvg(imageWidth, imageHeight, fields, settings);
-  const position = calculateSharedBoardPosition(imageWidth, imageHeight, board.width, board.height, settings);
   let photoBuffer = oriented.data;
 
   if (settings.outputGrayscale) {
@@ -1165,11 +1309,39 @@ async function renderBoardCompositeBuffer(photo: PhotoItem, fields: BoardField[]
       .toBuffer();
   }
 
+  if (settings.showBoard === false) {
+    return sharp(photoBuffer)
+      .flatten({ background: '#ffffff' })
+      .png()
+      .toBuffer();
+  }
+
+  const board = buildSharedBoardSvg(imageWidth, imageHeight, fields, settings);
+  const position = calculateSharedBoardPosition(imageWidth, imageHeight, board.width, board.height, settings);
+
   return sharp(photoBuffer)
     .composite([{ input: Buffer.from(board.svg, 'utf8'), left: position.left, top: position.top }])
     .flatten({ background: '#ffffff' })
     .png()
     .toBuffer();
+}
+
+async function resolvePhotoLedgerForPdf(photo: PhotoItem, settings: BoardSettings) {
+  const baseLedger = photo.photoLedger;
+  if (!settings.photoLedgerUsePhotoDate) {
+    return baseLedger;
+  }
+
+  const photoDate = await readExifDateTime(photo.path);
+  if (!photoDate?.date) {
+    return baseLedger;
+  }
+
+  return {
+    location: baseLedger?.location ?? '',
+    content: baseLedger?.content ?? '',
+    date: photoDate.date
+  };
 }
 
 async function applyOutsideGrayscale(buffer: Buffer, width: number, height: number, highlight: PhotoHighlight) {

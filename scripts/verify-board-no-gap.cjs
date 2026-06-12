@@ -12,7 +12,9 @@ const fields = [
 ];
 
 const baseSettings = {
+  showBoard: true,
   boardLayoutMode: 'table',
+  bottomStripShowLabels: true,
   position: 'bottom-right',
   widthRatio: 0.675,
   margin: 0,
@@ -26,9 +28,21 @@ const baseSettings = {
   fontWeight: 'bold',
   rowHeight: 70,
   borderWeight: 'bold',
+  borderColor: 'black',
   jpgQuality: 92,
+  boardBackgroundOpacity: 100,
+  labelTextColor: 'black',
+  valueTextColor: 'black',
+  outputMaxLongEdge: 0,
+  outputGrayscale: false,
+  openFolderAfterProcessing: false,
   createPdf: false,
-  pdfTitle: '사진대지'
+  pdfTitle: '사진대지',
+  photoLedgerUseBoardFields: true,
+  photoLedgerUsePhotoDate: false,
+  photoLedgerLocation: '',
+  photoLedgerContent: '',
+  photoLedgerDate: ''
 };
 
 const cases = [

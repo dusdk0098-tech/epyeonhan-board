@@ -64,6 +64,7 @@ import type {
   BoardTextColor,
   DateTimeMap,
   DateTimeValue,
+  HighlightColor,
   HorizontalAlign,
   PhotoHighlight,
   PhotoItem,
@@ -88,7 +89,13 @@ import {
   widthRatioToBoardSize
 } from './shared/boardConstants';
 import { buildBoardSvg, calculateBoardPosition } from './shared/boardRenderer';
-import { resolveHighlightCircle } from './shared/highlightRenderer';
+import { resolveHighlightCircle, resolveHighlightStrokeColor } from './shared/highlightRenderer';
+import {
+  PHOTO_LEDGER_LAYOUT,
+  PHOTO_LEDGER_PAGE,
+  resolvePhotoLedgerInfo,
+  type PhotoLedgerResolvedInfo
+} from './shared/photoLedgerRenderer';
 import { calculateContainedSize } from './shared/previewFit';
 import type { UpdateStatusPayload } from './electron-api';
 
@@ -145,7 +152,9 @@ function createDefaultFields(): BoardField[] {
 const defaultFields: BoardField[] = createDefaultFields();
 
 const defaultSettings: BoardSettings = {
+  showBoard: true,
   boardLayoutMode: 'table',
+  bottomStripShowLabels: true,
   position: 'bottom-right',
   widthRatio: DEFAULT_BOARD_WIDTH_RATIO,
   margin: 0,
@@ -159,6 +168,7 @@ const defaultSettings: BoardSettings = {
   fontWeight: 'bold',
   rowHeight: 70,
   borderWeight: 'bold',
+  borderColor: 'black',
   jpgQuality: 92,
   boardBackgroundOpacity: 100,
   labelTextColor: 'black',
@@ -169,6 +179,7 @@ const defaultSettings: BoardSettings = {
   createPdf: false,
   pdfTitle: '사진대지',
   photoLedgerUseBoardFields: true,
+  photoLedgerUsePhotoDate: false,
   photoLedgerLocation: '',
   photoLedgerContent: '',
   photoLedgerDate: ''
@@ -227,6 +238,14 @@ const boardTextColorOptions: Array<[BoardTextColor, string]> = [
   ['blue', '파랑'],
   ['red', '빨강'],
   ['green', '녹색']
+];
+
+const highlightColorOptions: Array<[HighlightColor, string]> = [
+  ['red', '빨강'],
+  ['blue', '파랑'],
+  ['green', '녹색'],
+  ['yellow', '노랑'],
+  ['black', '검정']
 ];
 
 const boardFontOptions: Array<{ label: string; value: string }> = [
@@ -290,7 +309,8 @@ const defaultHighlight: PhotoHighlight = {
   xRatio: 0.5,
   yRatio: 0.5,
   radiusRatio: 0.2,
-  outsideGrayscale: true
+  outsideGrayscale: true,
+  color: 'red'
 };
 
 const defaultPhotoLedgerInfo: PhotoLedgerInfo = {
@@ -343,6 +363,9 @@ export default function App() {
   const [previewContextMenu, setPreviewContextMenu] = useState<{ x: number; y: number } | null>(null);
   const [showPhotoList, setShowPhotoList] = useState(false);
   const [showLargePreview, setShowLargePreview] = useState(false);
+  const [showPhotoLedgerPreview, setShowPhotoLedgerPreview] = useState(false);
+  const [photoLedgerPreviewPage, setPhotoLedgerPreviewPage] = useState(0);
+  const [photoLedgerPreviewImages, setPhotoLedgerPreviewImages] = useState<Record<string, string>>({});
   const [updateStatus, setUpdateStatus] = useState<UpdateStatusPayload | null>(null);
 
   const activeWorkspaceKey: WorkspaceScreen = isWorkspaceScreen(activeScreen) ? activeScreen : 'basic';
@@ -365,18 +388,37 @@ export default function App() {
   const selectedPhotoLedger = selectedPhoto?.photoLedger ?? defaultPhotoLedgerInfo;
   const selectedIndex = selectedPhoto ? photos.findIndex((photo) => photo.path === selectedPhoto.path) : -1;
   const isAdmin = authState.status === 'ready' && authState.profile?.role === 'admin';
+  const photoLedgerPreviewPageCount = Math.max(1, Math.ceil(Math.max(photos.length, 1) / 2));
+  const photoLedgerRenderSettings = useMemo(
+    () => normalizeSettings(mergeCommonOutputSettings(settings)),
+    [settings, commonOutputSettings]
+  );
 
   const previewFields = useMemo(
     () => applyTimeMode(fields, selectedPhoto, selectedIndex, timeOptions, exifMap),
     [fields, selectedPhoto, selectedIndex, timeOptions, exifMap]
   );
+  const photoLedgerPreviewSlots = useMemo(() => {
+    return photos.slice(photoLedgerPreviewPage * 2, photoLedgerPreviewPage * 2 + 2).map((photo) => {
+      const photoIndex = photos.findIndex((item) => item.path === photo.path);
+      const renderFields = applyTimeMode(fields, photo, photoIndex, timeOptions, exifMap);
+      const renderKey = buildPhotoLedgerPreviewImageKey(photo, renderFields, photoLedgerRenderSettings);
+      return {
+        photo,
+        imageDataUrl: photoLedgerPreviewImages[renderKey],
+        info: resolveLedgerInfoForPhotoPreview(photo, photoIndex)
+      };
+    });
+  }, [photos, photoLedgerPreviewPage, fields, timeOptions, exifMap, photoLedgerPreviewImages, photoLedgerRenderSettings]);
   const livePreviewSignature = useMemo(
     () =>
       JSON.stringify({
         photoPath: selectedPhotoPath,
         fields: previewFields.map((field) => ({ id: field.id, label: field.label, value: field.value })),
         settings: {
+          showBoard: settings.showBoard,
           boardLayoutMode: settings.boardLayoutMode,
+          bottomStripShowLabels: settings.bottomStripShowLabels,
           position: settings.position,
           widthRatio: settings.widthRatio,
           boardSize: settings.boardSize,
@@ -389,6 +431,7 @@ export default function App() {
           fontWeight: settings.fontWeight,
           rowHeight: settings.rowHeight,
           borderWeight: settings.borderWeight,
+          borderColor: settings.borderColor,
           boardBackgroundOpacity: settings.boardBackgroundOpacity,
           labelTextColor: settings.labelTextColor,
           valueTextColor: settings.valueTextColor,
@@ -585,7 +628,7 @@ export default function App() {
 
   useEffect(() => {
     const workspaceKey = activeWorkspaceKey;
-    if (timeOptions.mode !== 'exif' || photos.length === 0) {
+    if ((timeOptions.mode !== 'exif' && !settings.photoLedgerUsePhotoDate) || photos.length === 0) {
       return;
     }
 
@@ -596,7 +639,54 @@ export default function App() {
         setStatusMessage('error', result.error ?? 'EXIF 정보를 읽을 수 없습니다.');
       }
     });
-  }, [activeWorkspaceKey, timeOptions.mode, photos]);
+  }, [activeWorkspaceKey, timeOptions.mode, settings.photoLedgerUsePhotoDate, photos]);
+
+  useEffect(() => {
+    if (!showPhotoLedgerPreview || photos.length === 0) {
+      return;
+    }
+
+    const pageCount = Math.max(1, Math.ceil(photos.length / 2));
+    if (photoLedgerPreviewPage >= pageCount) {
+      setPhotoLedgerPreviewPage(pageCount - 1);
+    }
+  }, [showPhotoLedgerPreview, photos.length, photoLedgerPreviewPage]);
+
+  useEffect(() => {
+    if (!showPhotoLedgerPreview || photos.length === 0 || !window.constructView?.renderPreviewImage) {
+      return;
+    }
+
+    let canceled = false;
+    const renderSettings = photoLedgerRenderSettings;
+    const pagePhotos = photos.slice(photoLedgerPreviewPage * 2, photoLedgerPreviewPage * 2 + 2);
+    pagePhotos.forEach((photo) => {
+      const photoIndex = photos.findIndex((item) => item.path === photo.path);
+      const renderFields = applyTimeMode(fields, photo, photoIndex, timeOptions, exifMap);
+      const renderKey = buildPhotoLedgerPreviewImageKey(photo, renderFields, renderSettings);
+      if (photoLedgerPreviewImages[renderKey]) return;
+
+      window.constructView.renderPreviewImage({ photo, fields: renderFields, settings: renderSettings }).then((result) => {
+        if (canceled || !result.ok || !result.dataUrl) return;
+        setPhotoLedgerPreviewImages((current) => ({ ...current, [renderKey]: result.dataUrl ?? '' }));
+      });
+    });
+
+    return () => {
+      canceled = true;
+    };
+  }, [
+    showPhotoLedgerPreview,
+    photoLedgerPreviewPage,
+    photos,
+    fields,
+    settings,
+    commonOutputSettings,
+    photoLedgerRenderSettings,
+    timeOptions,
+    exifMap,
+    photoLedgerPreviewImages
+  ]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -1042,6 +1132,15 @@ export default function App() {
     setPreviewRevision((current) => current + 1);
   }
 
+  function openPhotoLedgerPreview() {
+    if (photos.length === 0) {
+      setStatusMessage('info', '사진대지 미리보기를 볼 사진을 먼저 불러오세요.');
+      return;
+    }
+    setPhotoLedgerPreviewPage(Math.max(0, Math.floor(Math.max(0, selectedIndex) / 2)));
+    setShowPhotoLedgerPreview(true);
+  }
+
   function normalizeSettings(nextSettings: BoardSettings): BoardSettings {
     const columnRatios = normalizeColumnRatios(nextSettings);
     const widthRatio = columnRatios.widthRatio;
@@ -1054,16 +1153,20 @@ export default function App() {
       : defaultSettings.outputMaxLongEdge;
     return {
       ...nextSettings,
+      showBoard: nextSettings.showBoard !== false,
       boardLayoutMode: nextSettings.boardLayoutMode ?? 'table',
+      bottomStripShowLabels: nextSettings.bottomStripShowLabels !== false,
       widthRatio,
       boardSize: widthRatioToBoardSize(widthRatio),
       labelColumnWidthRatio: columnRatios.labelColumnWidthRatio,
       valueColumnWidthRatio: columnRatios.valueColumnWidthRatio,
       fontFamily: normalizeBoardFontFamily(nextSettings.fontFamily),
+      borderColor: nextSettings.borderColor ?? defaultSettings.borderColor,
       jpgQuality: clamp(Math.round(jpgQuality), 1, 100),
       boardBackgroundOpacity: clamp(Math.round(boardBackgroundOpacity), 0, 100),
       outputMaxLongEdge: Math.max(0, Math.round(outputMaxLongEdge)),
       photoLedgerUseBoardFields: Boolean(nextSettings.photoLedgerUseBoardFields),
+      photoLedgerUsePhotoDate: Boolean(nextSettings.photoLedgerUsePhotoDate),
       photoLedgerLocation: nextSettings.photoLedgerLocation ?? '',
       photoLedgerContent: nextSettings.photoLedgerContent ?? '',
       photoLedgerDate: nextSettings.photoLedgerDate ?? ''
@@ -1435,7 +1538,7 @@ export default function App() {
       setStatusMessage('info', '강조 표시할 사진을 먼저 선택하세요.');
       return;
     }
-    updateSelectedPhotoHighlight(enabled ? { ...(selectedPhoto?.highlight ?? defaultHighlight), enabled: true } : undefined);
+    updateSelectedPhotoHighlight(enabled ? { ...defaultHighlight, ...(selectedPhoto?.highlight ?? {}), enabled: true } : undefined);
   }
 
   function updateSelectedHighlightPatch(patch: Partial<PhotoHighlight>) {
@@ -1443,7 +1546,7 @@ export default function App() {
       setStatusMessage('info', '강조 표시할 사진을 먼저 선택하세요.');
       return;
     }
-    updateSelectedPhotoHighlight({ ...(selectedPhoto?.highlight ?? defaultHighlight), ...patch, enabled: true });
+    updateSelectedPhotoHighlight({ ...defaultHighlight, ...(selectedPhoto?.highlight ?? {}), ...patch, enabled: true });
   }
 
   function normalizePhotoLedgerInfo(value: Partial<PhotoLedgerInfo> | undefined): PhotoLedgerInfo {
@@ -1502,6 +1605,20 @@ export default function App() {
       )
     );
     setStatusMessage('success', `${targetCount}장의 사진에 같은 사진대지 하단정보를 적용했습니다.`);
+  }
+
+  function resolvePhotoInfoDateForLedger(photo: PhotoItem | undefined) {
+    if (!photo || !settings.photoLedgerUsePhotoDate) return '';
+    return exifMap[photo.path]?.date ?? exifMap[normalizeFileName(photo.name)]?.date ?? '';
+  }
+
+  function resolveLedgerInfoForPhotoPreview(photo: PhotoItem, photoIndex: number): PhotoLedgerResolvedInfo {
+    const fieldsForPhoto = applyTimeMode(fields, photo, photoIndex, timeOptions, exifMap);
+    const photoInfoDate = resolvePhotoInfoDateForLedger(photo);
+    const ledger = settings.photoLedgerUsePhotoDate && photoInfoDate
+      ? { ...normalizePhotoLedgerInfo(photo.photoLedger ?? defaultPhotoLedgerInfo), date: photoInfoDate }
+      : photo.photoLedger;
+    return resolvePhotoLedgerInfo(fieldsForPhoto, settings, ledger);
   }
 
   async function runProcess(mode: ProcessImagesPayload['mode'], options: { createPhotoLedgerPdf?: boolean } = {}) {
@@ -2160,6 +2277,19 @@ export default function App() {
           <option value="table">표형 보드</option>
           <option value="bottom-strip">하부 띠</option>
         </select>
+        {settings.boardLayoutMode === 'bottom-strip' && (
+          <>
+            <label>항목칸</label>
+            <label className="check-label compact-check">
+              <input
+                type="checkbox"
+                checked={settings.bottomStripShowLabels}
+                onChange={(event) => updateSettings({ bottomStripShowLabels: event.target.checked })}
+              />
+              항목칸 표시
+            </label>
+          </>
+        )}
         <label>위치</label>
         <select
           value={settings.position}
@@ -2311,6 +2441,8 @@ export default function App() {
           <option value="normal">보통</option>
           <option value="bold">굵게</option>
         </select>
+        <label>테두리 색상</label>
+        <ColorSelectRow label="테두리" value={settings.borderColor} onChange={(value) => updateSettings({ borderColor: value })} />
       </div>
     );
   }
@@ -2488,6 +2620,12 @@ export default function App() {
             />
             원 바깥 흑백
           </label>
+          <HighlightColorSelectRow
+            label="원형 색상"
+            value={selectedHighlight?.color ?? defaultHighlight.color}
+            disabled={!selectedHighlight?.enabled}
+            onChange={(value) => updateSelectedHighlightPatch({ color: value })}
+          />
           <button className="small-btn danger" type="button" disabled={!selectedHighlight?.enabled} onClick={() => updateSelectedPhotoHighlight(undefined)}>
             <Trash2 size={15} /> 강조 삭제
           </button>
@@ -2514,6 +2652,14 @@ export default function App() {
           <Play size={15} />
           <span>사진 작업</span>
         </div>
+        <label className="check-label compact-check premium-board-toggle">
+          <input
+            type="checkbox"
+            checked={settings.showBoard}
+            onChange={(event) => updateSettings({ showBoard: event.target.checked })}
+          />
+          보드판 삽입
+        </label>
         <div className="premium-field-action-grid">
           <button className="small-btn primary" type="button" disabled={isProcessing} onClick={() => void runProcess('selected')}>
             <Play size={15} /> 선택 작업
@@ -2534,6 +2680,8 @@ export default function App() {
 
   function renderPremiumPhotoLedgerSettings() {
     const manualLedgerDisabled = settings.photoLedgerUseBoardFields || !selectedPhoto;
+    const dateLedgerDisabled = manualLedgerDisabled || settings.photoLedgerUsePhotoDate;
+    const selectedPhotoInfoDate = resolvePhotoInfoDateForLedger(selectedPhoto);
     return (
       <div className="premium-settings-stack">
         <div className="output-setting-section premium-ledger-section">
@@ -2549,6 +2697,15 @@ export default function App() {
                 onChange={(event) => updateSettings({ photoLedgerUseBoardFields: event.target.checked })}
               />
               보드판 내용과 동일하게 적용
+            </label>
+            <label>촬영일자</label>
+            <label className="check-label compact-check">
+              <input
+                type="checkbox"
+                checked={settings.photoLedgerUsePhotoDate}
+                onChange={(event) => updateSettings({ photoLedgerUsePhotoDate: event.target.checked })}
+              />
+              사진정보 촬영일자 사용
             </label>
           </div>
 
@@ -2588,8 +2745,8 @@ export default function App() {
             />
             <label>촬영일자</label>
             <input
-              value={selectedPhotoLedger.date}
-              disabled={manualLedgerDisabled}
+              value={settings.photoLedgerUsePhotoDate ? selectedPhotoInfoDate || '사진정보 없음' : selectedPhotoLedger.date}
+              disabled={dateLedgerDisabled}
               onChange={(event) => updateSelectedPhotoLedgerPatch({ date: event.target.value })}
             />
           </div>
@@ -2611,6 +2768,14 @@ export default function App() {
             >
               체크 사진에 적용
             </button>
+            <button
+              className="small-btn outline"
+              type="button"
+              disabled={photos.length === 0}
+              onClick={openPhotoLedgerPreview}
+            >
+              <Eye size={15} /> 사진대지 미리보기
+            </button>
           </div>
 
           <button className="btn primary wide ledger-create-btn" type="button" disabled={isProcessing} onClick={() => void runProcess('all', { createPhotoLedgerPdf: true })}>
@@ -2618,7 +2783,7 @@ export default function App() {
           </button>
           <p className="output-help-text compact">
             {settings.photoLedgerUseBoardFields
-              ? 'PDF 생성 시 각 사진의 보드판 입력값에서 위치, 내용, 촬영일자를 자동 적용합니다.'
+              ? 'PDF 생성 시 각 사진의 보드판 입력값에서 위치와 내용을 자동 적용합니다. 촬영일자는 사진정보 옵션이 켜져 있고 값이 있으면 사진정보를 우선 사용합니다.'
               : '사진 목록에서 사진을 하나씩 선택해 하단정보와 출력 순서를 지정하면 PDF에 사진별로 다르게 출력됩니다.'}
           </p>
         </div>
@@ -3009,7 +3174,17 @@ export default function App() {
         <section className="contact-card">
           <h1>문의하기</h1>
           <p>프로그램 개발 및 현장의 반복업무 자동화 문의</p>
-          <a href="mailto:hamori4919@naver.com">hamori4919@naver.com</a>
+          <a className="contact-email-link" href="mailto:hamori4919@naver.com">hamori4919@naver.com</a>
+          <div className="contact-link-grid" aria-label="카카오 문의 링크">
+            <a className="contact-link-card" href="https://open.kakao.com/o/ssWChczi" target="_blank" rel="noreferrer">
+              <strong>1:1 문의</strong>
+              <span>https://open.kakao.com/o/ssWChczi</span>
+            </a>
+            <a className="contact-link-card" href="https://open.kakao.com/o/pAdphczi" target="_blank" rel="noreferrer">
+              <strong>단톡방</strong>
+              <span>https://open.kakao.com/o/pAdphczi</span>
+            </a>
+          </div>
         </section>
       </main>
     );
@@ -3270,6 +3445,32 @@ export default function App() {
             onContextMenu={handlePreviewContextMenu}
             large
           />
+        </Modal>
+      )}
+      {showPhotoLedgerPreview && (
+        <Modal title="사진대지 미리보기" onClose={() => setShowPhotoLedgerPreview(false)} wide>
+          <div className="modal-toolbar ledger-preview-toolbar">
+            <button
+              className="small-btn outline"
+              type="button"
+              disabled={photoLedgerPreviewPage <= 0}
+              onClick={() => setPhotoLedgerPreviewPage((current) => Math.max(0, current - 1))}
+            >
+              이전 페이지
+            </button>
+            <span>
+              {photoLedgerPreviewPage + 1} / {photoLedgerPreviewPageCount}
+            </span>
+            <button
+              className="small-btn outline"
+              type="button"
+              disabled={photoLedgerPreviewPage >= photoLedgerPreviewPageCount - 1}
+              onClick={() => setPhotoLedgerPreviewPage((current) => Math.min(photoLedgerPreviewPageCount - 1, current + 1))}
+            >
+              다음 페이지
+            </button>
+          </div>
+          <PhotoLedgerPreviewPage slots={photoLedgerPreviewSlots} />
         </Modal>
       )}
       {previewContextMenu && (
@@ -3575,6 +3776,39 @@ function ColorSelectRow({
   );
 }
 
+function HighlightColorSelectRow({
+  label,
+  value,
+  disabled = false,
+  onChange
+}: {
+  label: string;
+  value: HighlightColor;
+  disabled?: boolean;
+  onChange: (value: HighlightColor) => void;
+}) {
+  return (
+    <div className="color-select-row">
+      <label>{label}</label>
+      <div className="color-options">
+        {highlightColorOptions.map(([optionValue, optionLabel]) => (
+          <label key={optionValue} className={`color-option ${optionValue}${disabled ? ' disabled' : ''}`}>
+            <input
+              type="radio"
+              name={`${label}-color`}
+              checked={value === optionValue}
+              disabled={disabled}
+              onChange={() => onChange(optionValue)}
+            />
+            <span aria-hidden />
+            {optionLabel}
+          </label>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function RadioGroup({
   label,
   name,
@@ -3749,7 +3983,7 @@ function PreviewStage({
     : null;
 
   const boardPreview = useMemo(() => {
-    if (!imageSize) return null;
+    if (!imageSize || settings.showBoard === false) return null;
 
     const board = buildBoardSvg(imageSize.width, imageSize.height, fields, settings);
     const position = calculateBoardPosition(imageSize.width, imageSize.height, board.width, board.height, settings);
@@ -3758,13 +3992,18 @@ function PreviewStage({
       height: `${(board.height / imageSize.height) * 100}%`
     };
 
-    if (settings.position.endsWith('right')) {
+    if (settings.boardLayoutMode === 'bottom-strip') {
+      style.left = 0;
+      style.bottom = 0;
+    } else if (settings.position.endsWith('right')) {
       style.right = 0;
     } else {
       style.left = `${(position.left / imageSize.width) * 100}%`;
     }
 
-    if (settings.position.startsWith('bottom')) {
+    if (settings.boardLayoutMode === 'bottom-strip') {
+      // Bottom strips always attach to the photo's lower edge.
+    } else if (settings.position.startsWith('bottom')) {
       style.bottom = 0;
     } else {
       style.top = `${(position.top / imageSize.height) * 100}%`;
@@ -3909,7 +4148,8 @@ function PreviewStage({
                 left: `${highlightCircle.x - highlightCircle.radius}px`,
                 top: `${highlightCircle.y - highlightCircle.radius}px`,
                 width: `${highlightCircle.radius * 2}px`,
-                height: `${highlightCircle.radius * 2}px`
+                height: `${highlightCircle.radius * 2}px`,
+                color: resolveHighlightStrokeColor(activeHighlight?.color)
               }}
             >
               <span />
@@ -3935,10 +4175,76 @@ function PreviewStage({
   );
 }
 
+function PhotoLedgerPreviewPage({
+  slots
+}: {
+  slots: Array<{ photo: PhotoItem; imageDataUrl?: string; info: PhotoLedgerResolvedInfo }>;
+}) {
+  const pageStyle: React.CSSProperties = {
+    aspectRatio: `${PHOTO_LEDGER_PAGE.width} / ${PHOTO_LEDGER_PAGE.height}`
+  };
+
+  return (
+    <div className="photo-ledger-preview-wrap">
+      <div className="photo-ledger-preview-page" style={pageStyle}>
+        <div className="photo-ledger-preview-title">사&nbsp;&nbsp;진&nbsp;&nbsp;대&nbsp;&nbsp;지</div>
+        <div className="photo-ledger-preview-outer" style={ledgerRectStyle(PHOTO_LEDGER_LAYOUT.outer)} />
+        {[0, 1].map((slotIndex) => {
+          const slot = slots[slotIndex];
+          return (
+            <div key={slotIndex}>
+              <div className="photo-ledger-preview-frame" style={ledgerRectStyle(PHOTO_LEDGER_LAYOUT.photoFrames[slotIndex])}>
+                {slot?.imageDataUrl ? (
+                  <img src={slot.imageDataUrl} alt={slot.photo.name} />
+                ) : (
+                  <span>{slot?.photo ? '이미지 준비 중' : '사진 없음'}</span>
+                )}
+              </div>
+              <PhotoLedgerPreviewInfoTable
+                rect={PHOTO_LEDGER_LAYOUT.infoTables[slotIndex]}
+                info={slot?.info ?? { location: '', content: '', date: '' }}
+              />
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function PhotoLedgerPreviewInfoTable({
+  rect,
+  info
+}: {
+  rect: { x: number; y: number; width: number; height: number };
+  info: PhotoLedgerResolvedInfo;
+}) {
+  return (
+    <div className="photo-ledger-preview-info-table" style={ledgerRectStyle(rect)}>
+      <div className="ledger-info-label">위&nbsp;&nbsp;치</div>
+      <div className="ledger-info-value ledger-location">{info.location}</div>
+      <div className="ledger-info-label">사진내용</div>
+      <div className="ledger-info-value ledger-content">{info.content}</div>
+      <div className="ledger-info-label ledger-date-label">촬영일자</div>
+      <div className="ledger-info-date">{info.date}</div>
+    </div>
+  );
+}
+
+function ledgerRectStyle(rect: { x: number; y: number; width: number; height: number }): React.CSSProperties {
+  return {
+    left: `${(rect.x / PHOTO_LEDGER_PAGE.width) * 100}%`,
+    top: `${(rect.y / PHOTO_LEDGER_PAGE.height) * 100}%`,
+    width: `${(rect.width / PHOTO_LEDGER_PAGE.width) * 100}%`,
+    height: `${(rect.height / PHOTO_LEDGER_PAGE.height) * 100}%`
+  };
+}
+
 function clampHighlight(highlight: PhotoHighlight): PhotoHighlight {
   return {
     ...highlight,
     enabled: true,
+    color: highlight.color ?? defaultHighlight.color,
     xRatio: clamp(highlight.xRatio, 0, 1),
     yRatio: clamp(highlight.yRatio, 0, 1),
     radiusRatio: clamp(highlight.radiusRatio, 0.02, 1)
@@ -3951,6 +4257,16 @@ function hashString(value: string) {
     hash = (hash * 31 + value.charCodeAt(index)) | 0;
   }
   return hash.toString(36);
+}
+
+function buildPhotoLedgerPreviewImageKey(photo: PhotoItem, fields: BoardField[], settings: BoardSettings) {
+  return `${photo.path}:${hashString(
+    JSON.stringify({
+      fields: fields.map((field) => ({ label: field.label, value: field.value })),
+      settings,
+      highlight: photo.highlight ?? null
+    })
+  )}`;
 }
 
 function Modal({

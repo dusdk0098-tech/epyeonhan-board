@@ -15,7 +15,9 @@ function assert(condition, message) {
 }
 
 const baseSettings = {
+  showBoard: true,
   boardLayoutMode: 'table',
+  bottomStripShowLabels: true,
   position: 'bottom-right',
   widthRatio: 0.675,
   margin: 0,
@@ -29,6 +31,7 @@ const baseSettings = {
   fontWeight: 'bold',
   rowHeight: 70,
   borderWeight: 'bold',
+  borderColor: 'black',
   jpgQuality: 92,
   boardBackgroundOpacity: 100,
   labelTextColor: 'black',
@@ -39,6 +42,7 @@ const baseSettings = {
   createPdf: true,
   pdfTitle: '사진대지',
   photoLedgerUseBoardFields: true,
+  photoLedgerUsePhotoDate: false,
   photoLedgerLocation: '',
   photoLedgerContent: '',
   photoLedgerDate: ''
@@ -123,11 +127,31 @@ async function main() {
   assert(perPhotoInfo.content === '사진별 내용', 'per-photo ledger content must override shared manual value');
   assert(perPhotoInfo.date === '2026.06.14', 'per-photo ledger date must override shared manual value');
 
+  const photoDatePriorityInfo = resolvePhotoLedgerInfo(
+    fields,
+    {
+      ...baseSettings,
+      photoLedgerUseBoardFields: true,
+      photoLedgerUsePhotoDate: true
+    },
+    {
+      location: '',
+      content: '',
+      date: '2026.06.15'
+    }
+  );
+  assert(photoDatePriorityInfo.location === '변전소 내', 'photo-date option must keep board-field location mapping');
+  assert(photoDatePriorityInfo.content === '장비 점검', 'photo-date option must keep board-field content mapping');
+  assert(photoDatePriorityInfo.date === '2026.06.15', 'photo-date option must override board-field date when present');
+
   const app = fs.readFileSync(path.join(__dirname, '..', 'src', 'App.tsx'), 'utf8');
   const mainSource = fs.readFileSync(path.join(__dirname, '..', 'electron', 'main.ts'), 'utf8');
   const sharedTypes = fs.readFileSync(path.join(__dirname, '..', 'src', 'shared', 'types.ts'), 'utf8');
   assert(app.includes('사진대지 PDF 설정'), 'premium settings must expose photo ledger PDF settings');
   assert(app.includes('보드판 내용과 동일하게 적용'), 'photo ledger board-field sync option missing');
+  assert(app.includes('사진정보 촬영일자 사용') && sharedTypes.includes('photoLedgerUsePhotoDate'), 'photo ledger photo-date option missing');
+  assert(app.includes('사진대지 미리보기') && app.includes('PhotoLedgerPreviewPage'), 'photo ledger preview modal missing');
+  assert(app.includes('PHOTO_LEDGER_LAYOUT') && app.includes('resolvePhotoLedgerInfo'), 'photo ledger preview must use the shared ledger layout/resolver');
   assert(app.includes('selectedPhotoLedger') && app.includes('updateSelectedPhotoLedgerPatch'), 'photo ledger inputs must edit the selected photo');
   assert(app.includes('사진별로 다르게 출력됩니다'), 'photo ledger UI must explain per-photo output');
   assert(app.includes('moveSelectedPhotoOrder') && app.includes('출력 순서'), 'photo ledger UI must support per-photo output order');
@@ -137,7 +161,7 @@ async function main() {
   assert(app.includes('사진대지 만들기'), 'premium tab must expose a photo ledger creation button');
   assert(!app.includes('commonOutputSettings.createPdf'), 'photo ledger PDF toggle must not be in common settings');
   assert(mainSource.includes('createPhotoLedgerPdf'), 'image processing must use the photo ledger PDF renderer');
-  assert(mainSource.includes('photoLedger: photo.photoLedger'), 'PDF entries must carry per-photo ledger info');
+  assert(mainSource.includes('resolvePhotoLedgerForPdf'), 'PDF entries must resolve per-photo ledger info and photo date');
   assert(!mainSource.includes('async function createPdf('), 'old image-per-page PDF generator must be removed');
   assert(!app.includes('이미지 1장/페이지'), 'image-per-page PDF option must not be rendered');
 

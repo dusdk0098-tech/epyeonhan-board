@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron';
-import type { CopyPreviewImagePayload, PrintPreviewImagePayload, ProcessImagesPayload } from '../src/shared/types';
+import type { CopyPreviewImagePayload, PrintPreviewImagePayload, ProcessImagesPayload, RenderPreviewImagePayload } from '../src/shared/types';
 
 contextBridge.exposeInMainWorld('constructView', {
   selectPhotos: () => ipcRenderer.invoke('photos:select'),
@@ -13,6 +13,7 @@ contextBridge.exposeInMainWorld('constructView', {
   readPhotoDateTimes: (photoPaths: string[]) => ipcRenderer.invoke('photos:read-date-times', photoPaths),
   importDateTimeSheet: () => ipcRenderer.invoke('sheet:import-date-times'),
   processImages: (payload: ProcessImagesPayload) => ipcRenderer.invoke('images:process', payload),
+  renderPreviewImage: (payload: RenderPreviewImagePayload) => ipcRenderer.invoke('images:render-preview', payload),
   copyPreviewImage: (payload: CopyPreviewImagePayload) => ipcRenderer.invoke('images:copy-preview', payload),
   printPreviewImage: (payload: PrintPreviewImagePayload) => ipcRenderer.invoke('images:print-preview', payload),
   resizeWindow: (size: { width: number; height: number }) => ipcRenderer.invoke('window:resize', size),
