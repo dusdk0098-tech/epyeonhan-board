@@ -416,64 +416,38 @@ function buildSilentUpdateInstallArgs() {
 
 async function launchSilentUpdateInstaller(installerPath: string) {
   const updateDir = path.dirname(installerPath);
-  const launcherPath = path.join(updateDir, 'run-pedit-update.ps1');
   const logPath = path.join(updateDir, 'update-launcher.log');
   const installerArgs = buildSilentUpdateInstallArgs();
-  const launcherScript = buildUpdateLauncherScript(installerPath, installerArgs, process.pid, logPath);
+  const installDir = getCurrentInstallDirectory();
+  const installModeArg = isPerMachineInstallDirectory(installDir) ? '/allusers' : '/currentuser';
 
-  await fs.writeFile(launcherPath, launcherScript, 'utf8');
-  const launcherProcess = spawn(
-    'powershell.exe',
-    ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-File', launcherPath],
-    {
-      detached: true,
-      stdio: 'ignore',
-      windowsHide: true
+  await appendUpdateLauncherLog(logPath, [
+    'launcher started',
+    `app pid=${process.pid}`,
+    `installer=${installerPath}`,
+    `args=${installerArgs.join(' ')}`
+  ]);
+
+  const installerProcess = spawn(installerPath, installerArgs, {
+    detached: true,
+    stdio: 'ignore',
+    windowsHide: true,
+    env: {
+      ...process.env,
+      PEDIT_UPDATE_INSTALL_DIR: installDir,
+      PEDIT_UPDATE_INSTALL_MODE: installModeArg
     }
-  );
+  });
 
-  await waitForChildProcessSpawn(launcherProcess);
-  launcherProcess.unref();
-  return { launcherPath, logPath };
+  await waitForChildProcessSpawn(installerProcess);
+  await appendUpdateLauncherLog(logPath, [`installer bridge spawned pid=${installerProcess.pid ?? 'unknown'}`]);
+  installerProcess.unref();
+  return { logPath };
 }
 
-function buildUpdateLauncherScript(installerPath: string, installerArgs: string[], appProcessId: number, logPath: string) {
-  const installerLiteral = toPowerShellSingleQuoted(installerPath);
-  const logPathLiteral = toPowerShellSingleQuoted(logPath);
-  const argsLiteral = installerArgs.map(toPowerShellSingleQuoted).join(', ');
-
-  return [
-    "$ErrorActionPreference = 'Stop'",
-    `$installerPath = ${installerLiteral}`,
-    `$logPath = ${logPathLiteral}`,
-    `$installerArgs = @(${argsLiteral})`,
-    '',
-    'function Write-UpdateLog([string]$message) {',
-    '  $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss.fff"',
-    '  Add-Content -LiteralPath $logPath -Value "[$timestamp] $message"',
-    '}',
-    '',
-    'try {',
-    '  Write-UpdateLog "launcher started"',
-    '  Start-Sleep -Milliseconds 600',
-    `  $oldProcess = Get-Process -Id ${appProcessId} -ErrorAction SilentlyContinue`,
-    '  if ($oldProcess) {',
-    `    Write-UpdateLog "waiting for app pid ${appProcessId} to exit"`,
-    `    Wait-Process -Id ${appProcessId} -Timeout 45 -ErrorAction SilentlyContinue`,
-    '  }',
-    '  Write-UpdateLog "starting installer: $installerPath $($installerArgs -join \' \')"',
-    '  $installerProcess = Start-Process -FilePath $installerPath -ArgumentList $installerArgs -PassThru -WindowStyle Hidden',
-    '  Write-UpdateLog "installer started pid=$($installerProcess.Id)"',
-    '} catch {',
-    '  Write-UpdateLog "launcher failed: $($_.Exception.Message)"',
-    '  throw',
-    '}',
-    ''
-  ].join('\r\n');
-}
-
-function toPowerShellSingleQuoted(value: string) {
-  return `'${value.replace(/'/g, "''")}'`;
+async function appendUpdateLauncherLog(logPath: string, messages: string[]) {
+  const lines = messages.map((message) => `[${new Date().toISOString()}] ${message}`).join('\n') + '\n';
+  await fs.appendFile(logPath, lines, 'utf8').catch(() => undefined);
 }
 
 function waitForChildProcessSpawn(child: ChildProcess) {

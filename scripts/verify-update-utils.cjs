@@ -128,7 +128,12 @@ async function verifyMainProcessAutoUpdateSource() {
   assert(mainSource.includes('process.env.ProgramFiles'), 'Program Files install detection is missing');
   assert(mainSource.includes('NSIS requires /D=... to be the last argument'), '/D last-argument guard comment is missing');
   assert(mainSource.includes('launchSilentUpdateInstaller'), 'update installer launcher is missing');
-  assert(mainSource.includes('Wait-Process -Id'), 'update launcher must wait for the current app to exit');
+  assert(!mainSource.includes('powershell.exe'), 'update launcher must not depend on PowerShell');
+  assert(!mainSource.includes('run-pedit-update.ps1'), 'PowerShell update launcher script must not remain');
+  assert(!mainSource.includes('Start-Process -FilePath'), 'PowerShell Start-Process update launcher must not remain');
+  assert(mainSource.includes('spawn(installerPath, installerArgs'), 'update launcher must spawn the bridge installer directly');
+  assert(mainSource.includes('PEDIT_UPDATE_INSTALL_DIR'), 'update bridge install directory env handoff is missing');
+  assert(mainSource.includes('PEDIT_UPDATE_INSTALL_MODE'), 'update bridge install mode env handoff is missing');
   assert(mainSource.includes('update-launcher.log'), 'update launcher log is missing');
   assert(mainSource.includes('app.exit(0)'), 'update flow must force app exit after launcher starts');
   assert(mainSource.includes("phase: 'restarting'"), 'restart preparation update status is missing');
@@ -155,6 +160,10 @@ async function verifyMainProcessAutoUpdateSource() {
   assert(bridgeNsi.includes('File "/oname=$PLUGINSDIR\\PEDIT-full-setup.exe" "${FULL_INSTALLER}"'), 'update bridge must embed the full installer');
   assert(bridgeNsi.includes('ExecShellWait "runas"'), 'update bridge must elevate the full installer through UAC');
   assert(bridgeNsi.includes('${GetParameters} $R0'), 'update bridge must forward legacy updater arguments');
+  assert(bridgeNsi.includes('ReadEnvStr $R2 "PEDIT_UPDATE_INSTALL_DIR"'), 'update bridge must read install dir from env');
+  assert(bridgeNsi.includes('ReadEnvStr $R3 "PEDIT_UPDATE_INSTALL_MODE"'), 'update bridge must read install mode from env');
+  assert(bridgeNsi.includes('StrCpy $R1 "/S $R3 /updated /D=$R2"'), 'update bridge must rebuild NSIS args with /D last');
+  assert(bridgeNsi.includes('update-bridge.log'), 'update bridge must write a log file');
   assert(bridgeScript.includes('PEDIT-${version}-full-setup.exe'), 'bridge builder must preserve the full installer');
   assert(bridgeScript.includes('makensis.exe'), 'bridge builder must compile the NSIS bridge');
 }
