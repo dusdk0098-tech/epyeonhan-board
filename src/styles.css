@@ -6286,8 +6286,8 @@ body {
 
 .basic-setting-section .radio-group {
   display: grid;
-  grid-template-columns: 74px minmax(0, 1fr);
-  gap: 8px;
+  grid-template-columns: 68px minmax(0, 1fr);
+  gap: 6px;
   min-height: 30px;
 }
 
@@ -6297,7 +6297,10 @@ body {
 }
 
 .basic-setting-section .radio-group div {
-  gap: 10px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  min-width: 0;
 }
 
 .basic-action-footer {
@@ -6314,11 +6317,15 @@ body {
 }
 
 .basic-preview-tools {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .basic-run-actions {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.basic-preview-tools .btn:first-child {
+  grid-column: 1 / -1;
 }
 
 .basic-preview-tools .btn,
@@ -7077,7 +7084,7 @@ body {
 
 .app:not(.start-active) .radio-group label {
   min-height: 26px;
-  padding: 3px 7px;
+  padding: 3px 6px;
 }
 
 .app:not(.start-active) .position-preset:hover,
@@ -7280,7 +7287,7 @@ body {
 }
 
 .app:not(.start-active) .basic-preview-tools {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .app:not(.start-active) .basic-run-actions {
@@ -7349,21 +7356,24 @@ body {
 
 .app:not(.start-active) .basic-setting-section .radio-group {
   display: grid;
-  grid-template-columns: 72px minmax(0, 1fr);
-  gap: 8px;
+  grid-template-columns: 68px minmax(0, 1fr);
+  gap: 6px;
   align-items: center;
 }
 
 .app:not(.start-active) .basic-setting-section .radio-group label {
   justify-content: center;
   min-height: 28px;
+  min-width: 0;
+  gap: 4px;
   white-space: nowrap;
 }
 
 .app:not(.start-active) .basic-setting-section .radio-group div {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   min-width: 0;
   gap: 6px;
-  flex-wrap: nowrap;
 }
 
 .app:not(.start-active) .basic-setting-section .form-row {
@@ -7376,7 +7386,18 @@ body {
 
 .app:not(.start-active) .basic-preview-tools .btn:disabled,
 .app:not(.start-active) .basic-run-actions .btn:disabled {
+  opacity: 1;
   color: #6b7788;
+  border-color: #d6e0ec;
+  background: #f3f6fa;
+  box-shadow: none;
+}
+
+.app:not(.start-active) .basic-run-actions .btn.primary:disabled,
+.app:not(.start-active) .basic-run-actions .btn.blue:disabled {
+  color: #6f7f94;
+  border-color: #d2deeb;
+  background: #e7edf5;
 }
 
 @media (min-width: 1500px) and (min-height: 850px) {
