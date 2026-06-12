@@ -56,7 +56,9 @@ const maxClipboardCacheFiles = 100;
 const maxSheetInputBytes = 10 * 1024 * 1024;
 const updateCheckDelayMs = 2500;
 const updateRequestTimeoutMs = 15000;
-const oauthProtocol = 'epyeonhan-board';
+const oauthProtocol = 'pedit';
+const legacyOAuthProtocol = 'epyeonhan-board';
+const allowedOAuthProtocols = new Set([oauthProtocol, legacyOAuthProtocol]);
 let updateInstallInProgress = false;
 let mainWindow: BrowserWindow | null = null;
 let pendingOAuthCallbackUrl: string | null = null;
@@ -97,14 +99,12 @@ type UpdateAttemptRecord = {
 
 function createWindow() {
   const win = new BrowserWindow({
-    width: 998,
-    height: 826,
-    minWidth: 998,
-    minHeight: 826,
-    maxWidth: 998,
-    maxHeight: 826,
-    resizable: false,
-    maximizable: false,
+    width: 1280,
+    height: 880,
+    minWidth: 1280,
+    minHeight: 880,
+    resizable: true,
+    maximizable: true,
     title: 'PEDIT (페딧)',
     icon: getWindowIconPath(),
     autoHideMenuBar: true,
@@ -590,11 +590,16 @@ function registerIpcHandlers() {
 }
 
 function registerOAuthProtocol() {
+  registerSingleOAuthProtocol(oauthProtocol);
+  registerSingleOAuthProtocol(legacyOAuthProtocol);
+}
+
+function registerSingleOAuthProtocol(protocol: string) {
   if (process.defaultApp && process.argv.length >= 2) {
-    app.setAsDefaultProtocolClient(oauthProtocol, process.execPath, [path.resolve(process.argv[1])]);
+    app.setAsDefaultProtocolClient(protocol, process.execPath, [path.resolve(process.argv[1])]);
     return;
   }
-  app.setAsDefaultProtocolClient(oauthProtocol);
+  app.setAsDefaultProtocolClient(protocol);
 }
 
 async function openOAuthUrl(url: string): Promise<{ ok: boolean; error?: string }> {
@@ -612,7 +617,7 @@ async function openOAuthUrl(url: string): Promise<{ ok: boolean; error?: string 
 
 function isAllowedOAuthHost(hostname: string) {
   const normalized = hostname.toLowerCase();
-  return normalized === 'supabase.co' || normalized.endsWith('.supabase.co');
+  return normalized === 'supabase.co' || normalized.endsWith('.supabase.co') || normalized === 'accounts.google.com';
 }
 
 async function getRememberedLogin(): Promise<RememberedLoginResult> {
@@ -702,7 +707,7 @@ function isOAuthCallbackUrl(value: string | undefined) {
   }
   try {
     const parsed = new URL(value);
-    return parsed.protocol === `${oauthProtocol}:` && parsed.hostname === 'auth' && parsed.pathname.startsWith('/callback');
+    return allowedOAuthProtocols.has(parsed.protocol.replace(/:$/, '')) && parsed.hostname === 'auth' && parsed.pathname.startsWith('/callback');
   } catch {
     return false;
   }
@@ -823,8 +828,8 @@ function resizeWindow(webContents: WebContents, size: { width: number; height: n
       return { ok: false, error: '창 정보를 찾을 수 없습니다.' };
     }
 
-    const width = clamp(Math.round(size.width), 998, 998);
-    const height = clamp(Math.round(size.height), 826, 826);
+    const width = Math.max(Math.round(size.width), 1280);
+    const height = Math.max(Math.round(size.height), 880);
     const platformAdjustedHeight = process.platform === 'win32' && height === 1033 ? height + 1 : height;
     const [currentWidth, currentHeight] = win.getSize();
 
@@ -1131,17 +1136,21 @@ async function processImages(payload: ProcessImagesPayload): Promise<ProcessImag
 
     const savedFiles: string[] = [];
     const pdfEntries: PhotoLedgerPdfEntry[] = [];
+    const createPhotoLedgerPdfOnly = payload.settings.createPdf;
     for (let index = 0; index < photos.length; index += 1) {
       const photo = photos[index];
       const fields = await resolveFieldsForPhoto(photo, index, payload.fields, payload.timeOptions);
-      const outputPath = await nextAvailablePath(saveDir, path.basename(photo.name, path.extname(photo.name)), '_board.jpg');
-      await renderBoardImage(photo, outputPath, fields, payload.settings);
-      savedFiles.push(outputPath);
-      pdfEntries.push({
-        imagePath: outputPath,
-        fields,
-        photoLedger: await resolvePhotoLedgerForPdf(photo, payload.settings)
-      });
+      const photoLedger = await resolvePhotoLedgerForPdf(photo, payload.settings);
+
+      if (createPhotoLedgerPdfOnly) {
+        const imageBuffer = await renderBoardCompositeBuffer(photo, fields, payload.settings);
+        pdfEntries.push({ imageBuffer, fields, photoLedger });
+      } else {
+        const outputPath = await nextAvailablePath(saveDir, path.basename(photo.name, path.extname(photo.name)), '_board.jpg');
+        await renderBoardImage(photo, outputPath, fields, payload.settings);
+        savedFiles.push(outputPath);
+        pdfEntries.push({ imagePath: outputPath, fields, photoLedger });
+      }
     }
 
     let pdfPath: string | undefined;

@@ -10,7 +10,8 @@ import {
 } from '../src/shared/photoLedgerRenderer';
 
 export interface PhotoLedgerPdfEntry {
-  imagePath: string;
+  imagePath?: string;
+  imageBuffer?: Buffer;
   fields: BoardField[];
   photoLedger?: PhotoLedgerInfo;
 }
@@ -53,7 +54,10 @@ async function renderPhotoLedgerPage(entries: PhotoLedgerPdfEntry[], settings: B
     const frame = PHOTO_LEDGER_LAYOUT.photoFrames[index];
     if (!frame) continue;
 
-    const photo = await renderPhotoForFrame(entries[index].imagePath, frame);
+    const imageInput = entries[index].imageBuffer ?? entries[index].imagePath;
+    if (!imageInput) continue;
+
+    const photo = await renderPhotoForFrame(imageInput, frame);
     composites.push({ input: photo.buffer, left: photo.left, top: photo.top });
   }
 
@@ -63,9 +67,9 @@ async function renderPhotoLedgerPage(entries: PhotoLedgerPdfEntry[], settings: B
     .toBuffer();
 }
 
-async function renderPhotoForFrame(imagePath: string, frame: Rect) {
+async function renderPhotoForFrame(imageInput: string | Buffer, frame: Rect) {
   const inset = 8;
-  const rendered = await sharp(imagePath)
+  const rendered = await sharp(imageInput)
     .rotate()
     .resize({
       width: frame.width - inset * 2,

@@ -31,26 +31,25 @@ export function errorResponse(message: string, status = 400) {
 
 export async function requireAdminContext(request: Request): Promise<AdminContext | Response> {
   const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
-  const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
-  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+  const serviceRoleKey = Deno.env.get('PEDIT_SUPABASE_SERVICE_ROLE_KEY') ?? Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
   const authorization = request.headers.get('authorization') ?? '';
 
-  if (!supabaseUrl || !anonKey || !serviceRoleKey) {
+  if (!supabaseUrl || !serviceRoleKey) {
     return errorResponse('Supabase admin function environment is not configured', 500);
   }
   if (!authorization.toLowerCase().startsWith('bearer ')) {
     return errorResponse('Missing authorization token', 401);
   }
+  const accessToken = authorization.slice('bearer '.length).trim();
+  if (!accessToken) {
+    return errorResponse('Missing authorization token', 401);
+  }
 
-  const callerClient = createClient(supabaseUrl, anonKey, {
-    auth: { persistSession: false },
-    global: { headers: { authorization } }
-  });
   const adminClient = createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false }
   });
 
-  const { data: userData, error: userError } = await callerClient.auth.getUser();
+  const { data: userData, error: userError } = await adminClient.auth.getUser(accessToken);
   if (userError || !userData.user) {
     return errorResponse('Invalid authorization token', 401);
   }

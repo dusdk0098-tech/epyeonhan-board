@@ -1,71 +1,56 @@
-# 소셜 가입/로그인 설정
+# PEDIT 소셜 로그인 설정
 
-`PEDIT (페딧)`은 Supabase Auth를 통해 Google, Kakao, Naver 로그인을 사용한다. 앱에는 Supabase public client key만 포함하고, 각 provider의 client secret이나 service role key는 넣지 않는다.
+PEDIT은 Supabase Auth를 통해 Google 로그인을 사용한다. 앱에는 Supabase public key만 포함하고, Google Client Secret이나 Supabase Service Role Key는 포함하지 않는다.
+
+## 왜 Google 화면에 Supabase 주소가 보이나
+
+Google 로그인 동의 화면의 큰 제목은 앱 코드가 아니라 Google Cloud OAuth 동의 화면의 앱 이름과 Supabase Google Provider에 등록된 OAuth Client가 결정한다.
+
+현재 `mnopxruzrpgixislomsp.supabase.co 서비스로 로그인`처럼 보인다면, Google Provider가 PEDIT 전용 OAuth 클라이언트로 설정되지 않았거나 OAuth 동의 화면 앱 이름이 Supabase 프로젝트 도메인으로 되어 있다는 뜻이다.
+
+PEDIT으로 보이게 하려면 Google Cloud Console에서 OAuth 동의 화면의 앱 이름을 `PEDIT`으로 설정하고, 그 프로젝트에서 만든 Web OAuth Client ID/Secret을 Supabase Dashboard의 Google Provider에 등록해야 한다.
 
 ## Supabase Redirect URL
 
-Supabase Dashboard > Authentication > URL Configuration에 아래 값을 추가한다.
+Supabase Dashboard > Authentication > URL Configuration에 아래 URL을 추가한다.
 
 ```text
+pedit://auth/callback
 epyeonhan-board://auth/callback
+http://127.0.0.1:5180/**
 http://127.0.0.1:4173/**
 ```
 
-Supabase callback URL은 각 provider 개발자 콘솔에 아래 형식으로 등록한다.
+`pedit://auth/callback`이 새 기본 콜백이다. `epyeonhan-board://auth/callback`은 기존 설치와 이전 설정 호환을 위해 유지한다.
+
+## Google Cloud 설정
+
+Google Cloud Console > APIs & Services > OAuth consent screen에서 다음 값을 확인한다.
+
+- App name: `PEDIT`
+- User support email: 운영자 이메일
+- Developer contact information: 운영자 이메일
+- Authorized domains: Google이 요구하는 실제 서비스 도메인
+- Privacy Policy / Terms URL: 외부 공개 URL이 있으면 등록
+
+Google Cloud Console > APIs & Services > Credentials에서 Web application OAuth Client를 만들고 Authorized redirect URI에 아래 값을 등록한다.
 
 ```text
 https://mnopxruzrpgixislomsp.supabase.co/auth/v1/callback
 ```
 
-## Google
+그 다음 Supabase Dashboard > Authentication > Sign In / Providers > Google에 위 Google OAuth Client ID와 Client Secret을 등록하고 Google Provider를 켠다.
 
-Supabase Dashboard > Authentication > Providers > Google을 켠다.
+## Supabase Provider 설정
 
-Google Cloud Console OAuth Client에는 Supabase callback URL을 Authorized redirect URI로 등록한다. 필요한 기본 scope는 Supabase 기본값을 사용한다.
+Supabase Dashboard에서 Google Provider가 PEDIT 전용 Client ID/Secret을 사용해야 한다. Supabase 기본/공유 설정이나 다른 프로젝트의 OAuth Client를 사용하면 Google 동의 화면에 PEDIT 대신 Supabase 프로젝트 도메인이 표시될 수 있다.
 
-## Kakao
+관리자 탭에서 기존 이메일 계정에 Google 로그인을 연결하려면 Supabase Dashboard > Authentication > Security에서 Manual Linking을 켠다. 로컬 설정에는 `supabase/config.toml`의 `[auth] enable_manual_linking = true`로 기록한다.
 
-Kakao Developers에서 REST API 키와 Client Secret을 만든 뒤 Supabase Kakao provider에 입력한다.
+## 동작 방식
 
-Kakao Redirect URI에는 Supabase callback URL을 등록한다. 동의 항목에서 이메일과 닉네임/이름 제공을 활성화한다.
-
-## Naver
-
-Supabase에서 Custom OAuth2 Provider ID를 `naver`로 만든다. 앱 코드는 `custom:naver` provider를 호출한다.
-
-권장 설정:
-
-```text
-Authorization URL: https://nid.naver.com/oauth2.0/authorize
-Token URL: https://nid.naver.com/oauth2.0/token
-User Info URL: https://mnopxruzrpgixislomsp.supabase.co/functions/v1/naver-userinfo
-```
-
-Naver 개발자 센터에서는 이메일과 이름 제공 동의를 활성화한다. Naver UserInfo 응답은 `response` 내부에 값이 들어오므로 `supabase/functions/naver-userinfo/index.ts` Edge Function이 `{ sub, email, name }` 형태로 정규화한다.
-
-Edge Function 배포:
-
-```powershell
-supabase functions deploy naver-userinfo --project-ref mnopxruzrpgixislomsp --no-verify-jwt
-```
-
-`supabase/config.toml`에도 `naver-userinfo`의 `verify_jwt = false`를 지정했다. 이 함수는 Supabase JWT가 아니라 Naver OAuth access token을 받아야 하므로 JWT 검증을 끄는 것이 맞다.
-
-## DB 적용
-
-기존 DB에는 아래 증분 SQL을 Supabase SQL Editor에서 실행한다.
-
-```text
-supabase/migrations/20260610_social_auth_profile.sql
-```
-
-이 SQL은 `profiles.auth_provider`, `profiles.profile_completed_at`, `complete_current_profile()` RPC를 추가한다.
-
-## 앱 동작
-
-- 로그인 화면은 Google/Kakao/Naver 버튼을 우선 표시한다.
-- 이메일/비밀번호는 `관리자 이메일 로그인`을 누를 때만 열린다.
-- 소셜 인증은 기본 브라우저에서 진행되고, 완료 후 `epyeonhan-board://auth/callback`으로 앱에 돌아온다.
+- 로그인 화면은 Google 로그인 버튼과 이메일 로그인을 제공한다.
+- 소셜 인증은 기본 브라우저에서 진행되고, 완료 후 `pedit://auth/callback`으로 앱에 돌아온다.
+- 기존 `epyeonhan-board://auth/callback` 콜백도 앱에서 계속 처리한다.
 - 소셜 계정에서 이메일과 이름을 가져오고, 회사명은 최초 1회 앱에서 입력한다.
-- 기존 관리자 이메일 계정은 관리자 탭의 `소셜 계정 연결` 버튼으로 Google/Kakao/Naver 계정을 연결할 수 있다.
-- 초기 관리자 권한은 기존 allowlist 이메일 `hamori4919@naver.com` 기준으로 유지된다.
+- 기존 관리자 이메일 계정은 관리자 탭의 `소셜 계정 연결` 버튼으로 Google 계정을 연결할 수 있다.

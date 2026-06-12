@@ -2,13 +2,19 @@
 -- "permission denied for table profiles".
 -- It is intentionally idempotent and only restores client-safe grants.
 
-grant usage on schema public to anon, authenticated;
+grant usage on schema public to anon, authenticated, service_role;
 
 grant select on table public.app_admin_emails to authenticated;
 grant select, update on table public.profiles to authenticated;
 grant select, update on table public.subscriptions to authenticated;
 grant select, update on table public.devices to authenticated;
 grant select, insert on table public.audit_logs to authenticated;
+
+grant all privileges on table public.app_admin_emails to service_role;
+grant all privileges on table public.profiles to service_role;
+grant all privileges on table public.subscriptions to service_role;
+grant all privileges on table public.devices to service_role;
+grant all privileges on table public.audit_logs to service_role;
 
 do $$
 begin

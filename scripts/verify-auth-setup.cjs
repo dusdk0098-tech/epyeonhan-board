@@ -16,6 +16,9 @@ function assert(condition, message) {
 function verifyPackage() {
   const pkg = JSON.parse(read('package.json'));
   assert(pkg.dependencies?.['@supabase/supabase-js'], '@supabase/supabase-js dependency is missing');
+  const protocolSchemes = pkg.build?.protocols?.flatMap((protocol) => protocol.schemes ?? []) ?? [];
+  assert(protocolSchemes.includes('pedit'), 'PEDIT OAuth protocol scheme is missing from package metadata');
+  assert(protocolSchemes.includes('epyeonhan-board'), 'legacy OAuth protocol scheme must stay registered');
 }
 
 function verifyMigration() {
@@ -77,6 +80,10 @@ function verifyRenderer() {
   assert(app.includes('Supabase Dashboard > Authentication > Sign In / Providers'), 'provider disabled error must tell the operator where to fix it');
   assert(app.includes("status: 'profile_incomplete'"), 'profile completion gate is missing');
   assert(app.includes('visibleSocialAuthProviders'), 'visible social auth provider list is missing');
+  assert(app.includes("const socialOAuthFeatureEnabled = import.meta.env.VITE_ENABLE_SOCIAL_OAUTH === 'true'"), 'social OAuth must be disabled by default behind an explicit env flag');
+  assert(app.includes('const visibleSocialAuthProviders = socialOAuthFeatureEnabled'), 'social OAuth providers must be hidden while the feature flag is off');
+  assert(app.includes('{visibleSocialAuthProviders.length > 0 && ('), 'social OAuth buttons must not render when the feature flag is off');
+  assert(app.includes('소셜 로그인은 개인정보처리방침 정비 후 다시 제공됩니다'), 'disabled social OAuth handler must show temporary privacy-policy guidance');
   assert(app.includes("provider.id === 'google'"), 'Kakao/Naver must stay hidden until their provider setup is complete');
   assert(app.includes('<form className="auth-form compact" onSubmit={handleAuthSubmit}>'), 'email/password form must be visible by default');
   assert(!app.includes('showAdminPasswordLogin'), 'email/password login must not be hidden behind the old toggle');
@@ -98,7 +105,9 @@ function verifyElectronBridge() {
   const main = read('electron/main.ts');
   const preload = read('electron/preload.ts');
   const types = read('src/electron-api.d.ts');
-  assert(main.includes("const oauthProtocol = 'epyeonhan-board'"), 'OAuth custom protocol constant missing');
+  assert(main.includes("const oauthProtocol = 'pedit'"), 'PEDIT OAuth custom protocol constant missing');
+  assert(main.includes("const legacyOAuthProtocol = 'epyeonhan-board'"), 'legacy OAuth custom protocol compatibility missing');
+  assert(main.includes('allowedOAuthProtocols'), 'OAuth callback must accept the primary and legacy protocols');
   assert(main.includes('setAsDefaultProtocolClient'), 'OAuth protocol registration missing');
   assert(main.includes("ipcMain.handle('auth:open-oauth-url'"), 'OAuth external browser IPC handler missing');
   assert(main.includes("webContents.send('auth:oauth-callback'"), 'OAuth callback event bridge missing');

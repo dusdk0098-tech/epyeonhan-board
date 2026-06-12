@@ -60,10 +60,11 @@ const fields = [
 async function main() {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'epyeonhan-ledger-'));
   const imagePaths = [];
+  const imageBuffers = [];
 
   for (let index = 0; index < 3; index += 1) {
     const imagePath = path.join(tmpDir, `board-${index + 1}.jpg`);
-    await sharp({
+    const imageBuffer = await sharp({
       create: {
         width: 960,
         height: 540,
@@ -72,8 +73,10 @@ async function main() {
       }
     })
       .jpeg({ quality: 90 })
-      .toFile(imagePath);
+      .toBuffer();
+    fs.writeFileSync(imagePath, imageBuffer);
     imagePaths.push(imagePath);
+    imageBuffers.push(imageBuffer);
   }
 
   const pdfPath = path.join(tmpDir, 'ledger.pdf');
@@ -91,6 +94,16 @@ async function main() {
   const firstPage = pdfDoc.getPage(0);
   assert(Math.round(firstPage.getWidth()) === 595, `A4 page width mismatch: ${firstPage.getWidth()}`);
   assert(Math.round(firstPage.getHeight()) === 842, `A4 page height mismatch: ${firstPage.getHeight()}`);
+
+  const bufferPdfPath = path.join(tmpDir, 'ledger-buffer.pdf');
+  await createPhotoLedgerPdf(
+    imageBuffers.map((imageBuffer) => ({ imageBuffer, fields })),
+    bufferPdfPath,
+    '사진대지',
+    baseSettings
+  );
+  const bufferPdfDoc = await PDFDocument.load(fs.readFileSync(bufferPdfPath));
+  assert(bufferPdfDoc.getPageCount() === 2, `in-memory ledger images must create 2 pages, got ${bufferPdfDoc.getPageCount()}`);
 
   const autoInfo = resolvePhotoLedgerInfo(fields, baseSettings);
   assert(autoInfo.location === '변전소 내', 'ledger auto location mapping failed');
@@ -147,21 +160,23 @@ async function main() {
   const app = fs.readFileSync(path.join(__dirname, '..', 'src', 'App.tsx'), 'utf8');
   const mainSource = fs.readFileSync(path.join(__dirname, '..', 'electron', 'main.ts'), 'utf8');
   const sharedTypes = fs.readFileSync(path.join(__dirname, '..', 'src', 'shared', 'types.ts'), 'utf8');
-  assert(app.includes('사진대지 PDF 설정'), 'premium settings must expose photo ledger PDF settings');
-  assert(app.includes('보드판 내용과 동일하게 적용'), 'photo ledger board-field sync option missing');
+  assert(app.includes('사진대지 문서 설정'), 'premium settings must expose photo ledger document settings');
+  assert(app.includes('보드판 입력값 자동 적용'), 'photo ledger board-field sync option missing');
   assert(app.includes('사진정보 촬영일자 사용') && sharedTypes.includes('photoLedgerUsePhotoDate'), 'photo ledger photo-date option missing');
   assert(app.includes('사진대지 미리보기') && app.includes('PhotoLedgerPreviewPage'), 'photo ledger preview modal missing');
   assert(app.includes('PHOTO_LEDGER_LAYOUT') && app.includes('resolvePhotoLedgerInfo'), 'photo ledger preview must use the shared ledger layout/resolver');
   assert(app.includes('selectedPhotoLedger') && app.includes('updateSelectedPhotoLedgerPatch'), 'photo ledger inputs must edit the selected photo');
-  assert(app.includes('사진별로 다르게 출력됩니다'), 'photo ledger UI must explain per-photo output');
+  assert(app.includes('사진별 하단정보와 출력 순서를 지정해 PDF에 반영합니다.'), 'photo ledger UI must explain per-photo output');
   assert(app.includes('moveSelectedPhotoOrder') && app.includes('출력 순서'), 'photo ledger UI must support per-photo output order');
-  assert(app.includes('보드판 내용 불러오기') && app.includes('체크 사진에 적용'), 'photo ledger per-photo helper actions are missing');
+  assert(app.includes('보드 내용 불러오기') && app.includes('체크 사진에 적용'), 'photo ledger per-photo helper actions are missing');
   assert(sharedTypes.includes('interface PhotoLedgerInfo') && sharedTypes.includes('photoLedger?: PhotoLedgerInfo'), 'photo ledger info must be stored per photo');
   assert(app.includes("activeOutputSettingsTab === 'ledger'"), 'photo ledger settings must be a premium tab');
   assert(app.includes('사진대지 만들기'), 'premium tab must expose a photo ledger creation button');
   assert(!app.includes('commonOutputSettings.createPdf'), 'photo ledger PDF toggle must not be in common settings');
   assert(mainSource.includes('createPhotoLedgerPdf'), 'image processing must use the photo ledger PDF renderer');
   assert(mainSource.includes('resolvePhotoLedgerForPdf'), 'PDF entries must resolve per-photo ledger info and photo date');
+  assert(/if \(createPhotoLedgerPdfOnly\) \{\s+const imageBuffer = await renderBoardCompositeBuffer\(photo, fields, payload\.settings\);\s+pdfEntries\.push\(\{ imageBuffer, fields, photoLedger \}\);\s+\} else \{/.test(mainSource), 'photo ledger PDF mode must feed in-memory images without saving JPG files first');
+  assert(/else \{\s+const outputPath = await nextAvailablePath[\s\S]+await renderBoardImage\(photo, outputPath, fields, payload\.settings\);[\s\S]+savedFiles\.push\(outputPath\);/.test(mainSource), 'normal board image processing must still save JPG files');
   assert(!mainSource.includes('async function createPdf('), 'old image-per-page PDF generator must be removed');
   assert(!app.includes('이미지 1장/페이지'), 'image-per-page PDF option must not be rendered');
 

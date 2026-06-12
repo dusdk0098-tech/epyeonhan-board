@@ -1,6 +1,6 @@
 {
   "name": "epyeonhan-board",
-  "version": "1.0.22",
+  "version": "1.0.23",
   "description": "PICTURE EDIT 현장 사진 편집 로컬 데스크톱 프로그램",
   "author": "대성건설(주)",
   "main": "dist-electron/electron/main.js",
@@ -56,6 +56,15 @@
       ],
       "artifactName": "PEDIT-${version}-${target}.${ext}"
     },
+    "protocols": [
+      {
+        "name": "PEDIT",
+        "schemes": [
+          "pedit",
+          "epyeonhan-board"
+        ]
+      }
+    ],
     "nsis": {
       "artifactName": "PEDIT-${version}-setup.${ext}",
       "oneClick": false,

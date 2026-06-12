@@ -1,4 +1,4 @@
-import type { User } from '@supabase/supabase-js';
+import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from './supabaseClient';
 import type {
   AccountStatus,
@@ -304,9 +304,7 @@ export async function setUserPasswordByAdmin(userId: string, password: string) {
 
 async function invokeAdminFunction<T = unknown>(functionName: string, body?: Record<string, unknown>): Promise<T> {
   const client = requireSupabase();
-  const { data: sessionData, error: sessionError } = await client.auth.getSession();
-  if (sessionError) throw sessionError;
-  const accessToken = sessionData.session?.access_token;
+  const accessToken = await getFreshAdminAccessToken(client);
   if (!accessToken) {
     throw new Error('관리자 기능을 호출할 로그인 세션이 없습니다. 다시 로그인해주세요.');
   }
@@ -337,6 +335,53 @@ async function invokeAdminFunction<T = unknown>(functionName: string, body?: Rec
     throw new Error(message);
   }
   return (payload ?? {}) as T;
+}
+
+async function getFreshAdminAccessToken(client: ReturnType<typeof requireSupabase>) {
+  let session = await getCurrentSessionOrThrow(client);
+  session = await refreshSessionIfNeeded(client, session);
+
+  const { data: userData, error: userError } = await client.auth.getUser(session.access_token);
+  if (!userError && userData.user) {
+    return session.access_token;
+  }
+
+  const { data: refreshedData, error: refreshError } = await client.auth.refreshSession(session);
+  if (refreshError || !refreshedData.session?.access_token) {
+    await client.auth.signOut();
+    throw new Error('로그인 세션이 만료되었습니다. 다시 로그인해주세요.');
+  }
+
+  const { data: refreshedUserData, error: refreshedUserError } = await client.auth.getUser(refreshedData.session.access_token);
+  if (refreshedUserError || !refreshedUserData.user) {
+    await client.auth.signOut();
+    throw new Error('로그인 세션이 만료되었습니다. 다시 로그인해주세요.');
+  }
+
+  return refreshedData.session.access_token;
+}
+
+async function getCurrentSessionOrThrow(client: ReturnType<typeof requireSupabase>) {
+  const { data, error } = await client.auth.getSession();
+  if (error) throw error;
+  if (!data.session?.access_token) {
+    throw new Error('로그인 세션이 없습니다. 다시 로그인해주세요.');
+  }
+  return data.session;
+}
+
+async function refreshSessionIfNeeded(client: ReturnType<typeof requireSupabase>, session: Session) {
+  const expiresAt = session.expires_at ? session.expires_at * 1000 : 0;
+  if (!expiresAt || expiresAt - Date.now() > 60_000) {
+    return session;
+  }
+
+  const { data, error } = await client.auth.refreshSession(session);
+  if (error || !data.session) {
+    await client.auth.signOut();
+    throw new Error('로그인 세션이 만료되었습니다. 다시 로그인해주세요.');
+  }
+  return data.session;
 }
 
 function parseJsonPayload(value: string) {

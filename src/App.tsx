@@ -18,6 +18,8 @@ import {
   Link2,
   ListChecks,
   LogOut,
+  Mail,
+  MessageCircle,
   Monitor,
   Play,
   Plus,
@@ -109,6 +111,7 @@ type Screen = 'start' | 'help' | 'basic' | 'advanced' | 'output' | 'commonSettin
 type WorkspaceScreen = 'basic' | 'advanced' | 'output';
 type StatusKind = 'info' | 'success' | 'error';
 type AuthMode = 'signin' | 'signup';
+type OAuthFlow = 'signin' | 'link';
 type AdminView = 'all' | 'new' | 'social' | 'devices';
 type AdminNewUserWindow = 7 | 30 | 0;
 type StateAction<T> = T | ((current: T) => T);
@@ -136,6 +139,14 @@ interface BoardWorkspaceState {
 interface StatusMessage {
   kind: StatusKind;
   text: string;
+}
+
+interface PendingOAuthLink {
+  flow: 'link';
+  userId: string;
+  email: string;
+  provider: SocialAuthProvider;
+  startedAt: number;
 }
 
 function isWorkspaceScreen(screen: Screen): screen is WorkspaceScreen {
@@ -346,13 +357,23 @@ const rememberedLoginStorageKey = 'epyeonhan-remembered-login';
 const oauthFlowStorageKey = 'pedit-oauth-flow';
 const oauthLinkExpectedUserIdKey = 'pedit-oauth-link-user-id';
 const oauthLinkExpectedEmailKey = 'pedit-oauth-link-email';
-const oauthRedirectUrl = 'epyeonhan-board://auth/callback';
+const oauthPendingLinkStorageKey = 'pedit-oauth-pending-link';
+const oauthPendingMaxAgeMs = 30 * 60 * 1000;
+const oauthRedirectUrl = 'pedit://auth/callback';
+const socialOAuthFeatureEnabled = import.meta.env.VITE_ENABLE_SOCIAL_OAUTH === 'true';
 const socialAuthProviders: Array<{ id: SocialAuthProvider; label: string; badge: string }> = [
   { id: 'google', label: 'Google로 계속하기', badge: 'G' },
   { id: 'kakao', label: '카카오로 계속하기', badge: 'K' },
   { id: 'naver', label: '네이버로 계속하기', badge: 'N' }
 ];
-const visibleSocialAuthProviders = socialAuthProviders.filter((provider) => provider.id === 'google');
+const visibleSocialAuthProviders = socialOAuthFeatureEnabled
+  ? socialAuthProviders.filter((provider) => provider.id === 'google')
+  : [];
+const visibleAdminViewOptions = socialOAuthFeatureEnabled
+  ? adminViewOptions
+  : adminViewOptions.filter(([value]) => value !== 'social');
+const adminTableColumnCount = socialOAuthFeatureEnabled ? 10 : 9;
+const emptyAdminPasswordForm = { password: '', confirmPassword: '' };
 
 export default function App() {
   const [authState, setAuthState] = useState<AuthGateState>({
@@ -373,6 +394,9 @@ export default function App() {
   const [adminError, setAdminError] = useState('');
   const [adminView, setAdminView] = useState<AdminView>('all');
   const [adminNewUserWindow, setAdminNewUserWindow] = useState<AdminNewUserWindow>(7);
+  const [adminPasswordTarget, setAdminPasswordTarget] = useState<AdminUserRow | null>(null);
+  const [adminPasswordForm, setAdminPasswordForm] = useState(emptyAdminPasswordForm);
+  const [adminPasswordVisible, setAdminPasswordVisible] = useState(false);
   const [activeScreen, setActiveScreen] = useState<Screen>('start');
   const [workspaces, setWorkspaces] = useState<Record<WorkspaceScreen, BoardWorkspaceState>>(() => createWorkspaceMap());
   const [commonOutputSettings, setCommonOutputSettings] = useState<CommonOutputSettings>(() => createCommonOutputSettings());
@@ -631,8 +655,8 @@ export default function App() {
   }, [activeScreen, isAdmin]);
 
   useEffect(() => {
-    void window.constructView?.resizeWindow?.({ width: 998, height: 826 });
-  }, [activeScreen]);
+    void window.constructView?.resizeWindow?.({ width: 1280, height: 880 });
+  }, []);
 
   useEffect(() => {
     if (!status || (status.kind === 'info' && isProcessing)) {
@@ -901,6 +925,15 @@ export default function App() {
   }
 
   async function handleSocialAuth(provider: SocialAuthProvider) {
+    if (!socialOAuthFeatureEnabled) {
+      clearOAuthAttempt();
+      setAuthState({
+        status: 'unauthenticated',
+        message: '소셜 로그인은 개인정보처리방침 정비 후 다시 제공됩니다. 지금은 이메일로 로그인하거나 가입해 주세요.'
+      });
+      return;
+    }
+
     if (!isSupabaseConfigured) {
       setAuthState({ status: 'config_missing', message: 'Supabase 설정이 필요합니다.' });
       return;
@@ -909,7 +942,7 @@ export default function App() {
     try {
       setAuthBusy(true);
       setOauthBusyProvider(provider);
-      window.sessionStorage.setItem(oauthFlowStorageKey, 'signin');
+      rememberOAuthSigninAttempt();
       const redirectTo = getOAuthRedirectTo('signin');
       const authUrl = await startSocialSignIn(provider, redirectTo);
       const nativeBridge = getNativeBridge();
@@ -927,7 +960,7 @@ export default function App() {
         window.location.assign(authUrl);
       }
     } catch (error) {
-      window.sessionStorage.removeItem(oauthFlowStorageKey);
+      clearOAuthAttempt();
       setAuthState({ status: 'unauthenticated', message: toSocialAuthUiError(error, provider) });
     } finally {
       setAuthBusy(false);
@@ -937,6 +970,19 @@ export default function App() {
 
   async function handleOAuthCallback(callbackUrl: string) {
     const linkCallback = isOAuthLinkCallback(callbackUrl);
+    if (!socialOAuthFeatureEnabled) {
+      clearOAuthAttempt();
+      if (linkCallback) {
+        setStatusMessage('info', '소셜 계정 연결은 개인정보처리방침 정비 후 다시 제공됩니다.');
+      } else {
+        setAuthState({
+          status: 'unauthenticated',
+          message: '소셜 로그인은 개인정보처리방침 정비 후 다시 제공됩니다. 이메일 로그인을 이용해 주세요.'
+        });
+      }
+      return;
+    }
+
     try {
       setAuthBusy(true);
       if (linkCallback) {
@@ -967,14 +1013,18 @@ export default function App() {
         setAuthState({ status: 'unauthenticated', message: toUiError(error) });
       }
     } finally {
-      window.sessionStorage.removeItem(oauthFlowStorageKey);
-      window.sessionStorage.removeItem(oauthLinkExpectedUserIdKey);
-      window.sessionStorage.removeItem(oauthLinkExpectedEmailKey);
+      clearOAuthAttempt();
       setAuthBusy(false);
     }
   }
 
   async function handleSocialIdentityLink(provider: SocialAuthProvider) {
+    if (!socialOAuthFeatureEnabled) {
+      clearOAuthAttempt();
+      setStatusMessage('info', '소셜 계정 연결은 개인정보처리방침 정비 후 다시 제공됩니다.');
+      return;
+    }
+
     try {
       setAuthBusy(true);
       setOauthBusyProvider(provider);
@@ -982,9 +1032,7 @@ export default function App() {
       if (!currentUser) {
         throw new Error('로그인된 계정을 확인하지 못했습니다.');
       }
-      window.sessionStorage.setItem(oauthFlowStorageKey, 'link');
-      window.sessionStorage.setItem(oauthLinkExpectedUserIdKey, currentUser.id);
-      window.sessionStorage.setItem(oauthLinkExpectedEmailKey, currentUser.email ?? '');
+      rememberOAuthLinkAttempt(currentUser, provider);
       const authUrl = await linkSocialIdentity(provider, getOAuthRedirectTo('link'));
       const nativeBridge = getNativeBridge();
 
@@ -998,9 +1046,7 @@ export default function App() {
         window.location.assign(authUrl);
       }
     } catch (error) {
-      window.sessionStorage.removeItem(oauthFlowStorageKey);
-      window.sessionStorage.removeItem(oauthLinkExpectedUserIdKey);
-      window.sessionStorage.removeItem(oauthLinkExpectedEmailKey);
+      clearOAuthAttempt();
       setStatusMessage('error', toSocialLinkUiError(error, provider));
     } finally {
       setAuthBusy(false);
@@ -1086,19 +1132,43 @@ export default function App() {
     await runAdminMutation(async () => revokeDeviceByAdmin(userId, deviceId));
   }
 
-  async function handleAdminPasswordChange(row: AdminUserRow) {
-    const password = window.prompt(`${row.profile.email} 계정에 설정할 임시 비밀번호를 입력하세요. (8자 이상)`);
-    if (!password) return;
+  function openAdminPasswordDialog(row: AdminUserRow) {
+    setAdminError('');
+    setAdminPasswordTarget(row);
+    setAdminPasswordForm(emptyAdminPasswordForm);
+    setAdminPasswordVisible(false);
+  }
+
+  function closeAdminPasswordDialog() {
+    if (adminBusy) return;
+    setAdminPasswordTarget(null);
+    setAdminPasswordForm(emptyAdminPasswordForm);
+    setAdminPasswordVisible(false);
+  }
+
+  function updateAdminPasswordForm(field: keyof typeof emptyAdminPasswordForm, value: string) {
+    setAdminPasswordForm((current) => ({ ...current, [field]: value }));
+  }
+
+  async function handleAdminPasswordSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!adminPasswordTarget) return;
+
+    const password = adminPasswordForm.password;
+    const confirmPassword = adminPasswordForm.confirmPassword;
     if (password.length < 8) {
       setAdminError('임시 비밀번호는 8자 이상이어야 합니다.');
       return;
     }
-    const confirmPassword = window.prompt('임시 비밀번호를 한 번 더 입력하세요.');
     if (password !== confirmPassword) {
       setAdminError('비밀번호와 확인 입력이 일치하지 않습니다.');
       return;
     }
-    await runAdminMutation(async () => setUserPasswordByAdmin(row.profile.id, password));
+
+    const saved = await runAdminMutation(async () => setUserPasswordByAdmin(adminPasswordTarget.profile.id, password));
+    if (saved) {
+      closeAdminPasswordDialog();
+    }
   }
 
   async function handleAdminDeleteUser(row: AdminUserRow) {
@@ -1124,8 +1194,10 @@ export default function App() {
       await action();
       await refreshAdminRows();
       setStatusMessage('success', '관리자 변경사항을 저장했습니다.');
+      return true;
     } catch (error) {
       setAdminError(toUiError(error));
+      return false;
     } finally {
       setAdminBusy(false);
     }
@@ -1734,9 +1806,17 @@ export default function App() {
       return;
     }
 
-    const pdfText = result.pdfPath ? ` 사진대지 PDF도 생성했습니다.` : '';
-    const folderText = processSettings.openFolderAfterProcessing ? ' 결과 폴더를 열었습니다.' : '';
-    setStatusMessage('success', `${result.savedFiles.length}개의 JPG 파일을 저장했습니다.${pdfText}${folderText}`);
+    const successMessages: string[] = [];
+    if (result.savedFiles.length > 0) {
+      successMessages.push(`${result.savedFiles.length}개의 JPG 파일을 저장했습니다.`);
+    }
+    if (result.pdfPath) {
+      successMessages.push('사진대지 PDF를 생성했습니다.');
+    }
+    if (processSettings.openFolderAfterProcessing) {
+      successMessages.push('결과 폴더를 열었습니다.');
+    }
+    setStatusMessage('success', successMessages.join(' ') || '작업을 완료했습니다.');
   }
 
   async function handleCopyPreviewImage() {
@@ -1946,24 +2026,28 @@ export default function App() {
                 </button>
               </form>
 
-              <div className="auth-divider">
-                <span>또는</span>
-              </div>
+              {visibleSocialAuthProviders.length > 0 && (
+                <>
+                  <div className="auth-divider">
+                    <span>또는</span>
+                  </div>
 
-              <div className="social-auth-buttons" aria-label="소셜 로그인">
-                {visibleSocialAuthProviders.map((provider) => (
-                  <button
-                    key={provider.id}
-                    type="button"
-                    className={`social-auth-button ${provider.id}`}
-                    onClick={() => void handleSocialAuth(provider.id)}
-                    disabled={authBusy}
-                  >
-                    <span aria-hidden>{provider.badge}</span>
-                    {oauthBusyProvider === provider.id ? '브라우저 여는 중...' : provider.label}
-                  </button>
-                ))}
-              </div>
+                  <div className="social-auth-buttons" aria-label="소셜 로그인">
+                    {visibleSocialAuthProviders.map((provider) => (
+                      <button
+                        key={provider.id}
+                        type="button"
+                        className={`social-auth-button ${provider.id}`}
+                        onClick={() => void handleSocialAuth(provider.id)}
+                        disabled={authBusy}
+                      >
+                        <span aria-hidden>{provider.badge}</span>
+                        {oauthBusyProvider === provider.id ? '브라우저 여는 중...' : provider.label}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
           )}
 
@@ -2069,10 +2153,19 @@ export default function App() {
 
   function renderBasicScreen() {
     return (
-      <main className="page-shell">
-        <div className="basic-grid">
-          <div className="panel-column">
-            <Panel title="1. 보드용 사진 불러오기">
+      <main className="page-shell basic-shell">
+        <div className="basic-grid basic-workbench-grid">
+          <div className="panel-column basic-setup-column">
+            <Panel
+              title="1. 사진 준비"
+              icon={<Camera size={17} />}
+              className="basic-load-panel"
+              actions={
+                <button className="small-btn danger" type="button" onClick={handleClearPhotos}>
+                  <RotateCcw size={15} /> 초기화
+                </button>
+              }
+            >
               <div className="form-row photo-select-row">
                 <label>불러온 사진 목록</label>
                 <select value={selectedPhotoPath} onChange={(event) => setSelectedPhotoPath(event.target.value)}>
@@ -2093,79 +2186,59 @@ export default function App() {
                   <FolderOpen size={17} /> 폴더 불러오기
                 </button>
                 <button className="btn outline" type="button" onClick={() => setShowPhotoList(true)}>
-                  자세히 보기
+                  <ListChecks size={17} /> 사진 목록
                 </button>
               </div>
-              <button className="text-action danger-text" type="button" onClick={handleClearPhotos}>
-                <RotateCcw size={15} /> 불러온 사진 초기화
-              </button>
             </Panel>
 
-            <Panel title="2. 보드 크기 및 옵션 설정">
-              <div className="position-presets">
-                {(Object.keys(positionLabels) as BoardPosition[]).map((position) => (
-                  <label key={position} className="position-preset">
-                    <span className={`mini-frame ${position}`}>
-                      <span />
-                    </span>
-                    <input
-                      type="radio"
-                      name="basic-position"
-                      checked={settings.position === position}
-                      onChange={() => updateSettings({ position })}
-                    />
-                    <span>{positionLabels[position]}</span>
-                  </label>
-                ))}
-              </div>
-              <SliderRow
-                label="보드 크기"
-                min={widthRatioToBoardSize(MIN_BOARD_WIDTH_RATIO)}
-                max={widthRatioToBoardSize(MAX_BOARD_WIDTH_RATIO)}
-                value={settings.boardSize}
-                onChange={(value) => updateSettings({ boardSize: value })}
-              />
-              <div className="form-row">
-                <label>글꼴 선택</label>
-                <select value={settings.fontFamily} onChange={(event) => updateSettings({ fontFamily: event.target.value })}>
-                  {boardFontOptions.map((font) => (
-                    <option key={font.value} value={font.value}>
-                      {font.label}
-                    </option>
+            <Panel title="2. 보드 설정" icon={<Settings size={17} />} className="basic-settings-panel">
+              <div className="basic-setting-section">
+                <h3>보드 위치</h3>
+                <div className="position-presets">
+                  {(Object.keys(positionLabels) as BoardPosition[]).map((position) => (
+                    <label key={position} className="position-preset">
+                      <span className={`mini-frame ${position}`}>
+                        <span />
+                      </span>
+                      <input
+                        type="radio"
+                        name="basic-position"
+                        checked={settings.position === position}
+                        onChange={() => updateSettings({ position })}
+                      />
+                      <span>{positionLabels[position]}</span>
+                    </label>
                   ))}
-                </select>
-              </div>
-              <SliderRow
-                label="글자 크기"
-                min={12}
-                max={28}
-                value={settings.fontSize}
-                suffix="px"
-                onChange={(value) => updateSettings({ fontSize: value })}
-              />
-              <div className="option-grid">
-                <RadioGroup
-                  label="항목 텍스트 정렬"
-                  name="item-align"
-                  value={settings.itemAlign}
-                  options={[
-                    ['left', '왼쪽'],
-                    ['center', '가운데']
-                  ]}
-                  onChange={(value) => updateSettings({ itemAlign: value as HorizontalAlign })}
-                />
-                <RadioGroup
-                  label="내용 정렬"
-                  name="content-align"
-                  value={settings.contentAlign}
-                  options={[
-                    ['left', '왼쪽'],
-                    ['center', '가운데']
-                  ]}
-                  onChange={(value) => updateSettings({ contentAlign: value as HorizontalAlign })}
+                </div>
+                <SliderRow
+                  label="보드 크기"
+                  min={widthRatioToBoardSize(MIN_BOARD_WIDTH_RATIO)}
+                  max={widthRatioToBoardSize(MAX_BOARD_WIDTH_RATIO)}
+                  value={settings.boardSize}
+                  onChange={(value) => updateSettings({ boardSize: value })}
                 />
               </div>
-              <div className="option-grid">
+
+              <div className="basic-setting-section">
+                <h3>글자</h3>
+                <div className="form-row">
+                  <label>글꼴</label>
+                  <select value={settings.fontFamily} onChange={(event) => updateSettings({ fontFamily: event.target.value })}>
+                    {boardFontOptions.map((font) => (
+                      <option key={font.value} value={font.value}>
+                        {font.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <SliderRow
+                  label="글자 크기"
+                  min={12}
+                  max={28}
+                  value={settings.fontSize}
+                  suffix="px"
+                  onChange={(value) => updateSettings({ fontSize: value })}
+                />
                 <RadioGroup
                   label="글자 굵기"
                   name="font-weight"
@@ -2176,6 +2249,32 @@ export default function App() {
                   ]}
                   onChange={(value) => updateSettings({ fontWeight: value as BoardSettings['fontWeight'] })}
                 />
+              </div>
+
+              <div className="basic-setting-section">
+                <h3>정렬과 선</h3>
+                <div className="option-grid">
+                  <RadioGroup
+                    label="항목 정렬"
+                    name="item-align"
+                    value={settings.itemAlign}
+                    options={[
+                      ['left', '왼쪽'],
+                      ['center', '가운데']
+                    ]}
+                    onChange={(value) => updateSettings({ itemAlign: value as HorizontalAlign })}
+                  />
+                  <RadioGroup
+                    label="내용 정렬"
+                    name="content-align"
+                    value={settings.contentAlign}
+                    options={[
+                      ['left', '왼쪽'],
+                      ['center', '가운데']
+                    ]}
+                    onChange={(value) => updateSettings({ contentAlign: value as HorizontalAlign })}
+                  />
+                </div>
                 <SliderRow
                   label="행 높이"
                   min={42}
@@ -2183,26 +2282,26 @@ export default function App() {
                   value={settings.rowHeight}
                   onChange={(value) => updateSettings({ rowHeight: value })}
                 />
+                <RadioGroup
+                  label="테두리"
+                  name="border-weight"
+                  value={settings.borderWeight}
+                  options={[
+                    ['normal', '보통'],
+                    ['bold', '굵게']
+                  ]}
+                  onChange={(value) => updateSettings({ borderWeight: value as BoardSettings['borderWeight'] })}
+                />
               </div>
-              <RadioGroup
-                label="테두리"
-                name="border-weight"
-                value={settings.borderWeight}
-                options={[
-                  ['normal', '보통'],
-                  ['bold', '굵게']
-                ]}
-                onChange={(value) => updateSettings({ borderWeight: value as BoardSettings['borderWeight'] })}
-              />
             </Panel>
 
-            <Panel title="3. 저장 경로 지정">
+            <Panel title="3. 저장 위치" icon={<Save size={17} />} className="basic-save-panel">
               <div className="button-row">
                 <button className="btn primary" type="button" onClick={handleSelectSaveFolder}>
                   <Save size={17} /> 경로 지정
                 </button>
                 <button className="btn ghost" type="button" onClick={handleOpenSaveFolder}>
-                  <FolderOpen size={17} /> 폴더 열기
+                  <FolderOpen size={17} /> 결과 폴더
                 </button>
               </div>
               <div className="path-field">
@@ -2212,10 +2311,11 @@ export default function App() {
             </Panel>
           </div>
 
-          <div className="panel-column">
+          <div className="panel-column basic-board-column">
             <Panel
-              title="4. 보드 내용 작성"
-              className="field-panel"
+              title="4. 보드 내용"
+              icon={<ListChecks size={17} />}
+              className="field-panel basic-field-panel"
               actions={
                 <>
                   <button className="small-btn outline" type="button" onClick={addField}>
@@ -2234,8 +2334,10 @@ export default function App() {
                 onUpdate={updateField}
               />
             </Panel>
+          </div>
 
-            <Panel title="5. 미리보기 및 시작" className="preview-panel">
+          <div className="panel-column basic-preview-column">
+            <Panel title="5. 미리보기와 작업" icon={<Eye size={17} />} className="preview-panel basic-preview-panel">
               <PreviewStage
                 imageDataUrl={previewDataUrl}
                 fields={previewFields}
@@ -2259,10 +2361,10 @@ export default function App() {
                   ))}
                 </select>
               </div>
-              <div className="action-footer">
-                <div className="button-row">
+              <div className="action-footer basic-action-footer">
+                <div className="button-row basic-preview-tools">
                   <button className="btn ghost" type="button" onClick={openLargePreview}>
-                    <Eye size={17} /> 미리보기
+                    <Eye size={17} /> 크게 보기
                   </button>
                   <button className="btn ghost" type="button" disabled={!selectedPhoto} onClick={() => void handleCopyPreviewImage()}>
                     <Copy size={17} /> 결과 이미지 복사
@@ -2271,12 +2373,12 @@ export default function App() {
                     <Printer size={17} /> 미리보기 인쇄
                   </button>
                 </div>
-                <div className="button-row">
-                  <button className="btn primary" type="button" disabled={isProcessing} onClick={() => void runProcess('selected')}>
-                    1개 작업하기
+                <div className="button-row basic-run-actions">
+                  <button className="btn primary" type="button" disabled={isProcessing || !selectedPhoto} onClick={() => void runProcess('selected')}>
+                    <Play size={17} /> 선택 사진 작업
                   </button>
-                  <button className="btn blue" type="button" disabled={isProcessing} onClick={() => void runProcess('all')}>
-                    전체 작업하기
+                  <button className="btn blue" type="button" disabled={isProcessing || photos.length === 0} onClick={() => void runProcess('all')}>
+                    <CheckSquare size={17} /> 전체 사진 작업
                   </button>
                 </div>
               </div>
@@ -2309,7 +2411,7 @@ export default function App() {
     return (
       <div className="radio-stack">
         <TimeModeRadio label="보드판 입력값 직접 사용" value="manual" current={timeOptions.mode} onChange={setTimeMode} />
-        <TimeModeRadio label="사진정보(EXIF) 자동 사용" value="exif" current={timeOptions.mode} onChange={setTimeMode} />
+        <TimeModeRadio label="사진 촬영정보 자동 사용" value="exif" current={timeOptions.mode} onChange={setTimeMode} />
         <TimeModeRadio label="시작시간 + 간격 자동 입력" value="sequence" current={timeOptions.mode} onChange={setTimeMode} />
         <div className={timeOptions.mode === 'sequence' ? 'nested-options enabled' : 'nested-options'}>
           <input
@@ -2332,7 +2434,7 @@ export default function App() {
             }
           />
         </div>
-        <TimeModeRadio label="사진별 CSV/XLSX 직접 입력" value="sheet" current={timeOptions.mode} onChange={setTimeMode} />
+        <TimeModeRadio label="사진별 표 파일 직접 입력" value="sheet" current={timeOptions.mode} onChange={setTimeMode} />
         <div className="sheet-picker">
           <input value={timeOptions.sheetPath ? trimPath(timeOptions.sheetPath) : '파일을 선택하세요'} readOnly />
           <button type="button" onClick={handleImportSheet}>
@@ -2515,8 +2617,140 @@ export default function App() {
           <option value="normal">보통</option>
           <option value="bold">굵게</option>
         </select>
-        <label>테두리 색상</label>
         <ColorSelectRow label="테두리" value={settings.borderColor} onChange={(value) => updateSettings({ borderColor: value })} />
+      </div>
+    );
+  }
+
+  function renderPremiumBoardLayoutSettings() {
+    return (
+      <div className="premium-settings-stack">
+        <div className="output-setting-section premium-setting-group">
+          <h4>보드 형태와 위치</h4>
+          <div className="settings-form board-pdf-form">
+            <label>보드 형태</label>
+            <select value={settings.boardLayoutMode} onChange={(event) => updateSettings({ boardLayoutMode: event.target.value as BoardLayoutMode })}>
+              <option value="table">표형 보드</option>
+              <option value="bottom-strip">하부 띠</option>
+            </select>
+            {settings.boardLayoutMode === 'bottom-strip' && (
+              <>
+                <label>항목칸</label>
+                <label className="check-label compact-check">
+                  <input
+                    type="checkbox"
+                    checked={settings.bottomStripShowLabels}
+                    onChange={(event) => updateSettings({ bottomStripShowLabels: event.target.checked })}
+                  />
+                  항목칸 표시
+                </label>
+              </>
+            )}
+            <label>위치</label>
+            <select
+              value={settings.position}
+              onChange={(event) => updateSettings({ position: event.target.value as BoardPosition })}
+              disabled={settings.boardLayoutMode === 'bottom-strip'}
+            >
+              {(Object.keys(positionLabels) as BoardPosition[]).map((position) => (
+                <option key={position} value={position}>
+                  {positionLabels[position]}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="output-setting-section premium-setting-group">
+          <h4>칸 비율과 행 높이</h4>
+          <div className="settings-form board-pdf-form">
+            {settings.boardLayoutMode === 'table' && (
+              <>
+                <label>보드크기</label>
+                <div className="range-with-number">
+                  <input
+                    type="range"
+                    min={MIN_BOARD_WIDTH_RATIO}
+                    max={MAX_BOARD_WIDTH_RATIO}
+                    step={0.005}
+                    value={settings.widthRatio}
+                    onChange={(event) => {
+                      updateSettings({ widthRatio: Number(event.target.value) });
+                    }}
+                  />
+                  <input
+                    type="number"
+                    min={MIN_BOARD_WIDTH_RATIO}
+                    max={MAX_BOARD_WIDTH_RATIO}
+                    step={0.005}
+                    value={settings.widthRatio}
+                    onChange={(event) => {
+                      const value = Number(clampBoardWidthRatio(Number(event.target.value)).toFixed(3));
+                      updateSettings({ widthRatio: value });
+                    }}
+                  />
+                </div>
+              </>
+            )}
+            <label>항목명 칸</label>
+            <div className="range-with-number">
+              <input
+                type="range"
+                min={MIN_LABEL_COLUMN_WIDTH_RATIO}
+                max={MAX_LABEL_COLUMN_WIDTH_RATIO}
+                step={0.005}
+                value={settings.labelColumnWidthRatio}
+                onChange={(event) => updateSettings({ labelColumnWidthRatio: Number(event.target.value) })}
+              />
+              <input
+                type="number"
+                min={MIN_LABEL_COLUMN_WIDTH_RATIO}
+                max={MAX_LABEL_COLUMN_WIDTH_RATIO}
+                step={0.005}
+                value={settings.labelColumnWidthRatio}
+                onChange={(event) => updateSettings({ labelColumnWidthRatio: Number(event.target.value) })}
+              />
+            </div>
+            <label>내용 칸</label>
+            <div className="range-with-number">
+              <input
+                type="range"
+                min={MIN_VALUE_COLUMN_WIDTH_RATIO}
+                max={MAX_VALUE_COLUMN_WIDTH_RATIO}
+                step={0.005}
+                value={settings.valueColumnWidthRatio}
+                onChange={(event) => updateSettings({ valueColumnWidthRatio: Number(event.target.value) })}
+              />
+              <input
+                type="number"
+                min={MIN_VALUE_COLUMN_WIDTH_RATIO}
+                max={MAX_VALUE_COLUMN_WIDTH_RATIO}
+                step={0.005}
+                value={settings.valueColumnWidthRatio}
+                onChange={(event) => updateSettings({ valueColumnWidthRatio: Number(event.target.value) })}
+              />
+            </div>
+            <label>행 높이</label>
+            <div className="range-with-number">
+              <input
+                type="range"
+                min={42}
+                max={110}
+                step={1}
+                value={settings.rowHeight}
+                onChange={(event) => updateSettings({ rowHeight: Number(event.target.value) })}
+              />
+              <input
+                type="number"
+                min={42}
+                max={110}
+                step={1}
+                value={settings.rowHeight}
+                onChange={(event) => updateSettings({ rowHeight: clamp(Number(event.target.value), 42, 110) })}
+              />
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -2551,41 +2785,78 @@ export default function App() {
 
   function renderCommonOutputSettingsForm() {
     return (
-      <div className="settings-form board-pdf-form output-common-form">
-        <label>JPG 품질</label>
-        <input
-          type="number"
-          min={1}
-          max={100}
-          value={commonOutputSettings.jpgQuality}
-          onChange={(event) => updateCommonOutputSettings({ jpgQuality: clamp(Number(event.target.value), 1, 100) })}
-        />
-        <label>최대 긴 변</label>
-        <input
-          type="number"
-          min={0}
-          step={100}
-          value={commonOutputSettings.outputMaxLongEdge}
-          onChange={(event) => updateCommonOutputSettings({ outputMaxLongEdge: Math.max(0, Number(event.target.value)) })}
-        />
-        <label>흑백 저장</label>
-        <label className="check-label compact-check">
-          <input
-            type="checkbox"
-            checked={commonOutputSettings.outputGrayscale}
-            onChange={(event) => updateCommonOutputSettings({ outputGrayscale: event.target.checked })}
-          />
-          결과물 흑백 저장
-        </label>
-        <label>폴더 열기</label>
-        <label className="check-label compact-check">
-          <input
-            type="checkbox"
-            checked={commonOutputSettings.openFolderAfterProcessing}
-            onChange={(event) => updateCommonOutputSettings({ openFolderAfterProcessing: event.target.checked })}
-          />
-          작업 완료 후 결과 폴더 열기
-        </label>
+      <div className="common-settings-groups">
+        <section className="common-setting-section">
+          <div className="common-setting-section-head">
+            <span className="common-setting-icon" aria-hidden>
+              <ImageIcon size={18} />
+            </span>
+            <div>
+              <h3>출력 품질</h3>
+              <p>저장 이미지 기준값</p>
+            </div>
+          </div>
+          <div className="settings-form board-pdf-form output-common-form common-number-form">
+            <label>JPG 품질</label>
+            <div className="common-number-field">
+              <input
+                type="number"
+                min={1}
+                max={100}
+                value={commonOutputSettings.jpgQuality}
+                onChange={(event) => updateCommonOutputSettings({ jpgQuality: clamp(Number(event.target.value), 1, 100) })}
+              />
+              <span>%</span>
+            </div>
+            <label>최대 긴 변</label>
+            <div className="common-number-field">
+              <input
+                type="number"
+                min={0}
+                step={100}
+                value={commonOutputSettings.outputMaxLongEdge}
+                onChange={(event) => updateCommonOutputSettings({ outputMaxLongEdge: Math.max(0, Number(event.target.value)) })}
+              />
+              <span>px</span>
+            </div>
+          </div>
+        </section>
+
+        <section className="common-setting-section">
+          <div className="common-setting-section-head">
+            <span className="common-setting-icon" aria-hidden>
+              <FolderOpen size={18} />
+            </span>
+            <div>
+              <h3>작업 후 동작</h3>
+              <p>완료 후 처리 방식</p>
+            </div>
+          </div>
+          <div className="common-toggle-list">
+            <label className="check-label compact-check common-toggle-card">
+              <input
+                type="checkbox"
+                checked={commonOutputSettings.outputGrayscale}
+                onChange={(event) => updateCommonOutputSettings({ outputGrayscale: event.target.checked })}
+              />
+              <span>
+                <strong>흑백 저장</strong>
+                <small>결과물 색상</small>
+              </span>
+            </label>
+            <label className="check-label compact-check common-toggle-card">
+              <input
+                type="checkbox"
+                checked={commonOutputSettings.openFolderAfterProcessing}
+                onChange={(event) => updateCommonOutputSettings({ openFolderAfterProcessing: event.target.checked })}
+              />
+              <span>
+                <strong>결과 폴더 열기</strong>
+                <small>작업 완료 후</small>
+              </span>
+            </label>
+          </div>
+        </section>
       </div>
     );
   }
@@ -2653,7 +2924,64 @@ export default function App() {
   function renderPremiumTypographySettings() {
     return (
       <div className="premium-settings-stack">
-        {renderBoardTypographySettings()}
+        <div className="output-setting-section premium-setting-group">
+          <h4>글자 스타일</h4>
+          <div className="settings-form board-pdf-form">
+            <label>글자크기</label>
+            <div className="range-with-number">
+              <input
+                type="range"
+                min={12}
+                max={28}
+                step={1}
+                value={settings.fontSize}
+                onChange={(event) => updateSettings({ fontSize: Number(event.target.value) })}
+              />
+              <input
+                type="number"
+                min={12}
+                max={28}
+                step={1}
+                value={settings.fontSize}
+                onChange={(event) => updateSettings({ fontSize: clamp(Number(event.target.value), 12, 28) })}
+              />
+            </div>
+            <label>글꼴</label>
+            <select value={settings.fontFamily} onChange={(event) => updateSettings({ fontFamily: event.target.value })}>
+              {boardFontOptions.map((font) => (
+                <option key={font.value} value={font.value}>
+                  {font.label}
+                </option>
+              ))}
+            </select>
+            <label>항목 정렬</label>
+            <select value={settings.itemAlign} onChange={(event) => updateSettings({ itemAlign: event.target.value as HorizontalAlign })}>
+              <option value="left">왼쪽</option>
+              <option value="center">가운데</option>
+            </select>
+            <label>내용 정렬</label>
+            <select value={settings.contentAlign} onChange={(event) => updateSettings({ contentAlign: event.target.value as HorizontalAlign })}>
+              <option value="left">왼쪽</option>
+              <option value="center">가운데</option>
+            </select>
+            <label>글자 굵기</label>
+            <select value={settings.fontWeight} onChange={(event) => updateSettings({ fontWeight: event.target.value as BoardSettings['fontWeight'] })}>
+              <option value="normal">보통</option>
+              <option value="bold">굵게</option>
+            </select>
+          </div>
+        </div>
+        <div className="output-setting-section premium-setting-group">
+          <h4>테두리</h4>
+          <div className="settings-form board-pdf-form">
+            <label>굵기</label>
+            <select value={settings.borderWeight} onChange={(event) => updateSettings({ borderWeight: event.target.value as BoardSettings['borderWeight'] })}>
+              <option value="normal">보통</option>
+              <option value="bold">굵게</option>
+            </select>
+            <ColorSelectRow label="색상" value={settings.borderColor} onChange={(value) => updateSettings({ borderColor: value })} />
+          </div>
+        </div>
         <div className="output-setting-section premium-display-section">
           <h4>색상/배경</h4>
           <SliderRow
@@ -2666,6 +2994,17 @@ export default function App() {
           />
           <ColorSelectRow label="항목명 글씨" value={settings.labelTextColor} onChange={(value) => updateSettings({ labelTextColor: value })} />
           <ColorSelectRow label="내용 글씨" value={settings.valueTextColor} onChange={(value) => updateSettings({ valueTextColor: value })} />
+        </div>
+      </div>
+    );
+  }
+
+  function renderPremiumDateTimeSettings() {
+    return (
+      <div className="premium-settings-stack premium-datetime-settings">
+        <div className="output-setting-section premium-setting-group">
+          <h4>촬영시간 입력</h4>
+          {renderDateTimeSettings()}
         </div>
       </div>
     );
@@ -2708,10 +3047,10 @@ export default function App() {
           <h4>작업 실행</h4>
           <div className="button-row">
             <button className="btn primary" type="button" disabled={isProcessing} onClick={() => void runProcess('selected')}>
-              선택 사진 작업
+              <Play size={17} /> 선택 사진 작업
             </button>
             <button className="btn blue" type="button" disabled={isProcessing} onClick={() => void runProcess('checked')}>
-              체크 사진 작업
+              <CheckSquare size={17} /> 체크 사진 작업
             </button>
           </div>
         </div>
@@ -2736,16 +3075,10 @@ export default function App() {
         </label>
         <div className="premium-field-action-grid">
           <button className="small-btn primary" type="button" disabled={isProcessing} onClick={() => void runProcess('selected')}>
-            <Play size={15} /> 선택 작업
+            <Play size={15} /> 선택 사진 작업
           </button>
           <button className="small-btn blue" type="button" disabled={isProcessing} onClick={() => void runProcess('checked')}>
-            <CheckSquare size={15} /> 체크 작업
-          </button>
-          <button className="small-btn outline" type="button" onClick={openLargePreview}>
-            <RefreshCw size={15} /> 미리보기
-          </button>
-          <button className="small-btn outline" type="button" onClick={() => void handlePasteClipboardImage()}>
-            <ClipboardPaste size={15} /> 클립보드 첨부
+            <CheckSquare size={15} /> 체크 사진 작업
           </button>
         </div>
       </div>
@@ -2759,9 +3092,9 @@ export default function App() {
     return (
       <div className="premium-settings-stack">
         <div className="output-setting-section premium-ledger-section">
-          <h4>사진대지 PDF 설정</h4>
+          <h4>사진대지 문서 설정</h4>
           <div className="settings-form board-pdf-form premium-ledger-form">
-            <label>PDF 제목</label>
+            <label>문서 제목</label>
             <input value={settings.pdfTitle} onChange={(event) => updateSettings({ pdfTitle: event.target.value })} />
             <label>적용 방식</label>
             <label className="check-label compact-check">
@@ -2770,7 +3103,7 @@ export default function App() {
                 checked={settings.photoLedgerUseBoardFields}
                 onChange={(event) => updateSettings({ photoLedgerUseBoardFields: event.target.checked })}
               />
-              보드판 내용과 동일하게 적용
+              보드판 입력값 자동 적용
             </label>
             <label>촬영일자</label>
             <label className="check-label compact-check">
@@ -2804,51 +3137,70 @@ export default function App() {
             </button>
           </div>
 
-          <div className="settings-form board-pdf-form premium-ledger-form">
-            <label>위치</label>
-            <input
-              value={selectedPhotoLedger.location}
-              disabled={manualLedgerDisabled}
-              onChange={(event) => updateSelectedPhotoLedgerPatch({ location: event.target.value })}
-            />
-            <label>사진내용</label>
-            <input
-              value={selectedPhotoLedger.content}
-              disabled={manualLedgerDisabled}
-              onChange={(event) => updateSelectedPhotoLedgerPatch({ content: event.target.value })}
-            />
-            <label>촬영일자</label>
-            <input
-              value={settings.photoLedgerUsePhotoDate ? selectedPhotoInfoDate || '사진정보 없음' : selectedPhotoLedger.date}
-              disabled={dateLedgerDisabled}
-              onChange={(event) => updateSelectedPhotoLedgerPatch({ date: event.target.value })}
-            />
-          </div>
+          {settings.photoLedgerUseBoardFields ? (
+            <div className="ledger-auto-note">
+              <ListChecks size={16} aria-hidden />
+              <span>보드 입력값으로 위치와 내용 자동 구성</span>
+            </div>
+          ) : (
+            <>
+              {selectedPhoto ? (
+                <>
+                  <div className="settings-form board-pdf-form premium-ledger-form">
+                    <label>위치</label>
+                    <input
+                      value={selectedPhotoLedger.location}
+                      disabled={manualLedgerDisabled}
+                      onChange={(event) => updateSelectedPhotoLedgerPatch({ location: event.target.value })}
+                    />
+                    <label>사진내용</label>
+                    <input
+                      value={selectedPhotoLedger.content}
+                      disabled={manualLedgerDisabled}
+                      onChange={(event) => updateSelectedPhotoLedgerPatch({ content: event.target.value })}
+                    />
+                    <label>촬영일자</label>
+                    <input
+                      value={settings.photoLedgerUsePhotoDate ? selectedPhotoInfoDate || '사진정보 없음' : selectedPhotoLedger.date}
+                      disabled={dateLedgerDisabled}
+                      onChange={(event) => updateSelectedPhotoLedgerPatch({ date: event.target.value })}
+                    />
+                  </div>
 
-          <div className="ledger-action-row">
-            <button
-              className="small-btn outline"
-              type="button"
-              disabled={!selectedPhoto || settings.photoLedgerUseBoardFields}
-              onClick={applyCurrentBoardFieldsToSelectedLedger}
-            >
-              보드판 내용 불러오기
-            </button>
-            <button
-              className="small-btn outline"
-              type="button"
-              disabled={!selectedPhoto || settings.photoLedgerUseBoardFields}
-              onClick={applySelectedLedgerToCheckedPhotos}
-            >
-              체크 사진에 적용
-            </button>
+                  <div className="ledger-action-row">
+                    <button
+                      className="small-btn outline"
+                      type="button"
+                      onClick={applyCurrentBoardFieldsToSelectedLedger}
+                    >
+                      <ListChecks size={15} /> 보드 내용 불러오기
+                    </button>
+                    <button
+                      className="small-btn outline"
+                      type="button"
+                      onClick={applySelectedLedgerToCheckedPhotos}
+                    >
+                      <CheckSquare size={15} /> 체크 사진에 적용
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="ledger-manual-empty">
+                  <ListChecks size={16} aria-hidden />
+                  <span>사진을 선택하면 하단정보를 입력할 수 있습니다.</span>
+                </div>
+              )}
+            </>
+          )}
+
+          <div className="ledger-action-row single">
             <button
               className="small-btn outline"
               type="button"
               disabled={photos.length === 0}
               onClick={openPhotoLedgerPreview}
             >
-              <Eye size={15} /> 사진대지 미리보기
+              <Eye size={15} /> 문서 미리보기
             </button>
           </div>
 
@@ -2857,8 +3209,8 @@ export default function App() {
           </button>
           <p className="output-help-text compact">
             {settings.photoLedgerUseBoardFields
-              ? 'PDF 생성 시 각 사진의 보드판 입력값에서 위치와 내용을 자동 적용합니다. 촬영일자는 사진정보 옵션이 켜져 있고 값이 있으면 사진정보를 우선 사용합니다.'
-              : '사진 목록에서 사진을 하나씩 선택해 하단정보와 출력 순서를 지정하면 PDF에 사진별로 다르게 출력됩니다.'}
+              ? 'PDF 생성 시 보드 입력값을 문서 하단정보로 사용합니다.'
+              : '사진별 하단정보와 출력 순서를 지정해 PDF에 반영합니다.'}
           </p>
         </div>
       </div>
@@ -2937,12 +3289,8 @@ export default function App() {
               {renderPremiumFieldActions()}
             </div>
           )}
-          {activeOutputSettingsTab === 'datetime' && (
-            <div className="premium-settings-stack premium-datetime-settings">
-              {renderDateTimeSettings()}
-            </div>
-          )}
-          {activeOutputSettingsTab === 'layout' && renderBoardLayoutSettings()}
+          {activeOutputSettingsTab === 'datetime' && renderPremiumDateTimeSettings()}
+          {activeOutputSettingsTab === 'layout' && renderPremiumBoardLayoutSettings()}
           {activeOutputSettingsTab === 'typography' && renderPremiumTypographySettings()}
           {activeOutputSettingsTab === 'highlight' && renderPremiumHighlightAndActions()}
           {activeOutputSettingsTab === 'ledger' && renderPremiumPhotoLedgerSettings()}
@@ -3248,15 +3596,20 @@ export default function App() {
         <section className="contact-card">
           <h1>문의하기</h1>
           <p>프로그램 개발 및 현장의 반복업무 자동화 문의</p>
-          <a className="contact-email-link" href="mailto:hamori4919@naver.com">hamori4919@naver.com</a>
+          <a className="contact-email-link" href="mailto:hamori4919@naver.com">
+            <Mail size={16} aria-hidden />
+            hamori4919@naver.com
+          </a>
           <div className="contact-link-grid" aria-label="카카오 문의 링크">
             <a className="contact-link-card" href="https://open.kakao.com/o/ssWChczi" target="_blank" rel="noreferrer">
+              <MessageCircle size={23} aria-hidden />
               <strong>1:1 문의</strong>
-              <span>https://open.kakao.com/o/ssWChczi</span>
+              <span>카카오톡 1:1 문의 열기</span>
             </a>
             <a className="contact-link-card" href="https://open.kakao.com/o/pAdphczi" target="_blank" rel="noreferrer">
+              <Users size={23} aria-hidden />
               <strong>단톡방</strong>
-              <span>https://open.kakao.com/o/pAdphczi</span>
+              <span>카카오톡 단톡방 열기</span>
             </a>
           </div>
         </section>
@@ -3307,38 +3660,42 @@ export default function App() {
                   <span>신규가입</span>
                 </div>
               </div>
-              <div className="admin-summary-card social">
-                <span className="admin-summary-icon"><Link2 size={18} /></span>
+              {socialOAuthFeatureEnabled && (
+                <div className="admin-summary-card social">
+                  <span className="admin-summary-icon"><Link2 size={18} /></span>
+                  <div>
+                    <strong>{adminStats.socialLinked}</strong>
+                    <span>소셜연동</span>
+                  </div>
+                </div>
+              )}
+            </div>
+            {visibleSocialAuthProviders.length > 0 && (
+              <div className="admin-oauth-link">
                 <div>
-                  <strong>{adminStats.socialLinked}</strong>
-                  <span>소셜연동</span>
+                  <strong>소셜 계정 연결</strong>
+                  <span>현재 로그인된 이메일 계정에 Google 로그인을 추가합니다.</span>
+                  <small>같은 이메일로 이미 소셜 가입된 계정이 있으면 Supabase에서 계정 정리가 필요합니다.</small>
+                </div>
+                <div className="admin-oauth-actions">
+                  {visibleSocialAuthProviders.map((provider) => (
+                    <button
+                      key={provider.id}
+                      type="button"
+                      className={`admin-oauth-button ${provider.id}`}
+                      onClick={() => void handleSocialIdentityLink(provider.id)}
+                      disabled={authBusy}
+                    >
+                      <span aria-hidden>{provider.badge}</span>
+                      {oauthBusyProvider === provider.id ? '연결 중...' : `${getSocialProviderName(provider.id)} 연결`}
+                    </button>
+                  ))}
                 </div>
               </div>
-            </div>
-            <div className="admin-oauth-link">
-              <div>
-                <strong>소셜 계정 연결</strong>
-                <span>현재 로그인된 이메일 계정에 Google 로그인을 추가합니다.</span>
-                <small>같은 이메일로 이미 소셜 가입된 계정이 있으면 Supabase에서 계정 정리가 필요합니다.</small>
-              </div>
-              <div className="admin-oauth-actions">
-                {visibleSocialAuthProviders.map((provider) => (
-                  <button
-                    key={provider.id}
-                    type="button"
-                    className={`admin-oauth-button ${provider.id}`}
-                    onClick={() => void handleSocialIdentityLink(provider.id)}
-                    disabled={authBusy}
-                  >
-                    <span aria-hidden>{provider.badge}</span>
-                    {oauthBusyProvider === provider.id ? '연결 중...' : `${getSocialProviderName(provider.id)} 연결`}
-                  </button>
-                ))}
-              </div>
-            </div>
+            )}
           </div>
           <div className="admin-view-bar" aria-label="관리자 보기 필터">
-            {adminViewOptions.map(([value, label]) => (
+            {visibleAdminViewOptions.map(([value, label]) => (
               <button
                 key={value}
                 type="button"
@@ -3364,7 +3721,7 @@ export default function App() {
                 <tr>
                   <th>사용자</th>
                   <th>가입일</th>
-                  <th>소셜</th>
+                  {socialOAuthFeatureEnabled && <th>소셜</th>}
                   <th>역할</th>
                   <th>계정</th>
                   <th>구독</th>
@@ -3377,7 +3734,7 @@ export default function App() {
               <tbody>
                 {adminVisibleRows.length === 0 ? (
                   <tr>
-                    <td colSpan={10} className="admin-empty">
+                    <td colSpan={adminTableColumnCount} className="admin-empty">
                       {adminBusy ? '사용자 정보를 불러오는 중입니다.' : '조회된 사용자가 없습니다.'}
                     </td>
                   </tr>
@@ -3394,19 +3751,21 @@ export default function App() {
                         </div>
                       </td>
                       <td>{formatDateTime(row.profile.created_at)}</td>
-                      <td>
-                        <div className="admin-provider-list" aria-label="소셜 연동 상태">
-                          {adminProviderBadges.map((provider) => (
-                            <span
-                              key={provider.id}
-                              className={isProviderLinked(row, provider.id) ? 'linked' : 'not-linked'}
-                              title={isProviderLinked(row, provider.id) ? `${provider.label} 연동됨` : `${provider.label} 미연동`}
-                            >
-                              {provider.label}
-                            </span>
-                          ))}
-                        </div>
-                      </td>
+                      {socialOAuthFeatureEnabled && (
+                        <td>
+                          <div className="admin-provider-list" aria-label="소셜 연동 상태">
+                            {adminProviderBadges.map((provider) => (
+                              <span
+                                key={provider.id}
+                                className={isProviderLinked(row, provider.id) ? 'linked' : 'not-linked'}
+                                title={isProviderLinked(row, provider.id) ? `${provider.label} 연동됨` : `${provider.label} 미연동`}
+                              >
+                                {provider.label}
+                              </span>
+                            ))}
+                          </div>
+                        </td>
+                      )}
                       <td>
                         <select
                           value={row.profile.role}
@@ -3490,7 +3849,7 @@ export default function App() {
                           <button
                             type="button"
                             className="secondary-button small"
-                            onClick={() => void handleAdminPasswordChange(row)}
+                            onClick={() => openAdminPasswordDialog(row)}
                             disabled={adminBusy}
                           >
                             <KeyRound size={14} aria-hidden />
@@ -3534,7 +3893,7 @@ export default function App() {
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      {renderTopNavigation()}
+      {activeScreen !== 'start' && renderTopNavigation()}
       {activeScreen === 'start' && renderStartScreen()}
       {activeScreen === 'help' && renderHelpScreen()}
       {activeScreen === 'basic' && renderBasicScreen()}
@@ -3544,6 +3903,71 @@ export default function App() {
       {activeScreen === 'contact' && renderContactScreen()}
       {activeScreen === 'admin' && isAdmin && renderAdminScreen()}
       {renderStatus()}
+      {adminPasswordTarget && (
+        <Modal title="임시 비밀번호 설정" onClose={closeAdminPasswordDialog}>
+          <form className="admin-password-form" onSubmit={(event) => void handleAdminPasswordSubmit(event)} noValidate>
+            <div className="admin-password-target">
+              <span className="admin-password-target-icon">
+                <KeyRound size={18} aria-hidden />
+              </span>
+              <div>
+                <strong>{adminPasswordTarget.profile.email}</strong>
+                <small>이 계정의 이메일 로그인 비밀번호를 새 임시 비밀번호로 변경합니다.</small>
+              </div>
+            </div>
+
+            <label className="admin-password-field">
+              새 비밀번호
+              <div className="admin-password-input">
+                <input
+                  type={adminPasswordVisible ? 'text' : 'password'}
+                  value={adminPasswordForm.password}
+                  onChange={(event) => updateAdminPasswordForm('password', event.currentTarget.value)}
+                  minLength={8}
+                  autoComplete="new-password"
+                  disabled={adminBusy}
+                  required
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onClick={() => setAdminPasswordVisible((current) => !current)}
+                  disabled={adminBusy}
+                  aria-label={adminPasswordVisible ? '비밀번호 숨기기' : '비밀번호 보기'}
+                  title={adminPasswordVisible ? '비밀번호 숨기기' : '비밀번호 보기'}
+                >
+                  {adminPasswordVisible ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </label>
+
+            <label className="admin-password-field">
+              비밀번호 확인
+              <input
+                type={adminPasswordVisible ? 'text' : 'password'}
+                value={adminPasswordForm.confirmPassword}
+                onChange={(event) => updateAdminPasswordForm('confirmPassword', event.currentTarget.value)}
+                minLength={8}
+                autoComplete="new-password"
+                disabled={adminBusy}
+                required
+              />
+            </label>
+
+            <p className="admin-password-hint">8자 이상으로 입력하고, 저장 후 대상 사용자에게 임시 비밀번호를 별도로 전달하세요.</p>
+            {adminError && <div className="admin-password-error">{adminError}</div>}
+
+            <div className="modal-form-actions">
+              <button type="button" className="secondary-button" onClick={closeAdminPasswordDialog} disabled={adminBusy}>
+                취소
+              </button>
+              <button type="submit" className="primary-button" disabled={adminBusy}>
+                {adminBusy ? '저장 중...' : '비밀번호 저장'}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
       {showPhotoList && (
         <Modal title="불러온 사진 목록" onClose={() => setShowPhotoList(false)}>
           <div className="modal-list">
@@ -3639,21 +4063,28 @@ export default function App() {
   );
 }
 
-function getOAuthRedirectTo(_flow: 'signin' | 'link' = 'signin') {
-  return getNativeBridge()?.openOAuthUrl ? oauthRedirectUrl : `${window.location.origin}/auth/callback`;
+function getOAuthRedirectTo(flow: OAuthFlow = 'signin') {
+  const baseUrl = getNativeBridge()?.openOAuthUrl ? oauthRedirectUrl : `${window.location.origin}/auth/callback`;
+  try {
+    const url = new URL(baseUrl);
+    url.searchParams.set('flow', flow);
+    return url.toString();
+  } catch {
+    return `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}flow=${flow}`;
+  }
 }
 
 function isOAuthLinkCallback(callbackUrl: string) {
+  const callbackFlow = readOAuthCallbackFlow(callbackUrl);
+  if (callbackFlow) {
+    return callbackFlow === 'link';
+  }
+
+  const pendingLink = readPendingOAuthLink();
   try {
-    const url = new URL(callbackUrl);
-    const params = new URLSearchParams(url.search);
-    if (url.hash) {
-      const hashParams = new URLSearchParams(url.hash.replace(/^#/, ''));
-      hashParams.forEach((paramValue, key) => params.set(key, paramValue));
-    }
-    return params.get('flow') === 'link' || window.sessionStorage.getItem(oauthFlowStorageKey) === 'link';
+    return window.sessionStorage.getItem(oauthFlowStorageKey) === 'link' || Boolean(pendingLink);
   } catch {
-    return window.sessionStorage.getItem(oauthFlowStorageKey) === 'link';
+    return Boolean(pendingLink);
   }
 }
 
@@ -3661,9 +4092,82 @@ function getNativeBridge() {
   return Reflect.get(window, 'constructView') as Partial<Window['constructView']> | undefined;
 }
 
+function rememberOAuthSigninAttempt() {
+  window.sessionStorage.setItem(oauthFlowStorageKey, 'signin');
+  window.localStorage.removeItem(oauthPendingLinkStorageKey);
+}
+
+function rememberOAuthLinkAttempt(user: SupabaseUser, provider: SocialAuthProvider) {
+  const email = user.email ?? '';
+  window.sessionStorage.setItem(oauthFlowStorageKey, 'link');
+  window.sessionStorage.setItem(oauthLinkExpectedUserIdKey, user.id);
+  window.sessionStorage.setItem(oauthLinkExpectedEmailKey, email);
+  window.localStorage.setItem(
+    oauthPendingLinkStorageKey,
+    JSON.stringify({
+      flow: 'link',
+      userId: user.id,
+      email,
+      provider,
+      startedAt: Date.now()
+    } satisfies PendingOAuthLink)
+  );
+}
+
+function clearOAuthAttempt() {
+  window.sessionStorage.removeItem(oauthFlowStorageKey);
+  window.sessionStorage.removeItem(oauthLinkExpectedUserIdKey);
+  window.sessionStorage.removeItem(oauthLinkExpectedEmailKey);
+  window.localStorage.removeItem(oauthPendingLinkStorageKey);
+}
+
+function readOAuthCallbackFlow(callbackUrl: string): OAuthFlow | null {
+  try {
+    const url = new URL(callbackUrl);
+    const params = new URLSearchParams(url.search);
+    if (url.hash) {
+      const hashParams = new URLSearchParams(url.hash.replace(/^#/, ''));
+      hashParams.forEach((paramValue, key) => params.set(key, paramValue));
+    }
+    const flow = params.get('flow');
+    return flow === 'signin' || flow === 'link' ? flow : null;
+  } catch {
+    return null;
+  }
+}
+
+function readPendingOAuthLink(): PendingOAuthLink | null {
+  try {
+    const raw = window.localStorage.getItem(oauthPendingLinkStorageKey);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<PendingOAuthLink>;
+    if (
+      parsed.flow !== 'link' ||
+      !parsed.userId ||
+      !parsed.provider ||
+      typeof parsed.startedAt !== 'number' ||
+      Date.now() - parsed.startedAt > oauthPendingMaxAgeMs
+    ) {
+      window.localStorage.removeItem(oauthPendingLinkStorageKey);
+      return null;
+    }
+    return {
+      flow: 'link',
+      userId: parsed.userId,
+      email: parsed.email ?? '',
+      provider: parsed.provider,
+      startedAt: parsed.startedAt
+    };
+  } catch {
+    window.localStorage.removeItem(oauthPendingLinkStorageKey);
+    return null;
+  }
+}
+
 function assertLinkedOAuthUserMatchesExpected(user: SupabaseUser) {
-  const expectedUserId = window.sessionStorage.getItem(oauthLinkExpectedUserIdKey);
-  const expectedEmail = window.sessionStorage.getItem(oauthLinkExpectedEmailKey);
+  const pendingLink = readPendingOAuthLink();
+  const expectedUserId = window.sessionStorage.getItem(oauthLinkExpectedUserIdKey) || pendingLink?.userId;
+  const expectedEmail = window.sessionStorage.getItem(oauthLinkExpectedEmailKey) || pendingLink?.email;
   const actualEmail = user.email ?? '';
 
   if (expectedUserId && user.id !== expectedUserId) {
@@ -3845,11 +4349,13 @@ function formatProfileName(profile: AuthGateState['profile']) {
 
 function Panel({
   title,
+  icon,
   actions,
   children,
   className = ''
 }: {
   title: string;
+  icon?: React.ReactNode;
   actions?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
@@ -3857,7 +4363,10 @@ function Panel({
   return (
     <section className={`panel ${className}`}>
       <div className="panel-header">
-        <h2>{title}</h2>
+        <div className="panel-title">
+          {icon && <span className="panel-title-icon">{icon}</span>}
+          <h2>{title}</h2>
+        </div>
         {actions && <div className="panel-actions">{actions}</div>}
       </div>
       <div className="panel-body">{children}</div>
@@ -4450,9 +4959,29 @@ function Modal({
   onClose: () => void;
   wide?: boolean;
 }) {
+  useEffect(() => {
+    const handleModalKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleModalKeyDown);
+    return () => window.removeEventListener('keydown', handleModalKeyDown);
+  }, [onClose]);
+
   return (
-    <div className="modal-backdrop" role="dialog" aria-modal="true">
-      <div className={wide ? 'modal wide' : 'modal'}>
+    <div
+      className="modal-backdrop"
+      role="dialog"
+      aria-modal="true"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) {
+          onClose();
+        }
+      }}
+    >
+      <div className={wide ? 'modal wide' : 'modal'} onMouseDown={(event) => event.stopPropagation()}>
         <div className="modal-header">
           <h2>{title}</h2>
           <button type="button" onClick={onClose} aria-label="닫기">

@@ -40,7 +40,17 @@ assert(authService.includes("authorization: `Bearer ${accessToken}`"), 'admin Ed
 assert(authService.includes('readResponseMessage(payload)'), 'admin Edge Function errors must surface the server response body');
 assert(app.includes("type AdminView = 'all' | 'new' | 'social' | 'devices'"), 'admin view filters are missing');
 assert(app.includes('adminProviderBadges'), 'social provider badges are missing');
-assert(app.includes('handleAdminPasswordChange') && app.includes('handleAdminDeleteUser'), 'admin password/delete handlers are missing');
+assert(app.includes('visibleAdminViewOptions') && app.includes("value !== 'social'"), 'social admin filter must be hidden while social OAuth is disabled');
+assert(app.includes('adminTableColumnCount') && app.includes('socialOAuthFeatureEnabled && <th>소셜</th>'), 'admin social column must be feature-gated');
+assert(app.includes('{visibleSocialAuthProviders.length > 0 && (') && app.includes('className="admin-oauth-link"'), 'admin social linking card must be feature-gated');
+assert(
+  app.includes('openAdminPasswordDialog') &&
+    app.includes('handleAdminPasswordSubmit') &&
+    app.includes('adminPasswordTarget') &&
+    app.includes('handleAdminDeleteUser'),
+  'admin password modal/delete handlers are missing'
+);
+assert(styles.includes('.admin-password-form') && styles.includes('.admin-password-input'), 'admin password modal styles are missing');
 assert(app.includes('adminVisibleRows.map'), 'admin table must render filtered rows');
 assert(styles.includes('.admin-view-bar') && styles.includes('.admin-provider-list span.linked'), 'admin filter/provider badge styles are missing');
 

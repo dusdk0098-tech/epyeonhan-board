@@ -1,3 +1,21 @@
+[auth]
+enable_manual_linking = true
+site_url = "http://localhost:3000"
+additional_redirect_urls = [
+  "pedit://auth/callback",
+  "epyeonhan-board://auth/callback",
+  "http://127.0.0.1:5180/**",
+  "http://127.0.0.1:4173/**",
+]
+
+[auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true
+
+[auth.email]
+max_frequency = "1m0s"
+otp_length = 8
+
 [functions.naver-userinfo]
 verify_jwt = false
 

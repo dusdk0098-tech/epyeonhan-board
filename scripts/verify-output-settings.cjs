@@ -205,7 +205,7 @@ function verifyWorkspaceAndBridgeStatic() {
   assert(app.includes('sub-settings-tabs') && app.includes('크기/배치') && app.includes('글자/테두리'), 'advanced board settings must be split into size and typography tabs');
   assert(app.includes('renderCommonSettingsScreen') && app.includes('output-common-form'), 'common settings screen must render output settings');
   assert(app.includes('commonOutputSettings') && app.includes('updateCommonOutputSettings'), 'common output settings must use shared state');
-  assert(app.includes('결과물 흑백 저장') && app.includes('작업 완료 후 결과 폴더 열기'), 'common output settings are missing');
+  assert(app.includes('흑백 저장') && app.includes('작업 완료 후'), 'common output settings are missing');
   assert(app.includes('activeOutputSettingsTab') && app.includes('renderPremiumSettingsCard'), 'premium tab must use a tabbed settings card');
   assert(app.includes("activeOutputSettingsTab === 'datetime'") && app.includes('날짜/시간'), 'premium tab must expose datetime settings like the advanced tab');
   assert(app.includes("activeOutputSettingsTab === 'ledger'") && app.includes('renderPremiumPhotoLedgerSettings'), 'photo ledger settings must live in the premium settings tabs');
@@ -216,7 +216,7 @@ function verifyWorkspaceAndBridgeStatic() {
   assert(app.includes('보드 내용') && app.includes('renderBoardFieldEditor') && app.includes('premium-field-editor'), 'premium tab must allow editing board labels and values');
   assert(app.includes('보드판 삽입') && app.includes('settings.showBoard'), 'premium board insert toggle is missing');
   assert(app.includes('항목칸 표시') && app.includes('bottomStripShowLabels'), 'bottom strip label toggle is missing');
-  assert(app.includes('테두리 색상') && app.includes('borderColor'), 'board border color control is missing');
+  assert(app.includes('테두리') && app.includes('ColorSelectRow label="색상"') && app.includes('borderColor'), 'board border color control is missing');
   assert(app.includes('원형 색상') && app.includes('HighlightColorSelectRow'), 'highlight color control is missing');
   assert(app.includes('크기/배치') && app.includes('renderBoardLayoutSettings()'), 'premium tab must expose detailed board size/layout settings');
   assert(app.includes('글자/테두리') && app.includes('renderPremiumTypographySettings'), 'premium tab must expose detailed typography settings');
@@ -246,8 +246,8 @@ function verifyWorkspaceAndBridgeStatic() {
   [
     'JPG 품질',
     '최대 긴 변',
-    '결과물 흑백 저장',
-    '작업 완료 후 결과 폴더 열기'
+    '흑백 저장',
+    '작업 완료 후'
   ].forEach((label) => {
     const count = app.split(label).length - 1;
     assert(count === 1, `${label} control must only be rendered in the top-level common settings tab, found ${count}`);
