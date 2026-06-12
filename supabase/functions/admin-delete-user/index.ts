@@ -30,14 +30,18 @@ Deno.serve(async (request) => {
     return errorResponse('Current admin account cannot be deleted', 400);
   }
 
-  const { data: targetProfile, error: targetError } = await context.adminClient
+  let { data: targetProfile, error: targetError } = await context.adminClient
     .from('profiles')
     .select('id,email,role,status')
     .eq('id', userId)
     .maybeSingle();
 
   if (targetError) return errorResponse(targetError.message, 500);
-  if (!targetProfile) return errorResponse('User not found', 404);
+  if (!targetProfile) {
+    const backfilled = await backfillTargetProfile(context.adminClient, userId);
+    if (backfilled instanceof Response) return backfilled;
+    targetProfile = backfilled;
+  }
   if (String(targetProfile.email).toLowerCase() === initialAdminEmail) {
     return errorResponse('Initial admin account cannot be deleted', 400);
   }
@@ -58,3 +62,53 @@ Deno.serve(async (request) => {
 
   return jsonResponse({ ok: true });
 });
+
+async function backfillTargetProfile(adminClient: any, userId: string) {
+  const { data, error } = await adminClient.auth.admin.getUserById(userId);
+  if (error || !data?.user) {
+    return errorResponse(error?.message ?? 'User not found', 404);
+  }
+
+  const email = String(data.user.email ?? '').trim();
+  if (!email) return errorResponse('User email is missing', 400);
+
+  const profile = {
+    id: data.user.id,
+    email,
+    role: email.toLowerCase() === initialAdminEmail ? 'admin' : 'user',
+    status: 'active'
+  };
+
+  const { error: insertError } = await adminClient.from('profiles').insert({
+    ...profile,
+    display_name: firstText(data.user.user_metadata?.display_name, data.user.user_metadata?.name, data.user.user_metadata?.full_name),
+    company: firstText(data.user.user_metadata?.company),
+    created_at: data.user.created_at ?? new Date().toISOString(),
+    last_seen_at: data.user.last_sign_in_at ?? data.user.updated_at ?? data.user.created_at ?? null
+  });
+  if (insertError) return errorResponse(insertError.message, 500);
+
+  await adminClient.from('subscriptions').insert({
+    user_id: data.user.id,
+    plan: 'trial',
+    status: 'trial',
+    current_period_end: addDays(data.user.created_at ?? new Date().toISOString(), 14)
+  }).then(() => undefined);
+
+  return profile;
+}
+
+function firstText(...values: unknown[]) {
+  for (const value of values) {
+    const text = String(value ?? '').trim();
+    if (text) return text;
+  }
+  return null;
+}
+
+function addDays(value: string, days: number) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString();
+}

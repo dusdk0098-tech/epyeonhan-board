@@ -1,6 +1,6 @@
 {
   "name": "epyeonhan-board",
-  "version": "1.0.21",
+  "version": "1.0.22",
   "description": "PICTURE EDIT 현장 사진 편집 로컬 데스크톱 프로그램",
   "author": "대성건설(주)",
   "main": "dist-electron/electron/main.js",

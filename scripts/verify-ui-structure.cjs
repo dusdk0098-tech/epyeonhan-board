@@ -33,9 +33,11 @@ assert(styles.includes('grid-template-columns: repeat(2, 400px)'), 'start screen
 assert(styles.includes('background: #1e1e1e'), 'start nav must match Stitch dark top bar');
 
 assert(authTypes.includes('linkedProviders: string[]'), 'admin rows must include linked providers');
-assert(authService.includes("client.functions.invoke<{ rows: AdminUserRow[] }>('admin-users'"), 'admin list must come from Edge Function');
-assert(authService.includes("client.functions.invoke('admin-delete-user'"), 'admin delete function client wrapper is missing');
-assert(authService.includes("client.functions.invoke('admin-set-password'"), 'admin set password function client wrapper is missing');
+assert(authService.includes("invokeAdminFunction<{ rows: AdminUserRow[] }>('admin-users'"), 'admin list must come from Edge Function');
+assert(authService.includes("invokeAdminFunction('admin-delete-user'"), 'admin delete function client wrapper is missing');
+assert(authService.includes("invokeAdminFunction('admin-set-password'"), 'admin set password function client wrapper is missing');
+assert(authService.includes("authorization: `Bearer ${accessToken}`"), 'admin Edge Function calls must include the active session token explicitly');
+assert(authService.includes('readResponseMessage(payload)'), 'admin Edge Function errors must surface the server response body');
 assert(app.includes("type AdminView = 'all' | 'new' | 'social' | 'devices'"), 'admin view filters are missing');
 assert(app.includes('adminProviderBadges'), 'social provider badges are missing');
 assert(app.includes('handleAdminPasswordChange') && app.includes('handleAdminDeleteUser'), 'admin password/delete handlers are missing');
@@ -48,10 +50,19 @@ for (const functionName of ['admin-users', 'admin-delete-user', 'admin-set-passw
 assert(adminShared.includes("Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')"), 'admin Edge Functions must use service role only server-side');
 assert(adminShared.includes("profile.role !== 'admin'"), 'admin Edge Functions must verify admin profile role');
 assert(adminUsers.includes('auth.admin.listUsers'), 'admin-users must read Auth identities through admin API');
+assert(
+  adminUsers.includes("request.method !== 'GET' && request.method !== 'POST'"),
+  'admin-users must accept both GET and POST Edge Function invocations'
+);
+assert(adminUsers.includes('backfillMissingRows'), 'admin-users must backfill legacy Auth users missing profiles');
+assert(adminUsers.includes("adminClient.from('profiles').insert(missingProfiles)"), 'admin-users must create missing profile rows');
+assert(adminUsers.includes("adminClient.from('subscriptions').insert(missingSubscriptions)"), 'admin-users must create missing subscription rows');
 assert(adminDelete.includes('auth.admin.deleteUser'), 'admin-delete-user must delete Auth user through admin API');
+assert(adminDelete.includes('backfillTargetProfile'), 'admin-delete-user must support legacy users missing profiles');
 assert(adminDelete.includes('Current admin account cannot be deleted'), 'admin-delete-user must block self deletion');
 assert(adminDelete.includes('Initial admin account cannot be deleted'), 'admin-delete-user must block initial admin deletion');
 assert(adminPassword.includes('auth.admin.updateUserById'), 'admin-set-password must update password through admin API');
+assert(adminPassword.includes('backfillTargetProfile'), 'admin-set-password must support legacy users missing profiles');
 assert(adminPassword.includes('password.length < 8'), 'admin-set-password must enforce minimum password length');
 assert(packageJson.includes('"deploy:admin-functions"'), 'admin Edge Function deployment npm script is missing');
 assert(deployScript.includes('SUPABASE_ACCESS_TOKEN'), 'admin deploy script must require Supabase access token');

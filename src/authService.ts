@@ -258,11 +258,7 @@ function isKnownFingerprintRpcMissing(error: unknown) {
 }
 
 export async function loadAdminUsers(): Promise<AdminUserRow[]> {
-  const client = requireSupabase();
-  const { data, error } = await client.functions.invoke<{ rows: AdminUserRow[] }>('admin-users', {
-    method: 'GET'
-  });
-  if (error) throw error;
+  const data = await invokeAdminFunction<{ rows: AdminUserRow[] }>('admin-users');
   return data?.rows ?? [];
 }
 
@@ -299,21 +295,63 @@ export async function revokeDeviceByAdmin(userId: string, deviceId: string) {
 }
 
 export async function deleteUserByAdmin(userId: string) {
-  const client = requireSupabase();
-  const { error } = await client.functions.invoke('admin-delete-user', {
-    method: 'POST',
-    body: { userId }
-  });
-  if (error) throw error;
+  await invokeAdminFunction('admin-delete-user', { userId });
 }
 
 export async function setUserPasswordByAdmin(userId: string, password: string) {
+  await invokeAdminFunction('admin-set-password', { userId, password });
+}
+
+async function invokeAdminFunction<T = unknown>(functionName: string, body?: Record<string, unknown>): Promise<T> {
   const client = requireSupabase();
-  const { error } = await client.functions.invoke('admin-set-password', {
+  const { data: sessionData, error: sessionError } = await client.auth.getSession();
+  if (sessionError) throw sessionError;
+  const accessToken = sessionData.session?.access_token;
+  if (!accessToken) {
+    throw new Error('관리자 기능을 호출할 로그인 세션이 없습니다. 다시 로그인해주세요.');
+  }
+
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.trim() ?? '';
+  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim() ?? '';
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error('Supabase 설정이 없습니다.');
+  }
+
+  const response = await fetch(`${supabaseUrl.replace(/\/$/, '')}/functions/v1/${functionName}`, {
     method: 'POST',
-    body: { userId, password }
+    headers: {
+      apikey: supabaseAnonKey,
+      authorization: `Bearer ${accessToken}`,
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify(body ?? {})
   });
-  if (error) throw error;
+
+  const responseText = await response.text();
+  const payload = parseJsonPayload(responseText);
+  if (!response.ok) {
+    const message =
+      readResponseMessage(payload) ||
+      responseText ||
+      `관리자 기능 호출에 실패했습니다. (${response.status})`;
+    throw new Error(message);
+  }
+  return (payload ?? {}) as T;
+}
+
+function parseJsonPayload(value: string) {
+  if (!value.trim()) return null;
+  try {
+    return JSON.parse(value) as unknown;
+  } catch {
+    return null;
+  }
+}
+
+function readResponseMessage(payload: unknown) {
+  if (!payload || typeof payload !== 'object') return '';
+  const record = payload as Record<string, unknown>;
+  return String(record.error ?? record.message ?? '').trim();
 }
 
 async function updateProfileByAdmin(userId: string, patch: Partial<Pick<UserProfile, 'role' | 'status'>>, action: string, metadata: unknown) {
