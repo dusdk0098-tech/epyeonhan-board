@@ -100,21 +100,27 @@ async function verifyMainProcessAutoUpdateSource() {
   assert(mainSource.includes('response.body.getReader()'), 'download progress stream reader is missing');
   assert(!mainSource.includes("['/S', '--updated']"), 'legacy silent installer arguments must not remain');
   assert(mainSource.includes('buildSilentUpdateInstallArgs()'), 'silent update installer argument builder is missing');
-  assert(mainSource.includes("return ['/S', installModeArg, '/force-run', '/updated', `/D=${installDir}`];"), 'silent update args must include mode, force-run, update flag, and /D path');
+  assert(mainSource.includes("return ['/S', installModeArg, '/updated', `/D=${installDir}`];"), 'silent update args must include mode, update flag, and /D path');
+  assert(!mainSource.includes("'/force-run'"), 'silent update args must not suppress installer relaunch');
   assert(mainSource.includes('isPerMachineInstallDirectory'), 'install mode detection is missing');
   assert(mainSource.includes('process.env.ProgramFiles'), 'Program Files install detection is missing');
   assert(mainSource.includes('NSIS requires /D=... to be the last argument'), '/D last-argument guard comment is missing');
+  assert(mainSource.includes('launchSilentUpdateInstaller'), 'update installer launcher is missing');
+  assert(mainSource.includes('Wait-Process -Id'), 'update launcher must wait for the current app to exit');
+  assert(mainSource.includes('update-launcher.log'), 'update launcher log is missing');
+  assert(mainSource.includes('app.exit(0)'), 'update flow must force app exit after launcher starts');
   assert(mainSource.includes("phase: 'restarting'"), 'restart preparation update status is missing');
   assert(preloadSource.includes('onUpdateStatus'), 'preload update status listener is missing');
   assert(apiTypes.includes('UpdateStatusPayload') && apiTypes.includes("'restarting'") && apiTypes.includes('onUpdateStatus'), 'renderer update status types are missing');
   assert(appSource.includes('UpdateOverlay') && appSource.includes('PEDIT (페딧) 업데이트 중'), 'update progress overlay is missing');
   assert(appSource.includes('updatePhaseDescriptions') && appSource.includes('설치 화면을 띄우지 않고 업데이트를 적용합니다.'), 'dedicated update UI copy is missing');
-  assert(mainSource.includes('업데이트 설치 준비') && mainSource.includes('앱 재시작 준비'), 'update install/restart copy is missing');
+  assert(mainSource.includes('업데이트 설치 준비') && mainSource.includes('업데이트 설치 시작'), 'update install/restart copy is missing');
   assert(installerInclude.includes('!macro customInit'), 'NSIS custom init macro is missing');
   assert(installerInclude.includes('${isUpdated}') && installerInclude.includes('SetSilent silent'), 'NSIS update mode must force silent install');
   assert(installerInclude.includes('!macro customInstall'), 'NSIS custom install macro is missing');
   assert(installerInclude.includes('$newDesktopLink') && installerInclude.includes('$newStartMenuLink'), 'NSIS update mode must ensure shortcuts');
-  assert(installerInclude.includes('${isForceRun}') && installerInclude.includes('StdUtils.ExecShellAsUser'), 'NSIS update mode must restart the app even for old updater args');
+  assert(!installerInclude.includes('${isForceRun}'), 'NSIS update mode must restart the app even when old updater args include /force-run');
+  assert(installerInclude.includes('StdUtils.ExecShellAsUser'), 'NSIS update mode must restart the app after silent updates');
 }
 
 async function verifyVersionedPackagingConfig() {

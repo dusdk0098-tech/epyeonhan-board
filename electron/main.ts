@@ -1,7 +1,7 @@
 import { app, BrowserWindow, Menu, clipboard, dialog, ipcMain, nativeImage, safeStorage, shell, type WebContents } from 'electron';
 import * as fs from 'fs/promises';
 import { constants as fsConstants } from 'fs';
-import { spawn, spawnSync } from 'child_process';
+import { spawn, spawnSync, type ChildProcess } from 'child_process';
 import { createHash } from 'crypto';
 import path from 'path';
 import os from 'os';
@@ -280,13 +280,7 @@ async function downloadAndInstallUpdate(win: BrowserWindow, manifest: UpdateMani
       message: '업데이트 설치 준비'
     });
 
-    const installerProcess = spawn(installerPath, buildSilentUpdateInstallArgs(), {
-      detached: true,
-      stdio: 'ignore',
-      windowsHide: true
-    });
-    installerProcess.on('error', () => undefined);
-    installerProcess.unref();
+    const launchResult = await launchSilentUpdateInstaller(installerPath);
 
     sendUpdateStatus(win, {
       phase: 'restarting',
@@ -294,10 +288,14 @@ async function downloadAndInstallUpdate(win: BrowserWindow, manifest: UpdateMani
       percent: 100,
       downloadedBytes: buffer.byteLength,
       totalBytes: manifest.size_bytes,
-      message: '앱 재시작 준비'
+      message: '업데이트 설치 시작'
     });
 
-    setTimeout(() => app.quit(), 1400);
+    if (launchResult.logPath) {
+      console.info(`Update installer launcher log: ${launchResult.logPath}`);
+    }
+
+    setTimeout(() => app.exit(0), 900);
   } catch (error) {
     sendUpdateStatus(win, {
       phase: 'failed',
@@ -322,7 +320,89 @@ function buildSilentUpdateInstallArgs() {
   const installModeArg = isPerMachineInstallDirectory(installDir) ? '/allusers' : '/currentuser';
 
   // NSIS requires /D=... to be the last argument and unquoted.
-  return ['/S', installModeArg, '/force-run', '/updated', `/D=${installDir}`];
+  return ['/S', installModeArg, '/updated', `/D=${installDir}`];
+}
+
+async function launchSilentUpdateInstaller(installerPath: string) {
+  const updateDir = path.dirname(installerPath);
+  const launcherPath = path.join(updateDir, 'run-pedit-update.ps1');
+  const logPath = path.join(updateDir, 'update-launcher.log');
+  const installerArgs = buildSilentUpdateInstallArgs();
+  const launcherScript = buildUpdateLauncherScript(installerPath, installerArgs, process.pid, logPath);
+
+  await fs.writeFile(launcherPath, launcherScript, 'utf8');
+  const launcherProcess = spawn(
+    'powershell.exe',
+    ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-File', launcherPath],
+    {
+      detached: true,
+      stdio: 'ignore',
+      windowsHide: true
+    }
+  );
+
+  await waitForChildProcessSpawn(launcherProcess);
+  launcherProcess.unref();
+  return { launcherPath, logPath };
+}
+
+function buildUpdateLauncherScript(installerPath: string, installerArgs: string[], appProcessId: number, logPath: string) {
+  const installerLiteral = toPowerShellSingleQuoted(installerPath);
+  const logPathLiteral = toPowerShellSingleQuoted(logPath);
+  const argsLiteral = installerArgs.map(toPowerShellSingleQuoted).join(', ');
+
+  return [
+    "$ErrorActionPreference = 'Stop'",
+    `$installerPath = ${installerLiteral}`,
+    `$logPath = ${logPathLiteral}`,
+    `$installerArgs = @(${argsLiteral})`,
+    '',
+    'function Write-UpdateLog([string]$message) {',
+    '  $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss.fff"',
+    '  Add-Content -LiteralPath $logPath -Value "[$timestamp] $message"',
+    '}',
+    '',
+    'try {',
+    '  Write-UpdateLog "launcher started"',
+    '  Start-Sleep -Milliseconds 600',
+    `  $oldProcess = Get-Process -Id ${appProcessId} -ErrorAction SilentlyContinue`,
+    '  if ($oldProcess) {',
+    `    Write-UpdateLog "waiting for app pid ${appProcessId} to exit"`,
+    `    Wait-Process -Id ${appProcessId} -Timeout 45 -ErrorAction SilentlyContinue`,
+    '  }',
+    '  Write-UpdateLog "starting installer: $installerPath $($installerArgs -join \' \')"',
+    '  $installerProcess = Start-Process -FilePath $installerPath -ArgumentList $installerArgs -PassThru -WindowStyle Hidden',
+    '  Write-UpdateLog "installer started pid=$($installerProcess.Id)"',
+    '} catch {',
+    '  Write-UpdateLog "launcher failed: $($_.Exception.Message)"',
+    '  throw',
+    '}',
+    ''
+  ].join('\r\n');
+}
+
+function toPowerShellSingleQuoted(value: string) {
+  return `'${value.replace(/'/g, "''")}'`;
+}
+
+function waitForChildProcessSpawn(child: ChildProcess) {
+  return new Promise<void>((resolve, reject) => {
+    let settled = false;
+    const settle = (callback: () => void) => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      child.off('spawn', onSpawn);
+      child.off('error', onError);
+      callback();
+    };
+    const onSpawn = () => settle(resolve);
+    const onError = (error: Error) => settle(() => reject(error));
+    child.once('spawn', onSpawn);
+    child.once('error', onError);
+    setTimeout(() => settle(resolve), 1500);
+  });
 }
 
 function getCurrentInstallDirectory() {

@@ -20,10 +20,8 @@
     ${endif}
 
     ${if} ${Silent}
-      ${ifNot} ${isForceRun}
-        HideWindow
-        ${StdUtils.ExecShellAsUser} $0 "$launchLink" "open" "--updated"
-      ${endif}
+      HideWindow
+      ${StdUtils.ExecShellAsUser} $0 "$launchLink" "open" "--updated"
     ${endif}
   ${endif}
 !macroend

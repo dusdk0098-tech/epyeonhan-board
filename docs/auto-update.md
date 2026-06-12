@@ -9,7 +9,8 @@
 - 앱 동작:
   - 설치된 앱 실행 후 약 2.5초 뒤 `latest.json?t={timestamp}`를 확인합니다.
   - `latest.json.version`이 현재 앱 버전보다 높으면 확인 팝업 없이 설치 파일을 자동 다운로드합니다.
-  - 파일 크기와 SHA256을 검증한 뒤 설치 파일을 바로 실행합니다.
+  - 파일 크기와 SHA256을 검증한 뒤 업데이트 런처를 실행합니다.
+  - 런처는 현재 앱이 종료될 때까지 기다린 뒤 silent NSIS 설치를 실행하고 설치 완료 후 앱을 다시 시작합니다.
   - 네트워크 오류나 manifest 오류는 조용히 무시합니다.
   - 다운로드, 검증, 설치 파일 실행 실패만 오류창으로 알립니다.
   - `mandatory` 값과 무관하게 현재 버전보다 높으면 자동 업데이트 대상입니다.
@@ -103,4 +104,5 @@ npm run verify:board
 - Pages가 404이면 GitHub 저장소 `Settings > Pages`에서 Source가 `GitHub Actions`인지 확인합니다.
 - 자동 업데이트가 시작되지 않으면 `package.json`의 현재 버전보다 `latest.json.version`이 높은지 확인합니다.
 - 설치 실패가 뜨면 `sha256`, `size_bytes`, `download_url`이 Release 자산과 일치하는지 확인합니다.
+- 내부 업데이트 창이 `업데이트 설치 준비`에서 멈춘 경우 `%TEMP%\epyeonhan-board-updates\update-launcher.log`를 확인합니다.
 - private 저장소는 현재 기본 구성에서 지원하지 않습니다. public Releases + public Pages를 사용하거나 별도 public 업데이트 저장소를 분리해야 합니다.
