@@ -35,13 +35,42 @@ if ($AccessToken) {
   $env:SUPABASE_ACCESS_TOKEN = $AccessToken
 }
 
-$supabase = Get-Command supabase -ErrorAction SilentlyContinue
-if (-not $supabase) {
-  throw "Supabase CLI is missing. Run npm install -g supabase first."
+function Resolve-SupabaseCommand {
+  $supabase = Get-Command supabase -ErrorAction SilentlyContinue
+  if ($supabase) {
+    return @{
+      Command = $supabase.Source
+      Args = @()
+    }
+  }
+
+  $npx = Get-Command npx.cmd -ErrorAction SilentlyContinue
+  if (-not $npx) {
+    $npx = Get-Command npx -ErrorAction SilentlyContinue
+  }
+  if ($npx) {
+    return @{
+      Command = $npx.Source
+      Args = @("--yes", "supabase")
+    }
+  }
+
+  throw "Supabase CLI is missing. Install it globally with npm install -g supabase, or make sure npx is available."
+}
+
+$supabaseCli = Resolve-SupabaseCommand
+
+function Invoke-Supabase {
+  param(
+    [Parameter(ValueFromRemainingArguments = $true)]
+    [string[]]$Arguments
+  )
+
+  & $supabaseCli.Command @($supabaseCli.Args) @Arguments
 }
 
 if (-not $env:SUPABASE_ACCESS_TOKEN) {
-  supabase projects list --output json *> $null
+  Invoke-Supabase projects list --output json *> $null
   if ($LASTEXITCODE -ne 0) {
     throw "Supabase CLI is not logged in. Run supabase login --token <sbp_...> first, or pass -AccessToken."
   }
@@ -56,7 +85,7 @@ $functions = @(
 Write-Host "Deploying admin Edge Functions to project $ProjectRef"
 foreach ($functionName in $functions) {
   Write-Host "Deploying $functionName..."
-  supabase functions deploy $functionName --project-ref $ProjectRef
+  Invoke-Supabase functions deploy $functionName --project-ref $ProjectRef --use-api
 }
 
 Write-Host "Admin Edge Functions deployed successfully."

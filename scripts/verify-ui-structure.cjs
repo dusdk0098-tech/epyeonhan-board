@@ -66,7 +66,10 @@ assert(adminPassword.includes('backfillTargetProfile'), 'admin-set-password must
 assert(adminPassword.includes('password.length < 8'), 'admin-set-password must enforce minimum password length');
 assert(packageJson.includes('"deploy:admin-functions"'), 'admin Edge Function deployment npm script is missing');
 assert(deployScript.includes('SUPABASE_ACCESS_TOKEN'), 'admin deploy script must require Supabase access token');
-assert(deployScript.includes('supabase functions deploy $functionName'), 'admin deploy script must deploy functions');
+assert(deployScript.includes('Resolve-SupabaseCommand'), 'admin deploy script must resolve global supabase or npx fallback');
+assert(deployScript.includes('"--yes", "supabase"'), 'admin deploy script must support npx supabase fallback');
+assert(deployScript.includes('Invoke-Supabase functions deploy $functionName'), 'admin deploy script must deploy functions through the resolved CLI command');
+assert(deployScript.includes('--use-api'), 'admin deploy script must use Supabase API bundling to avoid requiring local Docker');
 assert(deployScript.includes('"admin-users"'), 'admin deploy script must include admin-users');
 assert(deployScript.includes('"admin-delete-user"'), 'admin deploy script must include admin-delete-user');
 assert(deployScript.includes('"admin-set-password"'), 'admin deploy script must include admin-set-password');
