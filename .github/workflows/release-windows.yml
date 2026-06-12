@@ -68,7 +68,7 @@ jobs:
             $prerelease = ($env:INPUT_PRERELEASE -eq 'true').ToString().ToLowerInvariant()
           } else {
             $version = $env:GITHUB_REF_NAME.Trim().TrimStart('v')
-            $notes = "자동 태그 배포: $env:GITHUB_REF_NAME"
+            $notes = "Automatic tag release: $env:GITHUB_REF_NAME"
             $mandatory = 'false'
             $prerelease = 'false'
           }
@@ -144,7 +144,7 @@ jobs:
           PRERELEASE: ${{ steps.meta.outputs.prerelease }}
           RELEASE_NOTES: ${{ steps.meta.outputs.notes }}
         run: |
-          $title = "PEDIT (페딧) v$env:VERSION"
+          $title = "PEDIT v$env:VERSION"
           gh release view $env:TAG *> $null
           if ($LASTEXITCODE -eq 0) {
             gh release upload $env:TAG $env:INSTALLER_PATH --clobber
@@ -168,6 +168,7 @@ jobs:
           RELEASE_NOTES: ${{ steps.meta.outputs.notes }}
         run: |
           $siteRoot = Join-Path $pwd 'site'
+          node scripts/build-pages-site.cjs
           $updateRoot = Join-Path $siteRoot 'updates/win'
           New-Item -ItemType Directory -Force -Path $updateRoot | Out-Null
 
@@ -191,19 +192,6 @@ jobs:
           $manifest | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $latestPath -Encoding UTF8
           Copy-Item -LiteralPath $latestPath -Destination $versionPath -Force
 
-          @"
-          <!doctype html>
-          <html lang="ko">
-          <head>
-            <meta charset="utf-8">
-            <title>PEDIT (페딧) 업데이트</title>
-          </head>
-          <body>
-            <h1>PEDIT (페딧) 업데이트</h1>
-            <p>Windows manifest: <a href="./updates/win/latest.json">latest.json</a></p>
-          </body>
-          </html>
-          "@ | Set-Content -LiteralPath (Join-Path $siteRoot 'index.html') -Encoding UTF8
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
