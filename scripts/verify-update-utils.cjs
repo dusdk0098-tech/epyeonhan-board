@@ -117,9 +117,12 @@ async function verifyMainProcessAutoUpdateSource() {
   assert(mainSource.includes('업데이트 설치 준비') && mainSource.includes('업데이트 설치 시작'), 'update install/restart copy is missing');
   assert(installerInclude.includes('!macro customInit'), 'NSIS custom init macro is missing');
   assert(installerInclude.includes('${isUpdated}') && installerInclude.includes('SetSilent silent'), 'NSIS update mode must force silent install');
+  assert(installerInclude.includes('PeditWaitForUpdatedAppToExit'), 'NSIS update mode must wait for old app process before file replacement');
+  assert(installerInclude.includes('Get-CimInstance -ClassName Win32_Process'), 'NSIS update wait must inspect running app processes');
+  assert(installerInclude.includes('Stop-Process -Id'), 'NSIS update wait must be able to close stale old app processes');
   assert(installerInclude.includes('!macro customInstall'), 'NSIS custom install macro is missing');
   assert(installerInclude.includes('$newDesktopLink') && installerInclude.includes('$newStartMenuLink'), 'NSIS update mode must ensure shortcuts');
-  assert(!installerInclude.includes('${isForceRun}'), 'NSIS update mode must restart the app even when old updater args include /force-run');
+  assert(installerInclude.includes('${ifNot} ${isForceRun}'), 'NSIS custom restart must avoid duplicating the legacy /force-run restart path');
   assert(installerInclude.includes('StdUtils.ExecShellAsUser'), 'NSIS update mode must restart the app after silent updates');
 }
 
