@@ -1,6 +1,7 @@
 # Security Guardrails
 
-PEDIT는 Electron 앱, Supabase 연동, 로컬 파일 처리, 관리자 기능을 포함하므로 민감값 노출과 권한 경계가 특히 중요하다.
+PEDIT는 Electron 앱, Supabase 연동, 로컬 파일 처리, 관리자 기능을 포함하므로 민감값 노출과 권한 경계가 특히
+중요하다.
 
 ## Never Expose
 

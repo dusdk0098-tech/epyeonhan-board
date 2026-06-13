@@ -1,6 +1,7 @@
 # Release Readiness
 
-이 문서는 PEDIT 릴리스 전 내부 QA, 파일 패키징, Supabase 연동, 사용자 안내 자료, 배포 위험을 확인하기 위한 기준이다.
+이 문서는 PEDIT 릴리스 전 내부 QA, 파일 패키징, Supabase 연동, 사용자 안내 자료, 배포 위험을 확인하기 위한
+기준이다.
 
 ## Internal QA Readiness
 
