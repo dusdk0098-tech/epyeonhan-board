@@ -60,4 +60,5 @@
 
 ## PASS Rule
 
-기능 PASS는 실제 명령, 테스트, 브라우저/Electron 확인, 또는 코드 증거가 있을 때만 인정한다. 증거가 부족하면 PARTIAL 또는 NOT_RUN으로 기록한다.
+기능 PASS는 실제 명령, 테스트, 브라우저/Electron 확인, 또는 코드 증거가
+있을 때만 인정한다. 증거가 부족하면 PARTIAL 또는 NOT_RUN으로 기록한다.

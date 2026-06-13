@@ -1,8 +1,9 @@
 # Codex Task Ledger
 
 이 문서는 PEDIT에서 Codex 작업을 append-only 방식으로 기록하기 위한 ledger
-구조를 정의한다. 작업 기록은 나중에 Evidence Bundle, 서브에이전트 검증,
-메인 취합, 다음 지시문 생성의 입력으로 사용한다.
+구조를 정의한다.
+작업 기록은 나중에 Evidence Bundle, 서브에이전트 검증, 메인 취합,
+다음 지시문 생성의 입력으로 사용한다.
 
 ## Append-Only Rule
 
