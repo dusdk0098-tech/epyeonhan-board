@@ -20,20 +20,26 @@
 # Subagent Report
 
 ## Agent Role
+
 [역할]
 
 ## Overall Verdict
+
 PASS / PARTIAL / FAIL / NOT_RUN
 
 ## Confidence
+
 High / Medium / Low
 
 ## Evidence Reviewed
+
 - reviewed:
 - missing:
 
 ## Findings
+
 ### Finding 1
+
 - Severity: S0 / S1 / S2 / S3 / Info
 - Area:
 - Description:
@@ -42,6 +48,7 @@ High / Medium / Low
 - Recommended next action:
 
 ## Checks
+
 - Requirement coverage:
   - PASS / PARTIAL / FAIL / NOT_RUN
 - Regression risk:
@@ -54,15 +61,19 @@ High / Medium / Low
   - PASS / PARTIAL / FAIL / NOT_RUN
 
 ## Must Fix Before Merge
+
 - [필수 수정]
 
 ## Should Fix Soon
+
 - [권장 수정]
 
 ## Safe To Proceed?
+
 Yes / No / Conditional
 
 ## Next Prompt Suggestions
+
 - Codex에게 다음에 지시해야 할 내용:
 ```
 

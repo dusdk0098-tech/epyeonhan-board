@@ -65,18 +65,23 @@
 입력:
 
 ## Original Task
+
 [원래 작업 지시문]
 
 ## Evidence Bundle
+
 [Codex 작업 결과]
 
 ## Subagent Reports
+
 [서브에이전트 검증 결과들]
 
 ## Main Aggregated Review
+
 [메인 취합 결과]
 
 ## Required Output
+
 다음 Codex 작업 지시문을 아래 형식으로 작성해 주세요.
 
 1. 이번 라운드 목적
@@ -101,9 +106,11 @@
 ## Evidence Bundle Template
 
 ```md
+
 # Evidence Bundle
 
 ## Project
+
 - Project name:
 - Base branch:
 - Working branch:
@@ -113,9 +120,11 @@
   - feature / fix / refactor / docs-only QA / security review / release readiness
 
 ## Original Request
+
 [이번 작업의 원래 지시문]
 
 ## Intended Scope
+
 - 허용된 변경:
 - 금지된 변경:
 - DB migration:
@@ -128,18 +137,22 @@
   - allowed / forbidden / none
 
 ## Changed Files
+
 [수정 파일 목록]
 
 ## Diff Summary
+
 [파일별 변경 요약. 민감값, full path, token, secret 출력 금지]
 
 ## Implementation Summary
+
 - 구현한 것:
 - 구현하지 않은 것:
 - 의도적으로 제외한 것:
 - 임시 처리한 것:
 
 ## Verification Results
+
 - git diff --check:
   - PASS / FAIL / NOT_RUN
   - evidence:
@@ -171,6 +184,7 @@
   - evidence:
 
 ## Screenshots / Visual Evidence
+
 - Before:
 - After:
 - Viewports checked:
@@ -179,10 +193,12 @@
   - mobile
 
 ## Known Issues
+
 - Issue 1:
 - Issue 2:
 
 ## Developer Self-Assessment
+
 - Overall:
   - PASS / PARTIAL / FAIL / NOT_RUN
 - Reason:
