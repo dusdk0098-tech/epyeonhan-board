@@ -2,6 +2,7 @@
 
 이 문서는 Main Aggregated Review를 GPT5.5PRO에 전달해 다음 Codex 작업 지시문을 만드는 기준이다.
 
+
 ## Required Inputs
 
 - Original Task
@@ -9,12 +10,14 @@
 - Subagent Reports
 - Main Aggregated Review
 
+
 ## Decision Branches
 
 - S0/S1 이슈가 있으면 새 기능 개발 금지, fix-only 또는 stabilization으로 작성한다.
 - 핵심 검증 NOT_RUN이 있으면 QA-only 또는 보수적 stabilization으로 작성한다.
 - S0/S1 없고 핵심 검증이 충분하면 feature continuation을 허용한다.
 - 배포 준비 단계면 release readiness로 작성한다.
+
 
 ## Direct Codex Prompt Must Include
 
@@ -38,9 +41,11 @@
 - commit/push/PR.
 - 작업 후 보고 형식.
 
+
 ## GPT5.5PRO Paste Template
 
 ```md
+
 아래는 Codex 구현 결과와 다중 서브에이전트 검증 결과를 메인 에이전트가 취합한 내용입니다.
 
 목표:
@@ -64,21 +69,26 @@
 
 입력:
 
+
 ## Original Task
 
 [원래 작업 지시문]
+
 
 ## Evidence Bundle
 
 [Codex 작업 결과]
 
+
 ## Subagent Reports
 
 [서브에이전트 검증 결과들]
 
+
 ## Main Aggregated Review
 
 [메인 취합 결과]
+
 
 ## Required Output
 
@@ -104,11 +114,14 @@
 
 ```
 
+
 ## Evidence Bundle Template
 
 ```md
 
+
 # Evidence Bundle
+
 
 ## Project
 
@@ -120,9 +133,11 @@
 - Task type:
   - feature / fix / refactor / docs-only QA / security review / release readiness
 
+
 ## Original Request
 
 [이번 작업의 원래 지시문]
+
 
 ## Intended Scope
 
@@ -137,13 +152,16 @@
 - public asset change:
   - allowed / forbidden / none
 
+
 ## Changed Files
 
 [수정 파일 목록]
 
+
 ## Diff Summary
 
 [파일별 변경 요약. 민감값, full path, token, secret 출력 금지]
+
 
 ## Implementation Summary
 
@@ -151,6 +169,7 @@
 - 구현하지 않은 것:
 - 의도적으로 제외한 것:
 - 임시 처리한 것:
+
 
 ## Verification Results
 
@@ -184,6 +203,7 @@
   - PASS / FAIL / NOT_RUN
   - evidence:
 
+
 ## Screenshots / Visual Evidence
 
 - Before:
@@ -193,10 +213,12 @@
   - tablet
   - mobile
 
+
 ## Known Issues
 
 - Issue 1:
 - Issue 2:
+
 
 ## Developer Self-Assessment
 
