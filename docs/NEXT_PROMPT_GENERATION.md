@@ -101,6 +101,7 @@
 14. commit/push/PR 생성 지시
 15. PR 본문 템플릿
 16. 작업 후 보고 형식
+
 ```
 
 ## Evidence Bundle Template
@@ -202,4 +203,5 @@
 - Overall:
   - PASS / PARTIAL / FAIL / NOT_RUN
 - Reason:
+
 ```

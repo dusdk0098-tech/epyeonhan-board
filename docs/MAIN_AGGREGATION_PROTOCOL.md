@@ -101,4 +101,5 @@ fix-only / QA-only / stabilization / feature continuation / release readiness
 ## Draft Direct Codex Prompt
 
 [Codex에 바로 붙여넣을 수 있는 다음 지시문]
+
 ```

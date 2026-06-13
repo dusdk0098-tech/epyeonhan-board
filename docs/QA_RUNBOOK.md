@@ -58,6 +58,7 @@
 - no-exposure check:
   - PASS / FAIL / NOT_RUN
   - evidence:
+
 ```
 
 ## Browser QA Conditions

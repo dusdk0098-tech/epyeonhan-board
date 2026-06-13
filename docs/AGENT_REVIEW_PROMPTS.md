@@ -75,6 +75,7 @@ Yes / No / Conditional
 ## Next Prompt Suggestions
 
 - Codex에게 다음에 지시해야 할 내용:
+
 ```
 
 ## Functional QA Agent Prompt
