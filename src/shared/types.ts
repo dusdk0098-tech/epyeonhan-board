@@ -7,6 +7,7 @@ export type BoardTextColor = 'black' | 'blue' | 'red' | 'green';
 export type BoardLineColor = BoardTextColor;
 export type HighlightColor = BoardTextColor | 'yellow';
 export type BoardLayoutMode = 'table' | 'bottom-strip';
+export type PhotoRotation = 0 | 90 | 180 | 270;
 
 export interface PhotoHighlight {
   enabled: boolean;
@@ -28,6 +29,7 @@ export interface PhotoItem {
   path: string;
   name: string;
   selectedForProcessing: boolean;
+  rotation?: PhotoRotation;
   highlight?: PhotoHighlight;
   photoLedger?: PhotoLedgerInfo;
 }
@@ -141,6 +143,8 @@ export interface ImageDataResult {
   dataUrl?: string;
   error?: string;
 }
+
+export type ImageDataSource = string | Pick<PhotoItem, 'path' | 'rotation'>;
 
 export type RenderPreviewImageResult = ImageDataResult;
 

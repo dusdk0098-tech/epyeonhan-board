@@ -74,3 +74,56 @@ Evidence Bundle, 서브에이전트 검증, 메인 취합, 다음 지시문 생�
 
 이 문서는 다중 에이전트 개발 검증 프로세스 도입을 위한 초기 ledger 기준이다. 실제 작업 기록은 향후 PR마다 이 파일에
 append-only로 추가한다.
+
+## Task 2026-06-13 - per-photo rotation controls
+
+- Phase: photo-rotation
+- Branch: codex/photo-rotation
+- PR: To be created as draft after this record is committed.
+- Task type:
+  - feature
+- Scope:
+  - Allowed: add per-photo 90-degree rotation controls to LITE and PRO photo workflows.
+  - Forbidden: package/package-lock changes, DB migrations, public assets, CI changes, generated build output, manual image assets.
+- Changed files:
+  - electron/main.ts
+  - electron/preload.ts
+  - scripts/verify-output-settings.cjs
+  - src/App.tsx
+  - src/electron-api.d.ts
+  - src/shared/types.ts
+  - src/styles.css
+  - docs/CODEX_TASKS.md
+- Evidence Bundle:
+  - Location or summary: rotation metadata is stored per photo, passed through the Electron bridge, applied by the main-process image pipeline, and exposed in LITE/PRO preview controls.
+- Verification:
+  - git diff --check: PASS
+  - lint: NOT_RUN - no lint script exists in package.json.
+  - typecheck: PASS - covered by npm run build.
+  - tests: NOT_RUN - no test script exists in package.json.
+  - build: PASS - npm run build.
+  - browser QA: NOT_RUN - Electron manual QA was not rerun during this PR packaging pass.
+  - migration check: PASS - no DB migration changes.
+  - no-exposure check: PASS - staged diff contains no secret, env, signed URL, storage path, or large binary exposure.
+  - verify:ui: PASS
+  - verify:board: PASS
+  - verify-output-settings: PASS
+  - package:win: PASS - installer packaging completed locally; generated release artifacts are not included in the PR.
+- Subagent reviews:
+  - Functional QA: NOT_RUN - independent subagent review not requested for this PR pass.
+  - Design Regression: NOT_RUN - independent subagent review not requested for this PR pass.
+  - Code Quality & Architecture: NOT_RUN - independent subagent review not requested for this PR pass.
+  - Security & Privacy: NOT_RUN - independent subagent review not requested for this PR pass.
+  - Test & Build Verification: NOT_RUN - independent subagent review not requested for this PR pass.
+  - API/DB Contract: NOT_RUN - no API/DB contract changes beyond Electron preload typing.
+  - Product Requirements: NOT_RUN - independent subagent review not requested for this PR pass.
+  - Release Risk: NOT_RUN - independent subagent review not requested for this PR pass.
+- Main aggregation result:
+  - Overall: PARTIAL - automated build, verification, and packaging passed; manual Electron QA remains a follow-up check.
+  - Safe to merge: PARTIAL - draft PR should receive normal review and manual smoke QA before merge.
+  - Safe to start next feature: PARTIAL - after manual smoke QA confirms LITE/PRO rotation controls.
+- Verdict:
+  - PARTIAL
+- Follow-up:
+  - Run manual Electron smoke QA for LITE and PRO rotation controls before moving the draft PR to ready.
+  - Keep untracked user manual images out of this feature PR.
