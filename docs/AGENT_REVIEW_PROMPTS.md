@@ -33,7 +33,9 @@ High / Medium / Low
 - missing:
 
 ## Findings
+
 ### Finding 1
+
 - Severity: S0 / S1 / S2 / S3 / Info
 - Area:
 - Description:
@@ -42,6 +44,7 @@ High / Medium / Low
 - Recommended next action:
 
 ## Checks
+
 - Requirement coverage:
   - PASS / PARTIAL / FAIL / NOT_RUN
 - Regression risk:

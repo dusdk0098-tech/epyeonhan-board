@@ -104,6 +104,7 @@
 # Evidence Bundle
 
 ## Project
+
 - Project name:
 - Base branch:
 - Working branch:
@@ -113,9 +114,11 @@
   - feature / fix / refactor / docs-only QA / security review / release readiness
 
 ## Original Request
+
 [이번 작업의 원래 지시문]
 
 ## Intended Scope
+
 - 허용된 변경:
 - 금지된 변경:
 - DB migration:
@@ -128,18 +131,22 @@
   - allowed / forbidden / none
 
 ## Changed Files
+
 [수정 파일 목록]
 
 ## Diff Summary
+
 [파일별 변경 요약. 민감값, full path, token, secret 출력 금지]
 
 ## Implementation Summary
+
 - 구현한 것:
 - 구현하지 않은 것:
 - 의도적으로 제외한 것:
 - 임시 처리한 것:
 
 ## Verification Results
+
 - git diff --check:
   - PASS / FAIL / NOT_RUN
   - evidence:
@@ -171,6 +178,7 @@
   - evidence:
 
 ## Screenshots / Visual Evidence
+
 - Before:
 - After:
 - Viewports checked:
@@ -179,10 +187,12 @@
   - mobile
 
 ## Known Issues
+
 - Issue 1:
 - Issue 2:
 
 ## Developer Self-Assessment
+
 - Overall:
   - PASS / PARTIAL / FAIL / NOT_RUN
 - Reason:

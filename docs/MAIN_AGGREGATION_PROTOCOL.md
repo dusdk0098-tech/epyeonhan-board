@@ -41,6 +41,7 @@
 PASS / PARTIAL / FAIL / NOT_RUN
 
 ## Merge / Proceed Decision
+
 - Safe to merge:
   - Yes / No / Conditional
 - Safe to start next feature:
@@ -49,7 +50,9 @@ PASS / PARTIAL / FAIL / NOT_RUN
   - fix-only PR / stabilization PR / additional QA / next feature allowed
 
 ## Critical Findings
+
 ### Finding A
+
 - Severity:
 - Source agents:
 - Consolidated description:
@@ -58,19 +61,23 @@ PASS / PARTIAL / FAIL / NOT_RUN
 - Required fix:
 
 ## Duplicated or Related Findings
+
 - [병합한 이슈 설명]
 
 ## Conflicting Agent Opinions
+
 - Conflict:
 - Resolution:
 - Final decision:
 
 ## Missing Evidence
+
 - [없는 증거]
 - Impact:
 - Required verification:
 
 ## PASS/PARTIAL/NOT_RUN/FAIL Matrix
+
 | Area | Status | Reason |
 |---|---|---|
 | Functional QA |  |  |
@@ -82,11 +89,14 @@ PASS / PARTIAL / FAIL / NOT_RUN
 | Release readiness |  |  |
 
 ## Next Work Type
+
 fix-only / QA-only / stabilization / feature continuation / release readiness
 
 ## Draft Next Instruction For GPT5.5PRO
+
 [GPT5.5PRO에게 붙여넣을 요약]
 
 ## Draft Direct Codex Prompt
+
 [Codex에 바로 붙여넣을 수 있는 다음 지시문]
 ```
