@@ -155,3 +155,41 @@
   - 04_PRO image was sanitized/replaced with a demo-safe version before commit.
 - Follow-up:
   - Link images from user manual document if needed.
+
+## Task 2026-06-14 - PRO guided workflow feedback
+
+- Phase: pro-guided-workflow-feedback
+- Branch: codex/pro-guided-workflow
+- Task type:
+  - UX improvement
+- Scope:
+  - Guided workflow, micro-interactions, button feedback, and generation status feedback for PRO options.
+- Changed files:
+  - src/App.tsx
+  - src/components/pro-guided-workflow/ProGuidedWorkflow.tsx
+  - src/components/pro-guided-workflow/ProWorkflowStep.tsx
+  - src/components/pro-guided-workflow/ProWorkflowOptionCard.tsx
+  - src/components/pro-guided-workflow/ProWorkflowSummary.tsx
+  - src/components/pro-guided-workflow/ProWorkflowStepper.tsx
+  - src/components/pro-guided-workflow/OutputProgressStatus.tsx
+  - src/styles.css
+  - docs/CODEX_TASKS.md
+- Verification:
+  - git diff --check: PASS
+  - build: PASS
+  - verify:ui: PASS
+  - verify:board: PASS
+  - verify-output-settings: PASS
+  - package:win: PASS
+  - browser auth-gate smoke: PASS
+  - LITE/PRO manual QA: NOT_RUN - local preview requires an authenticated session before the workflow screens render.
+  - reduced motion check: PASS - scoped CSS disables repeated motion under prefers-reduced-motion.
+  - no-exposure: PASS
+  - scope check: PASS
+- Known limitations:
+  - Full settings search/finder is not included.
+  - Real percentage progress is not included.
+  - Automatic carousel is intentionally not used.
+  - Additional user manual update may be needed after UX is finalized.
+- Follow-up:
+  - Revisit copy and screenshots after the guided PRO flow receives manual user feedback.

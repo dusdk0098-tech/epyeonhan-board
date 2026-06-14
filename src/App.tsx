@@ -108,6 +108,12 @@ import {
 } from './shared/photoLedgerRenderer';
 import { calculateContainedSize } from './shared/previewFit';
 import type { UpdateStatusPayload } from './electron-api';
+import {
+  ProGuidedWorkflow,
+  type ProDetailTab,
+  type ProOutputFeedback,
+  type ProWorkflowMode
+} from './components/pro-guided-workflow/ProGuidedWorkflow';
 
 type Screen = 'start' | 'help' | 'basic' | 'advanced' | 'output' | 'commonSettings' | 'contact' | 'admin';
 type WorkspaceScreen = 'basic' | 'advanced' | 'output';
@@ -407,6 +413,11 @@ export default function App() {
   const [activeOutputSettingsTab, setActiveOutputSettingsTab] = useState<'fields' | 'datetime' | 'layout' | 'typography' | 'highlight' | 'ledger'>('fields');
   const [status, setStatus] = useState<StatusMessage | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [proOutputFeedback, setProOutputFeedback] = useState<ProOutputFeedback>({
+    state: 'idle',
+    title: '생성 준비',
+    message: '사진과 저장 경로를 확인한 뒤 결과물을 생성하세요.'
+  });
   const [isDragTargetActive, setIsDragTargetActive] = useState(false);
   const [previewContextMenu, setPreviewContextMenu] = useState<{ x: number; y: number } | null>(null);
   const [showPhotoList, setShowPhotoList] = useState(false);
@@ -1794,21 +1805,38 @@ export default function App() {
   }
 
   async function runProcess(mode: ProcessImagesPayload['mode'], options: { createPhotoLedgerPdf?: boolean } = {}) {
+    const shouldTrackProOutput = activeWorkspaceKey === 'output';
+    const proFeedbackTitle = options.createPhotoLedgerPdf
+      ? '사진대지 PDF 생성'
+      : mode === 'checked'
+        ? '체크 사진 작업'
+        : mode === 'selected'
+          ? '선택 사진 작업'
+          : '전체 사진 작업';
+    const setProFeedback = (state: ProOutputFeedback['state'], message: string) => {
+      if (!shouldTrackProOutput) return;
+      setProOutputFeedback({ state, title: proFeedbackTitle, message });
+    };
+
     if (photos.length === 0) {
       setStatusMessage('error', '처리할 사진을 먼저 불러오세요.');
+      setProFeedback('error', '처리할 사진을 먼저 불러오세요.');
       return;
     }
     if (!saveDir) {
       setStatusMessage('error', '저장 경로를 먼저 지정하세요.');
+      setProFeedback('error', '저장 경로를 먼저 지정하세요.');
       return;
     }
     if ((mode === 'selected' && !selectedPhotoPath) || (mode === 'checked' && !photos.some((photo) => photo.selectedForProcessing))) {
       setStatusMessage('error', '처리할 사진을 선택하세요.');
+      setProFeedback('error', '처리할 사진을 선택하세요.');
       return;
     }
 
     setIsProcessing(true);
     setStatusMessage('info', '사진을 처리하는 중입니다.');
+    setProFeedback('generating', options.createPhotoLedgerPdf ? 'PDF를 저장하는 중입니다. 완료될 때까지 기다려주세요.' : '사진을 저장하는 중입니다. 중복 클릭은 잠시 막아둡니다.');
 
     const processSettings = normalizeSettings({
       ...mergeCommonOutputSettings(settings),
@@ -1829,6 +1857,7 @@ export default function App() {
 
     if (!result.ok) {
       setStatusMessage('error', result.error ?? '작업을 완료하지 못했습니다.');
+      setProFeedback('error', result.error ?? '작업을 완료하지 못했습니다.');
       return;
     }
 
@@ -1842,7 +1871,9 @@ export default function App() {
     if (processSettings.openFolderAfterProcessing) {
       successMessages.push('결과 폴더를 열었습니다.');
     }
-    setStatusMessage('success', successMessages.join(' ') || '작업을 완료했습니다.');
+    const successMessage = successMessages.join(' ') || '작업을 완료했습니다.';
+    setStatusMessage('success', successMessage);
+    setProFeedback('success', successMessage);
   }
 
   async function handleCopyPreviewImage() {
@@ -3271,9 +3302,46 @@ export default function App() {
     );
   }
 
+  function renderProGuidedWorkflow() {
+    const workflowMode: ProWorkflowMode = settings.showBoard ? 'board' : 'ledger';
+    const checkedCount = photos.filter((photo) => photo.selectedForProcessing).length;
+    const openDetailTab = (tab: ProDetailTab) => setActiveOutputSettingsTab(tab);
+
+    return (
+      <ProGuidedWorkflow
+        workflowMode={workflowMode}
+        boardLayoutMode={settings.boardLayoutMode}
+        timeMode={timeOptions.mode}
+        bottomStripShowLabels={settings.bottomStripShowLabels}
+        position={settings.position}
+        positionLabels={positionLabels}
+        highlightEnabled={Boolean(selectedHighlight?.enabled)}
+        highlightDisabled={!selectedPhoto}
+        photosCount={photos.length}
+        checkedCount={checkedCount}
+        hasSelectedPhoto={Boolean(selectedPhoto)}
+        hasSaveDir={Boolean(saveDir)}
+        isProcessing={isProcessing}
+        outputFeedback={proOutputFeedback}
+        onWorkflowModeChange={(mode) => updateSettings({ showBoard: mode === 'board' })}
+        onBoardLayoutModeChange={(mode) => updateSettings({ boardLayoutMode: mode })}
+        onTimeModeChange={setTimeMode}
+        onBottomStripShowLabelsChange={(value) => updateSettings({ bottomStripShowLabels: value })}
+        onPositionChange={(nextPosition) => updateSettings({ position: nextPosition })}
+        onHighlightEnabledChange={setSelectedHighlightEnabled}
+        onOpenDetailTab={openDetailTab}
+        onPreviewLedger={openPhotoLedgerPreview}
+        onCreateLedger={() => void runProcess('all', { createPhotoLedgerPdf: true })}
+        onRunSelected={() => void runProcess('selected')}
+        onRunChecked={() => void runProcess('checked')}
+      />
+    );
+  }
+
   function renderPremiumSettingsCard() {
     return (
       <Card title="설정" icon={<Settings size={17} />} className="output-settings-card premium-settings-card">
+        {renderProGuidedWorkflow()}
         <div className="settings-tabs premium-settings-tabs" role="tablist" aria-label="PRO 설정">
           <button
             type="button"
