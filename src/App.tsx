@@ -3002,6 +3002,7 @@ export default function App() {
             <input value={field.value} onInput={(event) => updateField(field.id, { value: event.currentTarget.value })} />
             <button type="button" onClick={() => deleteField(field.id)} aria-label="항목 삭제">
               <Trash2 size={16} />
+              <span>항목 삭제</span>
             </button>
           </div>
         ))}

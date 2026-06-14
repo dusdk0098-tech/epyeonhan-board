@@ -318,3 +318,39 @@
   - Small-window manual resizing was not exhaustively repeated in Electron for every PRO step.
   - Manual PDF failure-state forcing remains a follow-up candidate.
   - Full photo import/output manual QA should be repeated with a synthetic image before promoting the draft PR.
+
+## Task 2026-06-14 - PRO task flow modern UX redesign
+
+- Phase: pro-task-flow-modern-ux-redesign
+- Branch: codex/pro-guided-workflow
+- Task type:
+  - UX improvement / PRO workflow workspace refinement
+- Scope:
+  - Kept the preview in a stable right rail across guided PRO steps on wide screens.
+  - Made the preview more compact so the active task and detail controls keep priority.
+  - Added responsive workspace sizing variables for larger text, larger controls, and cleaner fullscreen scaling.
+  - Reused the existing board-field editor inside the lower-band item step so add/delete controls are available when the lower band is enabled.
+  - Added visible text to item delete buttons to avoid icon-only critical controls.
+  - Preserved existing PRO output/PDF logic, option values, and generated output structure.
+- Changed files:
+  - src/App.tsx
+  - src/components/pro-guided-workflow/ProGuidedWorkflow.tsx
+  - src/styles.css
+  - docs/CODEX_TASKS.md
+- Verification:
+  - preview placement QA: PASS - Electron smoke confirmed the preview rail stays on the right after lower-band and item-cell step changes.
+  - detail options panel QA: PASS - step content stays in the main task panel and lower-band item controls appear in the active step.
+  - lower band item management QA: PASS - existing add/delete board-field controls are available in the lower-band item step.
+  - 40+ usability QA: PASS - larger controls and visible delete labels were added.
+  - fullscreen/responsive QA: PASS for maximized Electron smoke; compact/narrow breakpoints are covered by CSS review.
+  - modern design QA: PASS - task panel and preview rail have clearer hierarchy without a broad redesign.
+  - duplicate/missing button QA: PASS - lower-band item add/delete controls are visible and primary output actions remain unchanged.
+  - flow QA: PASS - lower-band selection advances to item-cell setup without changing output logic.
+  - regression QA: PASS by automated build/verification commands and manual PRO visual smoke.
+  - reduced-motion/animation QA: PASS by CSS review; existing reduced-motion rules remain in place.
+  - no-exposure: PASS
+  - scope check: PASS
+- Known limitations:
+  - Small-window Electron resizing was not exhaustively repeated for every PRO step.
+  - Manual PDF failure-state forcing remains a follow-up candidate.
+  - Full authenticated photo import/output QA should be repeated before promoting the draft PR.

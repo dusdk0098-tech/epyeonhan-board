@@ -440,33 +440,40 @@ export function ProGuidedWorkflow({
         );
       case 'item-cells':
         return (
-          <div className="pro-workflow-options">
-            <ProWorkflowOptionCard
-              title="항목칸 표시"
-              description="하부띠에 항목명과 내용을 구분해서 보여줍니다."
-              selected={bottomStripShowLabels}
-              nextHint="선택하면 원형강조 단계로 이어집니다."
-              icon={<ListChecks size={18} />}
-              onClick={() => {
-                selectAndAdvance('item-cells', 'highlight', () => {
+          <div className="pro-workflow-step-stack">
+            <div className="pro-workflow-options">
+              <ProWorkflowOptionCard
+                title="항목칸 표시"
+                description="하부띠에 항목명과 내용을 구분해서 보여줍니다."
+                selected={bottomStripShowLabels}
+                nextHint="선택 후 아래에서 하부띠 항목을 정리하세요."
+                icon={<ListChecks size={18} />}
+                onClick={() => {
                   onBottomStripShowLabelsChange(true);
                   onOpenDetailTab('layout');
-                });
-              }}
-            />
-            <ProWorkflowOptionCard
-              title="항목칸 표시 안 함"
-              description="내용 중심으로 하부띠를 더 간결하게 표시합니다."
-              selected={!bottomStripShowLabels}
-              nextHint="선택하면 원형강조 단계로 이어집니다."
-              icon={<Rows3 size={18} />}
-              onClick={() => {
-                selectAndAdvance('item-cells', 'highlight', () => {
+                  setRecentlyCompletedStepId('item-cells');
+                }}
+              />
+              <ProWorkflowOptionCard
+                title="항목칸 표시 안 함"
+                description="내용 중심으로 하부띠를 더 간결하게 표시합니다."
+                selected={!bottomStripShowLabels}
+                nextHint="선택 후 아래에서 하부띠 항목을 정리하세요."
+                icon={<Rows3 size={18} />}
+                onClick={() => {
                   onBottomStripShowLabelsChange(false);
                   onOpenDetailTab('layout');
-                });
-              }}
-            />
+                  setRecentlyCompletedStepId('item-cells');
+                }}
+              />
+            </div>
+            <div className="pro-workflow-step-detail pro-lower-band-items-panel">
+              <div className="pro-workflow-subpanel-head">
+                <strong>하부띠 항목 관리</strong>
+                <small>PDF와 보드판에 들어갈 항목명과 내용을 추가하거나 삭제합니다.</small>
+              </div>
+              {boardFieldsSettings}
+            </div>
           </div>
         );
       case 'position':

@@ -8269,10 +8269,16 @@ body {
 }
 
 .pro-task-flow-shell {
+  --pro-ui-scale: clamp(1, 0.92 + 0.12vw, 1.12);
+  --pro-font-size: clamp(13px, 0.78vw, 15px);
+  --pro-card-padding: clamp(10px, 0.72vw, 14px);
+  --pro-control-height: clamp(40px, 2.3vw, 46px);
+  --pro-rail-width: clamp(320px, 24vw, 430px);
   padding: 10px 14px;
 }
 
 .app:not(.start-active) .pro-task-flow-grid {
+  container: pro-workspace / inline-size;
   width: 100%;
   max-width: 1500px;
   gap: 12px;
@@ -8284,6 +8290,24 @@ body {
 .pro-task-flow-grid .output-preview-card,
 .pro-task-flow-grid .output-settings-card {
   min-width: 0;
+}
+
+.pro-task-flow-grid .output-preview-card {
+  align-self: start;
+  height: auto;
+  max-height: calc(100vh - 118px);
+}
+
+.pro-task-flow-grid .output-preview-card .preview-stage {
+  flex: 0 0 auto;
+  aspect-ratio: 4 / 3;
+  min-height: clamp(220px, 30vh, 360px);
+  max-height: clamp(260px, 38vh, 460px);
+}
+
+.pro-task-flow-grid.pro-mode-preview .output-preview-card .preview-stage {
+  min-height: clamp(280px, 42vh, 540px);
+  max-height: clamp(320px, 52vh, 620px);
 }
 
 .app:not(.start-active) .pro-task-flow-grid.pro-mode-start {
@@ -8302,7 +8326,7 @@ body {
 }
 
 .app:not(.start-active) .pro-task-flow-grid.pro-mode-configure {
-  grid-template-columns: minmax(560px, 1fr) minmax(300px, 0.42fr);
+  grid-template-columns: minmax(560px, 1fr) var(--pro-rail-width);
 }
 
 .app:not(.start-active) .pro-task-flow-grid.pro-mode-configure .output-photo-card {
@@ -8320,7 +8344,7 @@ body {
 }
 
 .app:not(.start-active) .pro-task-flow-grid.pro-mode-photo {
-  grid-template-columns: 260px minmax(520px, 1fr) minmax(300px, 0.72fr);
+  grid-template-columns: minmax(240px, 0.36fr) minmax(520px, 1fr) var(--pro-rail-width);
 }
 
 .app:not(.start-active) .pro-task-flow-grid.pro-mode-photo .output-photo-card {
@@ -8339,7 +8363,7 @@ body {
 }
 
 .app:not(.start-active) .pro-task-flow-grid.pro-mode-preview {
-  grid-template-columns: minmax(560px, 1.15fr) minmax(430px, 0.85fr);
+  grid-template-columns: minmax(560px, 1fr) var(--pro-rail-width);
 }
 
 .app:not(.start-active) .pro-task-flow-grid.pro-mode-preview .output-photo-card {
@@ -8347,17 +8371,17 @@ body {
 }
 
 .app:not(.start-active) .pro-task-flow-grid.pro-mode-preview .output-preview-card {
-  grid-column: 1;
-  grid-row: 1;
-}
-
-.app:not(.start-active) .pro-task-flow-grid.pro-mode-preview .output-settings-card {
   grid-column: 2;
   grid-row: 1;
 }
 
+.app:not(.start-active) .pro-task-flow-grid.pro-mode-preview .output-settings-card {
+  grid-column: 1;
+  grid-row: 1;
+}
+
 .app:not(.start-active) .pro-task-flow-grid.pro-mode-generate {
-  grid-template-columns: minmax(520px, 0.95fr) minmax(420px, 1.05fr);
+  grid-template-columns: minmax(560px, 1fr) var(--pro-rail-width);
 }
 
 .app:not(.start-active) .pro-task-flow-grid.pro-mode-generate .output-photo-card {
@@ -8534,6 +8558,100 @@ body {
   padding: 0 9px 9px;
 }
 
+.pro-workflow-subpanel-head {
+  display: grid;
+  gap: 3px;
+  margin-bottom: 9px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e1e9f2;
+}
+
+.pro-workflow-subpanel-head strong {
+  color: #10243f;
+  font-size: clamp(13px, 0.78vw, 15px);
+  line-height: 1.25;
+}
+
+.pro-workflow-subpanel-head small {
+  color: #637388;
+  font-size: clamp(11.5px, 0.7vw, 13px);
+  line-height: 1.35;
+}
+
+.pro-lower-band-items-panel {
+  max-height: none;
+}
+
+.pro-task-flow-grid .pro-guided-workflow,
+.pro-task-flow-grid .pro-workflow-step {
+  padding: var(--pro-card-padding);
+}
+
+.pro-task-flow-grid .pro-guided-head h3,
+.pro-task-flow-grid .pro-workflow-step-head h4 {
+  font-size: clamp(15px, 0.92vw, 18px);
+}
+
+.pro-task-flow-grid .pro-guided-head p,
+.pro-task-flow-grid .pro-workflow-step-head p,
+.pro-task-flow-grid .pro-workflow-output-hint {
+  font-size: var(--pro-font-size);
+}
+
+.pro-task-flow-grid .pro-workflow-option {
+  min-height: calc(var(--pro-control-height) + 18px);
+  padding: clamp(10px, 0.8vw, 14px);
+}
+
+.pro-task-flow-grid .btn,
+.pro-task-flow-grid .small-btn,
+.pro-task-flow-grid .premium-detail-drawer > summary,
+.pro-task-flow-grid .pro-workflow-secondary-actions > summary {
+  min-height: var(--pro-control-height);
+}
+
+.pro-task-flow-grid .pro-workflow-summary-row {
+  min-height: calc(var(--pro-control-height) - 6px);
+}
+
+.advanced-field-row {
+  grid-template-columns: minmax(74px, 0.22fr) minmax(0, 1fr) minmax(92px, auto);
+}
+
+.premium-settings-card .advanced-field-row,
+.app:not(.start-active) .premium-settings-card .advanced-field-row {
+  grid-template-columns: minmax(78px, 0.22fr) minmax(0, 1fr) minmax(96px, auto);
+}
+
+.advanced-field-row button {
+  width: auto;
+  min-width: 92px;
+  height: auto;
+  min-height: 36px;
+  gap: 4px;
+  padding: 0 8px;
+  white-space: nowrap;
+}
+
+.advanced-field-row button span {
+  font-size: 12px;
+  font-weight: 800;
+}
+
+@container pro-workspace (min-width: 1100px) {
+  .pro-task-flow-grid .pro-guided-workflow {
+    gap: 13px;
+  }
+
+  .pro-task-flow-grid .pro-workflow-slide-panel {
+    max-width: 100%;
+  }
+
+  .pro-task-flow-grid .pro-workflow-step-detail {
+    max-height: min(52vh, 520px);
+  }
+}
+
 @media (hover: hover) and (pointer: fine) {
   .pro-workflow-option:not(:disabled):hover,
   .pro-workflow-step.step-task .pro-workflow-option:not(:disabled):hover,
@@ -8613,6 +8731,17 @@ body {
 
   .pro-workflow-progress-dots {
     flex-wrap: wrap;
+  }
+
+  .advanced-field-row,
+  .premium-settings-card .advanced-field-row,
+  .app:not(.start-active) .premium-settings-card .advanced-field-row {
+    grid-template-columns: minmax(70px, 0.3fr) minmax(0, 1fr);
+  }
+
+  .advanced-field-row button {
+    grid-column: 1 / -1;
+    justify-self: stretch;
   }
 }
 
