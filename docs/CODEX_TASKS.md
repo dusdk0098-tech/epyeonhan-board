@@ -129,3 +129,29 @@
 - Follow-up:
   - Run manual Electron smoke QA for LITE and PRO rotation controls before moving the draft PR to ready.
   - Keep untracked user manual images out of this feature PR.
+
+## Task 2026-06-14 - user manual images
+
+- Phase: user-manual-images
+- Branch: codex/user-manual-images
+- Task type:
+  - docs/image asset
+- Scope:
+  - Add reviewed user manual PNG assets.
+- Changed files:
+  - docs/user-manual-images/*.png
+  - docs/CODEX_TASKS.md
+- Verification:
+  - image file validation: PASS
+  - visual privacy review: PASS
+  - metadata review: PASS
+  - docs-only scope: PASS
+  - no-exposure: PASS
+- Excluded:
+  - product code
+  - review-artifacts
+  - generated output
+- Note:
+  - 04_PRO image was sanitized/replaced with a demo-safe version before commit.
+- Follow-up:
+  - Link images from user manual document if needed.
