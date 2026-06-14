@@ -3328,8 +3328,10 @@ export default function App() {
 
   function resolveProTaskWorkspaceMode(stepId: ProWorkflowStepId): ProTaskWorkspaceMode {
     if (stepId === 'task') return 'start';
+    if (stepId === 'photo-ready') return 'photo';
     if (stepId === 'ledger-detail') return 'photo';
     if (stepId === 'highlight') return 'preview';
+    if (stepId === 'save-ready') return 'generate';
     if (stepId === 'output') return 'generate';
     return 'configure';
   }
@@ -3373,6 +3375,10 @@ export default function App() {
         onCreateLedger={() => void runProcess('all', { createPhotoLedgerPdf: true })}
         onRunSelected={() => void runProcess('selected')}
         onRunChecked={() => void runProcess('checked')}
+        onSelectPhotos={handleSelectPhotos}
+        onSelectPhotoFolder={handleSelectPhotoFolder}
+        onSelectSaveFolder={handleSelectSaveFolder}
+        onOpenSaveFolder={handleOpenSaveFolder}
         ledgerSettings={renderPremiumPhotoLedgerSettings({ showBoardFieldToggle: false, showOutputActions: false })}
         boardFieldsSettings={renderPremiumBoardFieldsSettings({ showActions: false })}
         boardLayoutSettings={renderPremiumBoardLayoutSettings()}

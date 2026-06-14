@@ -1,15 +1,18 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
+  Camera,
   CheckSquare,
   CircleDot,
   Clock3,
   FileSpreadsheet,
+  FolderOpen,
   LayoutGrid,
   ListChecks,
   Loader2,
   MapPin,
   Play,
   Rows3,
+  Save,
   Sparkles
 } from 'lucide-react';
 import type { BoardLayoutMode, BoardPosition, TimeMode } from '../../shared/types';
@@ -22,6 +25,7 @@ import { ProWorkflowSummary, type ProWorkflowSummaryItem } from './ProWorkflowSu
 export type ProWorkflowMode = 'ledger' | 'board';
 export type ProWorkflowStepId =
   | 'task'
+  | 'photo-ready'
   | 'ledger-detail'
   | 'board-fields'
   | 'lower-band'
@@ -29,6 +33,7 @@ export type ProWorkflowStepId =
   | 'item-cells'
   | 'position'
   | 'highlight'
+  | 'save-ready'
   | 'output';
 export type ProDetailTab = 'fields' | 'datetime' | 'layout' | 'typography' | 'highlight' | 'ledger';
 export type ProOutputFeedbackState = 'idle' | 'generating' | 'success' | 'error';
@@ -74,6 +79,10 @@ interface ProGuidedWorkflowProps {
   onCreateLedger: () => void;
   onRunSelected: () => void;
   onRunChecked: () => void;
+  onSelectPhotos: () => void;
+  onSelectPhotoFolder: () => void;
+  onSelectSaveFolder: () => void;
+  onOpenSaveFolder: () => void;
   ledgerSettings: ReactNode;
   boardFieldsSettings: ReactNode;
   boardLayoutSettings: ReactNode;
@@ -128,6 +137,10 @@ export function ProGuidedWorkflow({
   onCreateLedger,
   onRunSelected,
   onRunChecked,
+  onSelectPhotos,
+  onSelectPhotoFolder,
+  onSelectSaveFolder,
+  onOpenSaveFolder,
   ledgerSettings,
   boardFieldsSettings,
   boardLayoutSettings,
@@ -149,6 +162,13 @@ export function ProGuidedWorkflow({
         description: '사진대지만 만들지, 보드판 정보를 함께 넣을지 먼저 정합니다.'
       }
     ];
+
+    nextSteps.push({
+      id: 'photo-ready',
+      title: '사진을 먼저 준비하세요',
+      shortTitle: '사진',
+      description: '사진 추가, 폴더 불러오기, 현재 사진 수를 한곳에서 확인한 뒤 다음 설정으로 이동합니다.'
+    });
 
     if (isBoardWorkflow) {
       nextSteps.push({
@@ -203,6 +223,12 @@ export function ProGuidedWorkflow({
         description: '선택한 사진에서 강조 표시가 필요한지 정합니다.'
       },
       {
+        id: 'save-ready',
+        title: '저장폴더를 확인하세요',
+        shortTitle: '저장',
+        description: '결과물이 저장될 폴더를 지정하거나 현재 저장 상태를 확인합니다.'
+      },
+      {
         id: 'output',
         title: '이제 무엇을 생성할까요?',
         shortTitle: '생성',
@@ -215,7 +241,13 @@ export function ProGuidedWorkflow({
 
   useEffect(() => {
     if (!steps.some((step) => step.id === currentStepId)) {
-      onCurrentStepChange(steps[Math.max(0, steps.length - 1)]?.id ?? 'task');
+      const fallbackStep =
+        currentStepId === 'item-cells'
+          ? steps.find((step) => step.id === 'position') ?? steps.find((step) => step.id === 'highlight')
+          : currentStepId === 'position'
+            ? steps.find((step) => step.id === 'item-cells') ?? steps.find((step) => step.id === 'highlight')
+            : steps.find((step) => step.id === 'photo-ready') ?? steps[0];
+      onCurrentStepChange(fallbackStep?.id ?? 'task');
     }
   }, [currentStepId, onCurrentStepChange, steps]);
 
@@ -248,16 +280,29 @@ export function ProGuidedWorkflow({
   const canGoNext = currentIndex < steps.length - 1;
   const canRunAny = photosCount > 0 && hasSaveDir && !isProcessing;
   const canRunSelected = canRunAny && hasSelectedPhoto;
+  const canRunPrimary = isBoardWorkflow ? checkedCount > 0 && hasSaveDir && !isProcessing : canRunAny;
+  const photoStatus = photosCount > 0 ? `${photosCount}장 준비됨` : '사진을 먼저 추가하세요';
+  const saveStatus = hasSaveDir ? '저장폴더 지정됨' : '저장폴더를 지정하세요';
+  const primaryOutputLabel = isBoardWorkflow ? '보드판 이미지 만들기' : '사진대지 PDF 만들기';
+  const primaryOutputBusyLabel = isBoardWorkflow ? '보드판 이미지 생성 중...' : 'PDF 생성 중...';
   const nextStepAfterCaptureTime: ProWorkflowStepId = isBoardWorkflow
     ? usesBottomStrip
       ? 'item-cells'
       : 'position'
     : 'highlight';
-  const outputHint = photosCount === 0
-    ? '먼저 사진을 추가해야 결과물을 만들 수 있습니다.'
-    : hasSaveDir
-      ? '사진 방향과 출력 순서를 확인한 뒤 생성하세요.'
-      : '먼저 저장 경로를 지정해야 결과물을 만들 수 있습니다.';
+  const outputHint = isBoardWorkflow
+    ? photosCount === 0
+      ? '먼저 사진을 추가해야 보드판 이미지를 만들 수 있습니다.'
+      : checkedCount === 0
+        ? '보드판을 넣을 사진을 체크한 뒤 생성하세요.'
+        : hasSaveDir
+          ? '체크 사진, 보드판 내용, 저장폴더를 확인한 뒤 생성하세요.'
+          : '먼저 저장 경로를 지정해야 보드판 이미지를 만들 수 있습니다.'
+    : photosCount === 0
+      ? '먼저 사진을 추가해야 결과물을 만들 수 있습니다.'
+      : hasSaveDir
+        ? '사진 방향과 출력 순서를 확인한 뒤 생성하세요.'
+        : '먼저 저장 경로를 지정해야 결과물을 만들 수 있습니다.';
 
   const summaryItems: ProWorkflowSummaryItem[] = [
     {
@@ -265,6 +310,12 @@ export function ProGuidedWorkflow({
       label: '작업 유형',
       value: workflowMode === 'board' ? '보드판 삽입하기' : '사진대지 만들기',
       stepId: 'task'
+    },
+    {
+      id: 'photo-ready',
+      label: '사진',
+      value: photoStatus,
+      stepId: 'photo-ready'
     },
     ...(isBoardWorkflow
       ? [
@@ -312,6 +363,12 @@ export function ProGuidedWorkflow({
       label: '원형강조',
       value: highlightEnabled ? '사용' : '사용 안 함',
       stepId: 'highlight'
+    },
+    {
+      id: 'save-ready',
+      label: '저장',
+      value: saveStatus,
+      stepId: 'save-ready'
     }
   ];
 
@@ -340,10 +397,10 @@ export function ProGuidedWorkflow({
               title="사진대지 만들기"
               description="여러 사진을 정리해 PDF 또는 출력용 대지로 만듭니다."
               selected={workflowMode === 'ledger'}
-              nextHint="선택하면 사진대지 내용 단계로 이어집니다."
+              nextHint="선택하면 사진 준비 단계로 이어집니다."
               icon={<FileSpreadsheet size={18} />}
               onClick={() => {
-                selectAndAdvance('task', 'ledger-detail', () => {
+                selectAndAdvance('task', 'photo-ready', () => {
                   onWorkflowModeChange('ledger');
                   onOpenDetailTab('ledger');
                 });
@@ -353,15 +410,43 @@ export function ProGuidedWorkflow({
               title="보드판 삽입하기"
               description="사진대지에 보드판 형식의 정보를 함께 표시합니다."
               selected={workflowMode === 'board'}
-              nextHint="선택하면 보드 내용 단계로 이어집니다."
+              nextHint="선택하면 사진 준비 단계로 이어집니다."
               icon={<LayoutGrid size={18} />}
               onClick={() => {
-                selectAndAdvance('task', 'board-fields', () => {
+                selectAndAdvance('task', 'photo-ready', () => {
                   onWorkflowModeChange('board');
                   onOpenDetailTab('fields');
                 });
               }}
             />
+          </div>
+        );
+      case 'photo-ready':
+        return (
+          <div className="pro-workflow-step-stack">
+            <div className="pro-workflow-readiness-grid">
+              <div className={photosCount > 0 ? 'pro-workflow-readiness-card ready' : 'pro-workflow-readiness-card attention'}>
+                <span>사진 상태</span>
+                <strong>{photoStatus}</strong>
+                <small>사진을 추가하면 순서, 선택, 회전을 확인할 수 있습니다.</small>
+              </div>
+              <div className={checkedCount > 0 ? 'pro-workflow-readiness-card ready' : 'pro-workflow-readiness-card'}>
+                <span>선택 상태</span>
+                <strong>{checkedCount > 0 ? `${checkedCount}장 체크됨` : '아직 체크 사진 없음'}</strong>
+                <small>보드판 삽입 작업은 체크 사진 기준으로 생성할 수 있습니다.</small>
+              </div>
+            </div>
+            <div className="pro-workflow-action-grid pro-workflow-prereq-actions">
+              <button className="small-btn primary" type="button" onClick={onSelectPhotos}>
+                <Camera size={16} /> 사진 추가
+              </button>
+              <button className="small-btn outline" type="button" onClick={onSelectPhotoFolder}>
+                <FolderOpen size={16} /> 폴더 불러오기
+              </button>
+            </div>
+            <p className="pro-workflow-next-action">
+              사진을 준비한 뒤 {isBoardWorkflow ? '보드판 입력 방식으로 이동하세요.' : '사진대지 내용을 확인하세요.'}
+            </p>
           </div>
         );
       case 'ledger-detail':
@@ -530,15 +615,43 @@ export function ProGuidedWorkflow({
             </div>
           </div>
         );
+      case 'save-ready':
+        return (
+          <div className="pro-workflow-step-stack">
+            <div className="pro-workflow-readiness-grid">
+              <div className={hasSaveDir ? 'pro-workflow-readiness-card ready' : 'pro-workflow-readiness-card attention'}>
+                <span>저장 상태</span>
+                <strong>{saveStatus}</strong>
+                <small>생성 전에 결과물이 저장될 폴더를 먼저 확인하세요.</small>
+              </div>
+              <div className={canRunPrimary ? 'pro-workflow-readiness-card ready' : 'pro-workflow-readiness-card'}>
+                <span>생성 준비</span>
+                <strong>{canRunPrimary ? '생성 가능' : isBoardWorkflow ? '체크 사진과 저장폴더 필요' : '사진과 저장폴더 필요'}</strong>
+                <small>{isBoardWorkflow ? '보드판 삽입은 체크된 사진을 기준으로 처리합니다.' : '사진대지 PDF는 불러온 사진 전체를 정리합니다.'}</small>
+              </div>
+            </div>
+            <div className="pro-workflow-action-grid pro-workflow-prereq-actions">
+              <button className="small-btn primary" type="button" onClick={onSelectSaveFolder}>
+                <Save size={16} /> 저장폴더 지정
+              </button>
+              <button className="small-btn outline" type="button" disabled={!hasSaveDir} onClick={onOpenSaveFolder}>
+                <FolderOpen size={16} /> 결과 폴더 열기
+              </button>
+            </div>
+            <p className="pro-workflow-next-action">
+              저장 위치를 확인한 뒤 생성 단계로 이동하세요.
+            </p>
+          </div>
+        );
       case 'output':
       default:
         return (
           <div className="pro-workflow-output-actions">
             <OutputProgressStatus feedback={outputFeedback} />
             <div className="pro-workflow-primary-action">
-              <button className="btn primary wide" type="button" disabled={!canRunAny} onClick={onCreateLedger}>
-                {isProcessing ? <Loader2 className="pro-workflow-button-spinner" size={15} aria-hidden /> : <FileSpreadsheet size={15} />}
-                {isProcessing ? 'PDF 생성 중...' : '사진대지 만들기'}
+              <button className="btn primary wide" type="button" disabled={!canRunPrimary} onClick={isBoardWorkflow ? onRunChecked : onCreateLedger}>
+                {isProcessing ? <Loader2 className="pro-workflow-button-spinner" size={15} aria-hidden /> : isBoardWorkflow ? <LayoutGrid size={15} /> : <FileSpreadsheet size={15} />}
+                {isProcessing ? primaryOutputBusyLabel : primaryOutputLabel}
               </button>
               <p className="pro-workflow-output-hint">{outputHint}</p>
             </div>
@@ -567,7 +680,7 @@ export function ProGuidedWorkflow({
     <section className="pro-guided-workflow" aria-label="PRO 단계별 작업 안내">
       <div className="pro-guided-head">
         <div>
-          <span className="pro-guided-eyebrow">PRO Task Flow</span>
+          <span className="pro-guided-eyebrow">PRO 작업 순서</span>
           <h3>현재 단계만 집중해서 설정하세요</h3>
           <p>필요한 설정만 보여주고, 세부 조정은 접힌 상세 설정 탭에서 계속 할 수 있습니다.</p>
         </div>

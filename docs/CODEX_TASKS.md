@@ -354,3 +354,49 @@
   - Small-window Electron resizing was not exhaustively repeated for every PRO step.
   - Manual PDF failure-state forcing remains a follow-up candidate.
   - Full authenticated photo import/output QA should be repeated before promoting the draft PR.
+
+## Task 2026-06-14 - PRO task flow senior redesign
+
+- Phase: pro-task-flow-senior-redesign
+- Branch: codex/pro-guided-workflow
+- Task type:
+  - senior UX redesign / accessibility / verification improvement
+- Scope:
+  - Added a guided photo preparation step so board insertion and ledger flows expose photo-add actions before configuration.
+  - Added a guided save-folder confirmation step before generation.
+  - Kept board-mode generation on the existing checked-photo output path and kept ledger-mode PDF generation on the existing PDF path.
+  - Strengthened fullscreen scaling with fluid typography, larger controls, larger cards, wider workspace use, and responsive density variables.
+  - Modernized PRO card/surface hierarchy with stronger selected, current, hover, and primary CTA treatment.
+  - Kept preview placement stable as a right rail on wide screens and stacked/compact at narrower widths.
+  - Improved default-window accessibility with sticky guided navigation and clearer prerequisite status cards.
+  - Preserved lower-band item management through the existing board-field editor and visible add/delete labels.
+  - Created local screenshot, layout-metrics, and review index artifacts under review-artifacts/pr-6-ux-review.
+  - Applied 40+ usability criteria for larger text, 44px+ control targets, clearer copy, and stronger state cues.
+- Changed files:
+  - src/App.tsx
+  - src/components/pro-guided-workflow/ProGuidedWorkflow.tsx
+  - src/styles.css
+  - docs/CODEX_TASKS.md
+- Verification:
+  - senior review board: PASS - five read-only review roles completed and were aggregated into a local plan artifact.
+  - fullscreen scaling QA: PASS by CSS review and fullscreen-like screenshot artifact.
+  - visual design QA: PASS - stronger surface hierarchy, selected states, and CTA hierarchy applied.
+  - hover regression QA: PASS by CSS review; hover uses scale, border, shadow, and background cues.
+  - default window overflow QA: PASS for captured default window; sticky nav keeps step controls reachable.
+  - board insertion flow QA: PASS - photo-add, folder-load, save-folder, checked-photo generation, and board setup are visible in the flow.
+  - preview placement QA: PASS - wide layout keeps preview on the right rail.
+  - lower band item management QA: PARTIAL - code path reuses the existing board-field editor; coordinate-driven screenshot capture repeatedly landed on the alternate position path.
+  - task screen transition QA: PASS - task, photo, configure, save, preview, and generate steps have distinct centered task content.
+  - review artifact QA: PASS - local screenshot gallery, layout-metrics.json, index.md, and index.html were generated and left uncommitted.
+  - reduced-motion QA: PASS by CSS review.
+  - no-exposure: PASS
+  - scope check: PASS
+- Known limitations:
+  - Forced output progress and failure-state screenshots were not generated.
+  - Lower-band item-management visual capture should be repeated with a more deterministic UI automation path.
+  - Screenshot/layout review artifacts are local-only and not committed.
+  - Further polish may be needed after user review of the packaged build.
+- Follow-up:
+  - Run subagent review after this senior redesign pass.
+  - Repeat authenticated manual QA with synthetic photos before promoting the Draft PR.
+  - Decide whether the user manual should be updated after UX acceptance.

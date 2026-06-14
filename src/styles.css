@@ -4488,8 +4488,11 @@ body {
 
 .pro-workflow-option.selected {
   border-color: #005bbf;
-  background: #eef6ff;
-  box-shadow: inset 0 0 0 1px rgba(0, 91, 191, 0.12);
+  background: linear-gradient(180deg, #eef6ff 0%, #ffffff 100%);
+  box-shadow:
+    inset 5px 0 0 #005bbf,
+    inset 0 0 0 1px rgba(0, 91, 191, 0.16),
+    0 14px 34px rgba(0, 91, 191, 0.16);
   animation: pro-guide-selected var(--motion-normal) var(--motion-emphasized);
 }
 
@@ -4563,6 +4566,14 @@ body {
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
   gap: 8px;
+  position: sticky;
+  z-index: 4;
+  bottom: 0;
+  padding: 8px;
+  border: 1px solid #d7e4f2;
+  border-radius: var(--pro-radius, 10px);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 -8px 24px rgba(15, 43, 76, 0.08);
 }
 
 .pro-workflow-nav span {
@@ -8269,19 +8280,28 @@ body {
 }
 
 .pro-task-flow-shell {
-  --pro-ui-scale: clamp(1, 0.92 + 0.12vw, 1.12);
-  --pro-font-size: clamp(13px, 0.78vw, 15px);
-  --pro-card-padding: clamp(10px, 0.72vw, 14px);
-  --pro-control-height: clamp(40px, 2.3vw, 46px);
-  --pro-rail-width: clamp(320px, 24vw, 430px);
-  padding: 10px 14px;
+  --pro-scale: clamp(1, 0.84 + 0.24vw, 1.28);
+  --pro-font-title: clamp(16px, 0.96vw, 22px);
+  --pro-font-body: clamp(13.5px, 0.78vw, 17px);
+  --pro-font-support: clamp(13px, 0.68vw, 15px);
+  --pro-card-padding: clamp(14px, 0.92vw, 22px);
+  --pro-control-height: clamp(44px, 2.45vw, 58px);
+  --pro-gap: clamp(12px, 0.84vw, 20px);
+  --pro-radius: clamp(10px, 0.72vw, 14px);
+  --pro-rail-width: clamp(340px, 24vw, 500px);
+  --pro-surface-shadow: 0 18px 46px rgba(15, 43, 76, 0.13);
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: clamp(10px, 1vw, 18px);
 }
 
 .app:not(.start-active) .pro-task-flow-grid {
   container: pro-workspace / inline-size;
   width: 100%;
-  max-width: 1500px;
-  gap: 12px;
+  max-width: min(1760px, calc(100vw - 28px));
+  min-height: 0;
+  gap: var(--pro-gap);
   align-items: stretch;
   transition: grid-template-columns var(--motion-normal) var(--motion-standard);
 }
@@ -8290,9 +8310,13 @@ body {
 .pro-task-flow-grid .output-preview-card,
 .pro-task-flow-grid .output-settings-card {
   min-width: 0;
+  border-radius: var(--pro-radius);
+  box-shadow: var(--pro-surface-shadow);
 }
 
 .pro-task-flow-grid .output-preview-card {
+  position: sticky;
+  top: clamp(8px, 1vw, 16px);
   align-self: start;
   height: auto;
   max-height: calc(100vh - 118px);
@@ -8400,6 +8424,9 @@ body {
 
 .pro-task-flow-grid .output-settings-card {
   overflow: hidden;
+  max-height: calc(100vh - 96px);
+  display: flex;
+  flex-direction: column;
 }
 
 .pro-task-flow-grid .premium-settings-card .card-header {
@@ -8456,7 +8483,9 @@ body {
 }
 
 .pro-guided-workflow {
-  gap: 11px;
+  gap: var(--pro-gap);
+  min-height: 0;
+  overflow: visible;
 }
 
 .pro-workflow-stepper.compact {
@@ -8531,12 +8560,15 @@ body {
 
 .pro-workflow-primary-action {
   display: grid;
-  gap: 7px;
+  gap: 9px;
   min-width: 0;
 }
 
 .pro-workflow-primary-action .btn.wide {
-  min-height: 40px;
+  min-height: calc(var(--pro-control-height) + 10px);
+  font-size: clamp(15px, 0.95vw, 20px);
+  font-weight: 950;
+  box-shadow: 0 16px 36px rgba(0, 120, 105, 0.22);
 }
 
 .pro-workflow-secondary-actions {
@@ -8578,6 +8610,68 @@ body {
   line-height: 1.35;
 }
 
+.pro-workflow-readiness-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--pro-gap);
+  min-width: 0;
+}
+
+.pro-workflow-readiness-card {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: clamp(12px, 0.9vw, 18px);
+  border: 1px solid #d6e2ef;
+  border-radius: var(--pro-radius);
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgba(20, 48, 84, 0.08);
+}
+
+.pro-workflow-readiness-card span {
+  color: #2f5c91;
+  font-size: var(--pro-font-support);
+  font-weight: 900;
+}
+
+.pro-workflow-readiness-card strong {
+  color: #10243f;
+  font-size: clamp(16px, 0.95vw, 21px);
+  line-height: 1.2;
+}
+
+.pro-workflow-readiness-card small,
+.pro-workflow-next-action {
+  color: #4d5f76;
+  font-size: var(--pro-font-support);
+  line-height: 1.45;
+}
+
+.pro-workflow-readiness-card.ready {
+  border-color: #65b6a5;
+  background: #f1fbf8;
+  box-shadow: 0 12px 28px rgba(0, 107, 95, 0.12);
+}
+
+.pro-workflow-readiness-card.attention {
+  border-color: #3f8ed9;
+  background: #eef7ff;
+  box-shadow: 0 14px 32px rgba(0, 91, 191, 0.16);
+}
+
+.pro-workflow-prereq-actions {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.pro-workflow-next-action {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid #d7e4f2;
+  border-radius: var(--pro-radius);
+  background: #f8fbff;
+  font-weight: 800;
+}
+
 .pro-lower-band-items-panel {
   max-height: none;
 }
@@ -8589,18 +8683,19 @@ body {
 
 .pro-task-flow-grid .pro-guided-head h3,
 .pro-task-flow-grid .pro-workflow-step-head h4 {
-  font-size: clamp(15px, 0.92vw, 18px);
+  font-size: var(--pro-font-title);
 }
 
 .pro-task-flow-grid .pro-guided-head p,
 .pro-task-flow-grid .pro-workflow-step-head p,
 .pro-task-flow-grid .pro-workflow-output-hint {
-  font-size: var(--pro-font-size);
+  font-size: var(--pro-font-body);
 }
 
 .pro-task-flow-grid .pro-workflow-option {
   min-height: calc(var(--pro-control-height) + 18px);
-  padding: clamp(10px, 0.8vw, 14px);
+  padding: clamp(13px, 0.95vw, 19px);
+  border-radius: var(--pro-radius);
 }
 
 .pro-task-flow-grid .btn,
@@ -8612,6 +8707,24 @@ body {
 
 .pro-task-flow-grid .pro-workflow-summary-row {
   min-height: calc(var(--pro-control-height) - 6px);
+}
+
+.pro-task-flow-grid .pro-workflow-option-copy strong,
+.pro-task-flow-grid .pro-workflow-summary-row strong,
+.pro-task-flow-grid .pro-output-status-copy strong {
+  font-size: clamp(14px, 0.8vw, 18px);
+}
+
+.pro-task-flow-grid .pro-workflow-option-copy small,
+.pro-task-flow-grid .pro-workflow-option-copy em,
+.pro-task-flow-grid .pro-workflow-summary-row span,
+.pro-task-flow-grid .pro-output-status-copy small {
+  font-size: var(--pro-font-support);
+}
+
+.pro-task-flow-grid .pro-workflow-option-icon {
+  width: clamp(34px, 2vw, 46px);
+  height: clamp(34px, 2vw, 46px);
 }
 
 .advanced-field-row {
@@ -8655,15 +8768,22 @@ body {
 @media (hover: hover) and (pointer: fine) {
   .pro-workflow-option:not(:disabled):hover,
   .pro-workflow-step.step-task .pro-workflow-option:not(:disabled):hover,
+  .pro-workflow-step.step-photo-ready .pro-workflow-option:not(:disabled):hover,
   .pro-workflow-step.step-lower-band .pro-workflow-option:not(:disabled):hover,
   .pro-workflow-option.selected:not(:disabled):hover {
-    transform: translateY(-1px);
+    z-index: 3;
+    border-color: #006fe0;
+    background: #eef7ff;
+    box-shadow: 0 18px 44px rgba(0, 91, 191, 0.2);
+    transform: translateY(-3px) scale(1.12);
   }
 
   .pro-guided-workflow .small-btn:not(:disabled):hover,
   .pro-workflow-action-grid .small-btn:not(:disabled):hover,
   .pro-workflow-summary-row button:not(:disabled):hover {
-    transform: translateY(-1px);
+    border-color: #006fe0;
+    box-shadow: 0 12px 28px rgba(0, 91, 191, 0.18);
+    transform: translateY(-2px) scale(1.07);
   }
 }
 
@@ -8704,6 +8824,14 @@ body {
   .pro-task-flow-grid.pro-mode-photo .output-settings-card {
     grid-column: 2;
   }
+
+  .pro-task-flow-grid .output-preview-card {
+    position: static;
+  }
+
+  .pro-task-flow-grid .preview-card-actions {
+    flex-wrap: wrap;
+  }
 }
 
 @media (max-width: 900px) {
@@ -8742,6 +8870,11 @@ body {
   .advanced-field-row button {
     grid-column: 1 / -1;
     justify-self: stretch;
+  }
+
+  .pro-workflow-readiness-grid,
+  .pro-workflow-prereq-actions {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
