@@ -47,6 +47,7 @@ export interface ProWorkflowStepItem {
 }
 
 interface ProGuidedWorkflowProps {
+  currentStepId: ProWorkflowStepId;
   workflowMode: ProWorkflowMode;
   boardLayoutMode: BoardLayoutMode;
   timeMode: TimeMode;
@@ -61,6 +62,7 @@ interface ProGuidedWorkflowProps {
   hasSaveDir: boolean;
   isProcessing: boolean;
   outputFeedback: ProOutputFeedback;
+  onCurrentStepChange: (stepId: ProWorkflowStepId) => void;
   onWorkflowModeChange: (mode: ProWorkflowMode) => void;
   onBoardLayoutModeChange: (mode: BoardLayoutMode) => void;
   onTimeModeChange: (mode: TimeMode) => void;
@@ -99,6 +101,7 @@ const timeModeCopy: Record<TimeMode, { title: string; description: string }> = {
 };
 
 export function ProGuidedWorkflow({
+  currentStepId,
   workflowMode,
   boardLayoutMode,
   timeMode,
@@ -113,6 +116,7 @@ export function ProGuidedWorkflow({
   hasSaveDir,
   isProcessing,
   outputFeedback,
+  onCurrentStepChange,
   onWorkflowModeChange,
   onBoardLayoutModeChange,
   onTimeModeChange,
@@ -130,7 +134,6 @@ export function ProGuidedWorkflow({
   dateTimeSettings,
   highlightSettings
 }: ProGuidedWorkflowProps) {
-  const [currentStepId, setCurrentStepId] = useState<ProWorkflowStepId>('task');
   const [recentlyCompletedStepId, setRecentlyCompletedStepId] = useState<ProWorkflowStepId | null>(null);
   const currentStepRef = useRef<HTMLElement | null>(null);
   const shouldGuideFocusRef = useRef(false);
@@ -212,9 +215,9 @@ export function ProGuidedWorkflow({
 
   useEffect(() => {
     if (!steps.some((step) => step.id === currentStepId)) {
-      setCurrentStepId(steps[Math.max(0, steps.length - 1)]?.id ?? 'task');
+      onCurrentStepChange(steps[Math.max(0, steps.length - 1)]?.id ?? 'task');
     }
-  }, [currentStepId, steps]);
+  }, [currentStepId, onCurrentStepChange, steps]);
 
   useEffect(() => {
     if (!recentlyCompletedStepId) return;
@@ -314,17 +317,12 @@ export function ProGuidedWorkflow({
 
   function moveToStep(stepId: ProWorkflowStepId) {
     shouldGuideFocusRef.current = true;
-    setCurrentStepId(stepId);
+    onCurrentStepChange(stepId);
   }
 
   function goToStep(stepId: string) {
     const step = steps.find((item) => item.id === stepId);
     if (step) moveToStep(step.id);
-  }
-
-  function openDetail(tab: ProDetailTab, stepId: ProWorkflowStepId) {
-    onOpenDetailTab(tab);
-    moveToStep(stepId);
   }
 
   function selectAndAdvance(completedStepId: ProWorkflowStepId, nextStepId: ProWorkflowStepId, onSelect: () => void) {
@@ -530,24 +528,29 @@ export function ProGuidedWorkflow({
         return (
           <div className="pro-workflow-output-actions">
             <OutputProgressStatus feedback={outputFeedback} />
-            <div className="pro-workflow-action-grid">
-              <button className="small-btn outline" type="button" disabled={photosCount === 0} onClick={onPreviewLedger}>
-                <FileSpreadsheet size={15} /> 문서 미리보기
-              </button>
-              <button className="small-btn primary" type="button" disabled={!canRunAny} onClick={onCreateLedger}>
+            <div className="pro-workflow-primary-action">
+              <button className="btn primary wide" type="button" disabled={!canRunAny} onClick={onCreateLedger}>
                 {isProcessing ? <Loader2 className="pro-workflow-button-spinner" size={15} aria-hidden /> : <FileSpreadsheet size={15} />}
                 {isProcessing ? 'PDF 생성 중...' : '사진대지 만들기'}
               </button>
-              <button className="small-btn blue" type="button" disabled={!canRunSelected} onClick={onRunSelected}>
-                {isProcessing ? <Loader2 className="pro-workflow-button-spinner" size={15} aria-hidden /> : <Play size={15} />}
-                {isProcessing ? '작업 중...' : '선택 사진 작업'}
-              </button>
-              <button className="small-btn outline" type="button" disabled={checkedCount === 0 || !hasSaveDir || isProcessing} onClick={onRunChecked}>
-                {isProcessing ? <Loader2 className="pro-workflow-button-spinner" size={15} aria-hidden /> : <CheckSquare size={15} />}
-                {isProcessing ? '작업 중...' : '체크 사진 작업'}
-              </button>
+              <p className="pro-workflow-output-hint">{outputHint}</p>
             </div>
-            <p className="pro-workflow-output-hint">{outputHint}</p>
+            <details className="pro-workflow-secondary-actions">
+              <summary>보조 작업 열기</summary>
+              <div className="pro-workflow-action-grid">
+                <button className="small-btn outline" type="button" disabled={photosCount === 0} onClick={onPreviewLedger}>
+                  <FileSpreadsheet size={15} /> 문서 미리보기
+                </button>
+                <button className="small-btn blue" type="button" disabled={!canRunSelected} onClick={onRunSelected}>
+                  {isProcessing ? <Loader2 className="pro-workflow-button-spinner" size={15} aria-hidden /> : <Play size={15} />}
+                  {isProcessing ? '작업 중...' : '선택 사진 작업'}
+                </button>
+                <button className="small-btn outline" type="button" disabled={checkedCount === 0 || !hasSaveDir || isProcessing} onClick={onRunChecked}>
+                  {isProcessing ? <Loader2 className="pro-workflow-button-spinner" size={15} aria-hidden /> : <CheckSquare size={15} />}
+                  {isProcessing ? '작업 중...' : '체크 사진 작업'}
+                </button>
+              </div>
+            </details>
           </div>
         );
     }
@@ -557,9 +560,9 @@ export function ProGuidedWorkflow({
     <section className="pro-guided-workflow" aria-label="PRO 단계별 작업 안내">
       <div className="pro-guided-head">
         <div>
-          <span className="pro-guided-eyebrow">PRO Guided Workflow</span>
-          <h3>순서대로 설정하고 생성하세요</h3>
-          <p>필요한 설정만 단계별로 보여주고, 자세한 조정은 기존 탭에서 계속 할 수 있습니다.</p>
+          <span className="pro-guided-eyebrow">PRO Task Flow</span>
+          <h3>현재 단계만 집중해서 설정하세요</h3>
+          <p>필요한 설정만 보여주고, 세부 조정은 접힌 상세 설정 탭에서 계속 할 수 있습니다.</p>
         </div>
       </div>
 
@@ -598,14 +601,6 @@ export function ProGuidedWorkflow({
       </div>
 
       <ProWorkflowSummary items={summaryItems} onEdit={goToStep} />
-
-      <div className="pro-workflow-detail-links" aria-label="기존 상세 설정으로 이동">
-        {isBoardWorkflow && <button type="button" onClick={() => openDetail('fields', 'board-fields')}>보드 내용</button>}
-        {isBoardWorkflow && <button type="button" onClick={() => openDetail('datetime', 'capture-time')}>촬영시간</button>}
-        {isBoardWorkflow && <button type="button" onClick={() => openDetail('layout', 'lower-band')}>크기/배치</button>}
-        <button type="button" onClick={() => openDetail('highlight', 'highlight')}>강조/실행</button>
-        <button type="button" onClick={() => openDetail('ledger', isBoardWorkflow ? 'output' : 'ledger-detail')}>사진대지</button>
-      </div>
     </section>
   );
 }

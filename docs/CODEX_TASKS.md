@@ -276,3 +276,45 @@
   - No fake percentage progress was added.
   - The top stepper is now status display; returning is handled by summary edit and previous/next controls.
   - Full manual photo import/output generation should be repeated with a synthetic image before the draft PR is promoted.
+
+## Task 2026-06-14 - PRO task flow workspace redesign
+
+- Phase: pro-task-flow-workspace-redesign
+- Branch: codex/pro-guided-workflow
+- Task type:
+  - UX improvement / PRO workflow layout refinement
+- Scope:
+  - Reworked the PRO output screen into a task-flow workspace that centers the active guided step.
+  - Converted the top workflow stepper into a compact progress/status strip with numbered dots.
+  - Added mode-based workspace layout classes so start/configure/photo/preview/generate steps can show only the relevant settings, preview, or photo-list areas.
+  - Moved legacy detailed PRO settings into a collapsed detail drawer while preserving access to the existing tabbed controls.
+  - Reduced duplicate output action prominence by keeping 사진대지 만들기 as the primary action and moving secondary actions into a collapsed section.
+  - Tuned hover/focus/active motion to avoid large layout-shifting scale effects and kept reduced-motion handling.
+- Changed files:
+  - src/App.tsx
+  - src/components/pro-guided-workflow/ProGuidedWorkflow.tsx
+  - src/components/pro-guided-workflow/ProWorkflowStepper.tsx
+  - src/styles.css
+  - docs/CODEX_TASKS.md
+- Verification:
+  - git diff --check: PASS
+  - build: PASS
+  - verify:ui: PASS
+  - verify:board: PASS
+  - verify-output-settings: PASS
+  - package:win: PASS
+  - lint: NOT_RUN - no lint script is defined.
+  - typecheck: NOT_RUN - no typecheck script is defined.
+  - test: NOT_RUN - no test script is defined.
+  - authenticated PRO task-flow visual QA: PASS for start and configure steps; mode-based hiding and preview/settings balance were confirmed in Electron.
+  - LITE visual smoke QA: PASS; existing LITE setup, preview, rotation controls, and run buttons remained visible.
+  - photo import/output generation manual QA: NOT_RUN - file-dialog path entry was avoided; automated output verification passed.
+  - design regression / large-window QA: PASS; no overlap found in checked PRO/LITE views.
+  - reduced motion check: PASS by CSS review; new motion selectors are covered by prefers-reduced-motion.
+  - hidden/bidi/newline check: PASS for BOM, bidi controls, zero-width characters, NBSP, lone CR, CR-only newline, and unusual invisible controls.
+  - no-exposure: PASS
+  - scope check: PASS
+- Known limitations:
+  - Small-window manual resizing was not exhaustively repeated in Electron for every PRO step.
+  - Manual PDF failure-state forcing remains a follow-up candidate.
+  - Full photo import/output manual QA should be repeated with a synthetic image before promoting the draft PR.
