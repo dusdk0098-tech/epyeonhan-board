@@ -35,11 +35,9 @@
 ## Main Aggregated Review Template
 
 ```md
-
 # Main Aggregated Review
 
 ## Executive Verdict
-
 PASS / PARTIAL / FAIL / NOT_RUN
 
 ## Merge / Proceed Decision

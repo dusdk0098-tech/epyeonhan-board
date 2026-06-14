@@ -65,23 +65,18 @@
 입력:
 
 ## Original Task
-
 [원래 작업 지시문]
 
 ## Evidence Bundle
-
 [Codex 작업 결과]
 
 ## Subagent Reports
-
 [서브에이전트 검증 결과들]
 
 ## Main Aggregated Review
-
 [메인 취합 결과]
 
 ## Required Output
-
 다음 Codex 작업 지시문을 아래 형식으로 작성해 주세요.
 
 1. 이번 라운드 목적
@@ -106,7 +101,6 @@
 ## Evidence Bundle Template
 
 ```md
-
 # Evidence Bundle
 
 ## Project

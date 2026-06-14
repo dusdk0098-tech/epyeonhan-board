@@ -20,19 +20,15 @@
 # Subagent Report
 
 ## Agent Role
-
 [역할]
 
 ## Overall Verdict
-
 PASS / PARTIAL / FAIL / NOT_RUN
 
 ## Confidence
-
 High / Medium / Low
 
 ## Evidence Reviewed
-
 - reviewed:
 - missing:
 
@@ -61,19 +57,15 @@ High / Medium / Low
   - PASS / PARTIAL / FAIL / NOT_RUN
 
 ## Must Fix Before Merge
-
 - [필수 수정]
 
 ## Should Fix Soon
-
 - [권장 수정]
 
 ## Safe To Proceed?
-
 Yes / No / Conditional
 
 ## Next Prompt Suggestions
-
 - Codex에게 다음에 지시해야 할 내용:
 ```
 

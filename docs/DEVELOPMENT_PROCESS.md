@@ -1,15 +1,16 @@
 # PEDIT Development Process
 
 이 문서는 PEDIT 개발 작업에서 기능, 디자인, 보안, 테스트, DB/API 계약, 아키텍처가 함께 관리되도록 하는 운영 기준이다.
-모든 작업은 작은 브랜치와 작은 PR 단위로 진행하고, 검증 증거가 없는 PASS 판정은 인정하지 않는다.
+
+모든 작업은 작은 브랜치와 작은 PR 단위로 진행한다. 검증 증거가 없는 PASS 판정은 인정하지 않는다.
 
 ## Project Principles
 
 - 제품 코드는 최소 변경으로 수정하고 기존 구조를 우선한다.
-- 변경 범위는 `src/`, `electron/`, `supabase/`, `scripts/`, `public/`, `.github/`, `docs/` 중 작업 목적과 직접 관련된 영역으로 제한한다.
+- 변경 범위는 작업 목적과 직접 관련된 영역으로 제한한다.
 - 사용자 파일, 실제 고객 파일, 로컬 개인 경로, 비밀값은 저장소와 문서에 포함하지 않는다.
-- DB migration, Supabase Edge Function, Electron packaging, public asset, CI 변경은 PR 본문에 별도 위험과 검증 결과를 기록한다.
-- 사용자가 명령을 직접 실행하도록 시키지 않고, Codex가 가능한 명령과 검증을 직접 수행한다.
+- DB migration, Electron packaging, public asset, CI 변경은 PR 본문에 별도 위험과 검증 결과를 기록한다.
+- Codex가 가능한 명령과 검증을 직접 수행하고, 사용자가 직접 shell 명령을 실행하도록 시키지 않는다.
 
 ## Branch And PR Types
 
@@ -50,7 +51,7 @@
 - S0 또는 S1이 확인되면 새 기능 개발을 시작하지 않는다.
 - 다음 PR은 `fix-only PR` 또는 `stabilization PR`로 제한한다.
 - S0/S1 해결 전 release readiness를 Ready로 판정하지 않는다.
-- 증거가 없는 "문제 없음"은 PASS가 아니라 NOT_RUN 또는 PARTIAL이다.
+- 증거가 없는 “문제 없음”은 PASS가 아니라 NOT_RUN 또는 PARTIAL이다.
 
 ## Merge And Cleanup
 

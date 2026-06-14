@@ -7,7 +7,7 @@
 - `package.json`의 `scripts`를 먼저 확인한다.
 - `lint`, `typecheck`, `test` script가 있으면 실행한다.
 - 해당 script가 없으면 `NOT_RUN with reason`으로 기록한다.
-- PEDIT는 `build`, `verify:ui`, `verify:board`, `verify:update`, `verify:auth` 등의 검증 script를 제공한다.
+- PEDIT는 `build`, `verify:ui`, `verify:board`, `verify:update`, `verify:auth` 등의 검증 script를 제공할 수 있다.
 - DB/migration 확인은 안전한 local-only 파일 목록 또는 dry-run 성격의 확인만 수행한다.
 
 ## Execution Principles
@@ -85,9 +85,7 @@ Browser 또는 Electron QA는 다음 조건에서 수행한다.
 
 ## Docs-Only QA PR
 
-docs-only PR에서는 다음을 확인한다.
-
-- 변경 파일이 의도한 문서 범위에만 있는가.
-- 제품 코드, package, lockfile, public asset, DB migration, CI, scripts/tool 변경이 없는가.
-- 문서에 민감값, 실제 사용자 파일명, 로컬 개인 경로가 없는가.
-- 문서 내용이 기존 프로젝트 구조와 맞는가.
+- 변경 파일이 의도한 문서 범위에만 있는지 확인한다.
+- 제품 코드, package, lockfile, public asset, DB migration, CI, scripts/tool 변경이 없는지 확인한다.
+- 문서에 민감값, 실제 사용자 파일명, 로컬 개인 경로가 없는지 확인한다.
+- 문서 내용이 기존 프로젝트 구조와 맞는지 확인한다.
