@@ -194,6 +194,51 @@
 - Follow-up:
   - Revisit copy and screenshots after the guided PRO flow receives manual user feedback.
 
+## Task 2026-06-14 - PRO guided workflow accessibility fix
+
+- Phase: pro-guided-workflow-accessibility-fix
+- Branch: codex/pro-guided-workflow
+- Task type:
+  - UX fix / guided workflow stabilization
+- Scope:
+  - Corrected conditional flow so photo-ledger-only mode no longer exposes board-only workflow options.
+  - Restored photo ledger content fields and per-photo detail editing inside the guided flow.
+  - Restored circular highlight detail controls, including existing color and black-white options.
+  - Rebalanced PRO preview/settings columns to give workflow and settings more room.
+  - Moved step navigation directly under the active slide panel so previous/next actions remain visible.
+  - Kept the top stepper as progress/status display and preserved summary edit links.
+  - Strengthened hover scale feedback while preserving reduced-motion handling.
+- Changed files:
+  - src/App.tsx
+  - src/components/pro-guided-workflow/ProGuidedWorkflow.tsx
+  - src/styles.css
+  - docs/CODEX_TASKS.md
+- Verification:
+  - git diff --check: PASS
+  - build: PASS
+  - verify:ui: PASS
+  - verify:board: PASS
+  - verify-output-settings: PASS
+  - package:win: PASS
+  - photo ledger flow QA: PASS with a synthetic clipboard image.
+  - board insertion flow QA: PASS with a synthetic clipboard image.
+  - existing option accessibility QA: PASS
+  - step carousel / slide panel QA: PASS
+  - layout QA: PASS
+  - hover / animation QA: PASS
+  - output generation feedback QA: PARTIAL - automated output verification passed; manual failure-state forcing was not run.
+  - LITE regression QA: PASS visual smoke; PRO guided workflow did not appear in LITE.
+  - hidden/bidi/newline check: PASS for bidi, zero-width, BOM, NBSP, lone CR, and CR-only newline.
+  - no-exposure: PASS
+  - scope check: PASS
+- Known limitations:
+  - Real percentage progress is still not included.
+  - Full settings search/finder is not included.
+  - Further user manual screenshot updates may be needed after UX acceptance.
+  - Manual forced failure-state verification remains a follow-up candidate.
+- Follow-up:
+  - Repeat full output failure-path QA with a controlled error fixture before moving the draft PR to ready.
+
 ## Task 2026-06-14 - PRO guided workflow motion follow-up
 
 - Phase: pro-guided-workflow-feedback

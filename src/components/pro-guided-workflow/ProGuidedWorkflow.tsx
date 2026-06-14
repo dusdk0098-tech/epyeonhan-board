@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   CheckSquare,
   CircleDot,
@@ -20,7 +20,16 @@ import { ProWorkflowStepper } from './ProWorkflowStepper';
 import { ProWorkflowSummary, type ProWorkflowSummaryItem } from './ProWorkflowSummary';
 
 export type ProWorkflowMode = 'ledger' | 'board';
-export type ProWorkflowStepId = 'task' | 'lower-band' | 'capture-time' | 'item-cells' | 'position' | 'highlight' | 'output';
+export type ProWorkflowStepId =
+  | 'task'
+  | 'ledger-detail'
+  | 'board-fields'
+  | 'lower-band'
+  | 'capture-time'
+  | 'item-cells'
+  | 'position'
+  | 'highlight'
+  | 'output';
 export type ProDetailTab = 'fields' | 'datetime' | 'layout' | 'typography' | 'highlight' | 'ledger';
 export type ProOutputFeedbackState = 'idle' | 'generating' | 'success' | 'error';
 
@@ -63,6 +72,11 @@ interface ProGuidedWorkflowProps {
   onCreateLedger: () => void;
   onRunSelected: () => void;
   onRunChecked: () => void;
+  ledgerSettings: ReactNode;
+  boardFieldsSettings: ReactNode;
+  boardLayoutSettings: ReactNode;
+  dateTimeSettings: ReactNode;
+  highlightSettings: ReactNode;
 }
 
 const timeModeCopy: Record<TimeMode, { title: string; description: string }> = {
@@ -109,7 +123,12 @@ export function ProGuidedWorkflow({
   onPreviewLedger,
   onCreateLedger,
   onRunSelected,
-  onRunChecked
+  onRunChecked,
+  ledgerSettings,
+  boardFieldsSettings,
+  boardLayoutSettings,
+  dateTimeSettings,
+  highlightSettings
 }: ProGuidedWorkflowProps) {
   const [currentStepId, setCurrentStepId] = useState<ProWorkflowStepId>('task');
   const [recentlyCompletedStepId, setRecentlyCompletedStepId] = useState<ProWorkflowStepId | null>(null);
@@ -130,35 +149,46 @@ export function ProGuidedWorkflow({
 
     if (isBoardWorkflow) {
       nextSteps.push({
+        id: 'board-fields',
+        title: '보드판에 어떤 내용을 넣을까요?',
+        shortTitle: '내용',
+        description: '보드판에 들어갈 항목명과 내용을 기존 입력칸에서 편집합니다.'
+      });
+      nextSteps.push({
         id: 'lower-band',
         title: '보드판을 어디에 넣을까요?',
         shortTitle: '보드',
         description: '보드판을 표형으로 넣을지, 사진 아래 하부띠로 넣을지 정합니다.'
       });
-    }
 
-    nextSteps.push({
-      id: 'capture-time',
-      title: '촬영시간을 어떻게 채울까요?',
-      shortTitle: '시간',
-      description: '기존 촬영시간 옵션 중 현장에 맞는 입력 방식을 선택합니다.'
-    });
-
-    if (isBoardWorkflow && usesBottomStrip) {
       nextSteps.push({
-        id: 'item-cells',
-        title: '항목칸을 보여줄까요?',
-        shortTitle: '항목칸',
-        description: '하부띠에 항목명 칸을 함께 표시할지 정합니다.'
+        id: 'capture-time',
+        title: '보드판 촬영시간을 어떻게 채울까요?',
+        shortTitle: '시간',
+        description: '보드판에 들어갈 촬영시간 입력 방식을 선택합니다.'
       });
-    }
 
-    if (isBoardWorkflow && !usesBottomStrip) {
+      if (usesBottomStrip) {
+        nextSteps.push({
+          id: 'item-cells',
+          title: '항목칸을 보여줄까요?',
+          shortTitle: '항목칸',
+          description: '하부띠에 항목명 칸을 함께 표시할지 정합니다.'
+        });
+      } else {
+        nextSteps.push({
+          id: 'position',
+          title: '보드판을 어디에 둘까요?',
+          shortTitle: '위치',
+          description: '기존 위치 옵션 중 사진을 덜 가리는 위치를 선택합니다.'
+        });
+      }
+    } else {
       nextSteps.push({
-        id: 'position',
-        title: '보드판을 어디에 둘까요?',
-        shortTitle: '위치',
-        description: '기존 위치 옵션 중 사진을 덜 가리는 위치를 선택합니다.'
+        id: 'ledger-detail',
+        title: '사진대지 내용을 입력하세요',
+        shortTitle: '사진대지',
+        description: '사진대지 문서 제목, 하단정보, 출력 순서를 기존 입력칸에서 편집합니다.'
       });
     }
 
@@ -233,36 +263,47 @@ export function ProGuidedWorkflow({
       value: workflowMode === 'board' ? '보드판 삽입하기' : '사진대지 만들기',
       stepId: 'task'
     },
-    {
-      id: 'board',
-      label: '보드판',
-      value: workflowMode === 'board' ? '삽입' : '접힘',
-      stepId: 'task'
-    },
-    {
-      id: 'lower-band',
-      label: '하부띠',
-      value: !isBoardWorkflow ? '사용 안 함' : usesBottomStrip ? '삽입' : '하부띠 없이 진행',
-      stepId: isBoardWorkflow ? 'lower-band' : 'task'
-    },
-    {
-      id: 'capture-time',
-      label: '촬영시간',
-      value: timeModeCopy[timeMode].title,
-      stepId: 'capture-time'
-    },
-    {
-      id: 'item-cells',
-      label: '항목칸',
-      value: usesBottomStrip ? (bottomStripShowLabels ? '표시' : '표시 안 함') : '해당 없음',
-      stepId: usesBottomStrip ? 'item-cells' : 'lower-band'
-    },
-    {
-      id: 'position',
-      label: '위치',
-      value: usesBottomStrip ? '하부띠 고정' : positionLabels[position],
-      stepId: usesBottomStrip ? 'lower-band' : 'position'
-    },
+    ...(isBoardWorkflow
+      ? [
+          {
+            id: 'board',
+            label: '보드판',
+            value: '삽입',
+            stepId: 'board-fields'
+          },
+          {
+            id: 'lower-band',
+            label: '하부띠',
+            value: usesBottomStrip ? '삽입' : '하부띠 없이 진행',
+            stepId: 'lower-band'
+          },
+          {
+            id: 'capture-time',
+            label: '촬영시간',
+            value: timeModeCopy[timeMode].title,
+            stepId: 'capture-time'
+          },
+          {
+            id: 'item-cells',
+            label: '항목칸',
+            value: usesBottomStrip ? (bottomStripShowLabels ? '표시' : '표시 안 함') : '해당 없음',
+            stepId: usesBottomStrip ? 'item-cells' : 'lower-band'
+          },
+          {
+            id: 'position',
+            label: '위치',
+            value: usesBottomStrip ? '하부띠 고정' : positionLabels[position],
+            stepId: usesBottomStrip ? 'lower-band' : 'position'
+          }
+        ]
+      : [
+          {
+            id: 'ledger-detail',
+            label: '사진대지',
+            value: '수동 하단정보',
+            stepId: 'ledger-detail'
+          }
+        ]),
     {
       id: 'highlight',
       label: '원형강조',
@@ -301,10 +342,10 @@ export function ProGuidedWorkflow({
               title="사진대지 만들기"
               description="여러 사진을 정리해 PDF 또는 출력용 대지로 만듭니다."
               selected={workflowMode === 'ledger'}
-              nextHint="선택하면 촬영시간 단계로 이어집니다."
+              nextHint="선택하면 사진대지 내용 단계로 이어집니다."
               icon={<FileSpreadsheet size={18} />}
               onClick={() => {
-                selectAndAdvance('task', 'capture-time', () => {
+                selectAndAdvance('task', 'ledger-detail', () => {
                   onWorkflowModeChange('ledger');
                   onOpenDetailTab('ledger');
                 });
@@ -314,10 +355,10 @@ export function ProGuidedWorkflow({
               title="보드판 삽입하기"
               description="사진대지에 보드판 형식의 정보를 함께 표시합니다."
               selected={workflowMode === 'board'}
-              nextHint="선택하면 보드판 배치 단계로 이어집니다."
+              nextHint="선택하면 보드 내용 단계로 이어집니다."
               icon={<LayoutGrid size={18} />}
               onClick={() => {
-                selectAndAdvance('task', 'lower-band', () => {
+                selectAndAdvance('task', 'board-fields', () => {
                   onWorkflowModeChange('board');
                   onOpenDetailTab('fields');
                 });
@@ -325,56 +366,78 @@ export function ProGuidedWorkflow({
             />
           </div>
         );
+      case 'ledger-detail':
+        return (
+          <div className="pro-workflow-step-detail">
+            {ledgerSettings}
+          </div>
+        );
+      case 'board-fields':
+        return (
+          <div className="pro-workflow-step-detail">
+            {boardFieldsSettings}
+          </div>
+        );
       case 'lower-band':
         return (
-          <div className="pro-workflow-options">
-            <ProWorkflowOptionCard
-              title="하부띠 삽입"
-              description="사진 아래에 보드 내용을 띠 형태로 붙입니다."
-              selected={usesBottomStrip}
-              nextHint="선택하면 촬영시간 단계로 이어집니다."
-              icon={<Rows3 size={18} />}
-              onClick={() => {
-                selectAndAdvance('lower-band', 'capture-time', () => {
-                  onBoardLayoutModeChange('bottom-strip');
-                  onOpenDetailTab('layout');
-                });
-              }}
-            />
-            <ProWorkflowOptionCard
-              title="하부띠 없이 진행"
-              description="기존 표형 보드판을 선택한 위치에 배치합니다."
-              selected={!usesBottomStrip}
-              nextHint="선택하면 촬영시간 단계로 이어집니다."
-              icon={<LayoutGrid size={18} />}
-              onClick={() => {
-                selectAndAdvance('lower-band', 'capture-time', () => {
-                  onBoardLayoutModeChange('table');
-                  onOpenDetailTab('layout');
-                });
-              }}
-            />
+          <div className="pro-workflow-step-stack">
+            <div className="pro-workflow-options">
+              <ProWorkflowOptionCard
+                title="하부띠 삽입"
+                description="사진 아래에 보드 내용을 띠 형태로 붙입니다."
+                selected={usesBottomStrip}
+                nextHint="선택하면 촬영시간 단계로 이어집니다."
+                icon={<Rows3 size={18} />}
+                onClick={() => {
+                  selectAndAdvance('lower-band', 'capture-time', () => {
+                    onBoardLayoutModeChange('bottom-strip');
+                    onOpenDetailTab('layout');
+                  });
+                }}
+              />
+              <ProWorkflowOptionCard
+                title="하부띠 없이 진행"
+                description="기존 표형 보드판을 선택한 위치에 배치합니다."
+                selected={!usesBottomStrip}
+                nextHint="선택하면 촬영시간 단계로 이어집니다."
+                icon={<LayoutGrid size={18} />}
+                onClick={() => {
+                  selectAndAdvance('lower-band', 'capture-time', () => {
+                    onBoardLayoutModeChange('table');
+                    onOpenDetailTab('layout');
+                  });
+                }}
+              />
+            </div>
+            <div className="pro-workflow-step-detail compact">
+              {boardLayoutSettings}
+            </div>
           </div>
         );
       case 'capture-time':
         return (
-          <div className="pro-workflow-options">
-            {(Object.keys(timeModeCopy) as TimeMode[]).map((mode) => (
-              <ProWorkflowOptionCard
-                key={mode}
-                title={timeModeCopy[mode].title}
-                description={timeModeCopy[mode].description}
-                selected={timeMode === mode}
-                nextHint="선택하면 다음 설정 단계로 이어집니다."
-                icon={<Clock3 size={18} />}
-                onClick={() => {
-                  selectAndAdvance('capture-time', nextStepAfterCaptureTime, () => {
-                    onTimeModeChange(mode);
-                    onOpenDetailTab('datetime');
-                  });
-                }}
-              />
-            ))}
+          <div className="pro-workflow-step-stack">
+            <div className="pro-workflow-options">
+              {(Object.keys(timeModeCopy) as TimeMode[]).map((mode) => (
+                <ProWorkflowOptionCard
+                  key={mode}
+                  title={timeModeCopy[mode].title}
+                  description={timeModeCopy[mode].description}
+                  selected={timeMode === mode}
+                  nextHint="선택하면 다음 설정 단계로 이어집니다."
+                  icon={<Clock3 size={18} />}
+                  onClick={() => {
+                    selectAndAdvance('capture-time', nextStepAfterCaptureTime, () => {
+                      onTimeModeChange(mode);
+                      onOpenDetailTab('datetime');
+                    });
+                  }}
+                />
+              ))}
+            </div>
+            <div className="pro-workflow-step-detail compact">
+              {dateTimeSettings}
+            </div>
           </div>
         );
       case 'item-cells':
@@ -431,34 +494,35 @@ export function ProGuidedWorkflow({
         );
       case 'highlight':
         return (
-          <div className="pro-workflow-options">
-            <ProWorkflowOptionCard
-              title="원형강조 사용 안 함"
-              description="사진을 그대로 보여줍니다."
-              selected={!highlightEnabled}
-              nextHint="선택하면 생성 단계로 이어집니다."
-              icon={<CircleDot size={18} />}
-              onClick={() => {
-                selectAndAdvance('highlight', 'output', () => {
+          <div className="pro-workflow-step-stack">
+            <div className="pro-workflow-options">
+              <ProWorkflowOptionCard
+                title="원형강조 사용 안 함"
+                description="사진을 그대로 보여줍니다."
+                selected={!highlightEnabled}
+                nextHint="선택 후 다음 단계로 진행하세요."
+                icon={<CircleDot size={18} />}
+                onClick={() => {
                   onHighlightEnabledChange(false);
                   onOpenDetailTab('highlight');
-                });
-              }}
-            />
-            <ProWorkflowOptionCard
-              title="원형강조 사용"
-              description={highlightDisabled ? '사진을 선택하면 원형강조를 켤 수 있습니다.' : '선택 사진의 중요한 위치를 원으로 강조합니다.'}
-              selected={highlightEnabled}
-              disabled={highlightDisabled}
-              nextHint="선택하면 생성 단계로 이어집니다."
-              icon={<Sparkles size={18} />}
-              onClick={() => {
-                selectAndAdvance('highlight', 'output', () => {
+                }}
+              />
+              <ProWorkflowOptionCard
+                title="원형강조 사용"
+                description={highlightDisabled ? '사진을 선택하면 원형강조를 켤 수 있습니다.' : '선택 사진의 중요한 위치를 원으로 강조합니다.'}
+                selected={highlightEnabled}
+                disabled={highlightDisabled}
+                nextHint="사용하면 아래 세부 옵션을 고를 수 있습니다."
+                icon={<Sparkles size={18} />}
+                onClick={() => {
                   onHighlightEnabledChange(true);
                   onOpenDetailTab('highlight');
-                });
-              }}
-            />
+                }}
+              />
+            </div>
+            <div className="pro-workflow-step-detail compact">
+              {highlightSettings}
+            </div>
           </div>
         );
       case 'output':
@@ -505,27 +569,22 @@ export function ProGuidedWorkflow({
         recentlyCompletedStepId={recentlyCompletedStepId}
       />
 
-      <ProWorkflowStep
-        key={currentStep.id}
-        focusRef={currentStepRef}
-        stepNumber={currentIndex + 1}
-        title={currentStep.title}
-        description={currentStep.description}
-        current
-        completed={false}
-        className={recentlyCompletedStepId ? 'revealed-after-selection' : undefined}
-      >
-        {renderCurrentStep()}
-      </ProWorkflowStep>
-
-      <ProWorkflowSummary items={summaryItems} onEdit={goToStep} />
-
-      <div className="pro-workflow-detail-links" aria-label="기존 상세 설정으로 이동">
-        <button type="button" onClick={() => openDetail('fields', 'task')}>보드 내용</button>
-        <button type="button" onClick={() => openDetail('datetime', 'capture-time')}>촬영시간</button>
-        <button type="button" onClick={() => openDetail('layout', isBoardWorkflow ? 'lower-band' : 'task')}>크기/배치</button>
-        <button type="button" onClick={() => openDetail('highlight', 'highlight')}>강조/실행</button>
-        <button type="button" onClick={() => openDetail('ledger', 'output')}>사진대지</button>
+      <div className="pro-workflow-slide-panel" aria-live="polite">
+        <ProWorkflowStep
+          key={currentStep.id}
+          focusRef={currentStepRef}
+          stepNumber={currentIndex + 1}
+          title={currentStep.title}
+          description={currentStep.description}
+          current
+          completed={false}
+          className={[
+            `step-${currentStep.id}`,
+            recentlyCompletedStepId ? 'revealed-after-selection' : ''
+          ].filter(Boolean).join(' ')}
+        >
+          {renderCurrentStep()}
+        </ProWorkflowStep>
       </div>
 
       <div className="pro-workflow-nav">
@@ -536,6 +595,16 @@ export function ProGuidedWorkflow({
         <button type="button" className="small-btn primary" disabled={!canGoNext} onClick={() => moveToStep(steps[currentIndex + 1].id)}>
           다음 단계
         </button>
+      </div>
+
+      <ProWorkflowSummary items={summaryItems} onEdit={goToStep} />
+
+      <div className="pro-workflow-detail-links" aria-label="기존 상세 설정으로 이동">
+        {isBoardWorkflow && <button type="button" onClick={() => openDetail('fields', 'board-fields')}>보드 내용</button>}
+        {isBoardWorkflow && <button type="button" onClick={() => openDetail('datetime', 'capture-time')}>촬영시간</button>}
+        {isBoardWorkflow && <button type="button" onClick={() => openDetail('layout', 'lower-band')}>크기/배치</button>}
+        <button type="button" onClick={() => openDetail('highlight', 'highlight')}>강조/실행</button>
+        <button type="button" onClick={() => openDetail('ledger', isBoardWorkflow ? 'output' : 'ledger-detail')}>사진대지</button>
       </div>
     </section>
   );

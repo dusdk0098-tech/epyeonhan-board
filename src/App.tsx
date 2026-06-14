@@ -3154,7 +3154,12 @@ export default function App() {
           <input
             type="checkbox"
             checked={settings.showBoard}
-            onChange={(event) => updateSettings({ showBoard: event.target.checked })}
+            onChange={(event) =>
+              updateSettings({
+                showBoard: event.target.checked,
+                photoLedgerUseBoardFields: event.target.checked
+              })
+            }
           />
           보드판 삽입
         </label>
@@ -3170,8 +3175,10 @@ export default function App() {
     );
   }
 
-  function renderPremiumPhotoLedgerSettings() {
-    const manualLedgerDisabled = settings.photoLedgerUseBoardFields || !selectedPhoto;
+  function renderPremiumPhotoLedgerSettings(options: { showBoardFieldToggle?: boolean } = {}) {
+    const showBoardFieldToggle = options.showBoardFieldToggle ?? true;
+    const useBoardFields = showBoardFieldToggle && settings.photoLedgerUseBoardFields;
+    const manualLedgerDisabled = useBoardFields || !selectedPhoto;
     const dateLedgerDisabled = manualLedgerDisabled || settings.photoLedgerUsePhotoDate;
     const selectedPhotoInfoDate = resolvePhotoInfoDateForLedger(selectedPhoto);
     return (
@@ -3181,15 +3188,19 @@ export default function App() {
           <div className="settings-form board-pdf-form premium-ledger-form">
             <label>문서 제목</label>
             <input value={settings.pdfTitle} onChange={(event) => updateSettings({ pdfTitle: event.target.value })} />
-            <label>적용 방식</label>
-            <label className="check-label compact-check">
-              <input
-                type="checkbox"
-                checked={settings.photoLedgerUseBoardFields}
-                onChange={(event) => updateSettings({ photoLedgerUseBoardFields: event.target.checked })}
-              />
-              보드판 입력값 자동 적용
-            </label>
+            {showBoardFieldToggle && (
+              <>
+                <label>적용 방식</label>
+                <label className="check-label compact-check">
+                  <input
+                    type="checkbox"
+                    checked={settings.photoLedgerUseBoardFields}
+                    onChange={(event) => updateSettings({ photoLedgerUseBoardFields: event.target.checked })}
+                  />
+                  보드판 입력값 자동 적용
+                </label>
+              </>
+            )}
             <label>촬영일자</label>
             <label className="check-label compact-check">
               <input
@@ -3222,7 +3233,7 @@ export default function App() {
             </button>
           </div>
 
-          {settings.photoLedgerUseBoardFields ? (
+          {useBoardFields ? (
             <div className="ledger-auto-note">
               <ListChecks size={16} aria-hidden />
               <span>보드 입력값으로 위치와 내용 자동 구성</span>
@@ -3293,7 +3304,7 @@ export default function App() {
             <FileSpreadsheet size={17} /> 사진대지 만들기
           </button>
           <p className="output-help-text compact">
-            {settings.photoLedgerUseBoardFields
+            {useBoardFields
               ? 'PDF 생성 시 보드 입력값을 문서 하단정보로 사용합니다.'
               : '사진별 하단정보와 출력 순서를 지정해 PDF에 반영합니다.'}
           </p>
@@ -3323,7 +3334,12 @@ export default function App() {
         hasSaveDir={Boolean(saveDir)}
         isProcessing={isProcessing}
         outputFeedback={proOutputFeedback}
-        onWorkflowModeChange={(mode) => updateSettings({ showBoard: mode === 'board' })}
+        onWorkflowModeChange={(mode) =>
+          updateSettings({
+            showBoard: mode === 'board',
+            photoLedgerUseBoardFields: mode === 'board'
+          })
+        }
         onBoardLayoutModeChange={(mode) => updateSettings({ boardLayoutMode: mode })}
         onTimeModeChange={setTimeMode}
         onBottomStripShowLabelsChange={(value) => updateSettings({ bottomStripShowLabels: value })}
@@ -3334,7 +3350,27 @@ export default function App() {
         onCreateLedger={() => void runProcess('all', { createPhotoLedgerPdf: true })}
         onRunSelected={() => void runProcess('selected')}
         onRunChecked={() => void runProcess('checked')}
+        ledgerSettings={renderPremiumPhotoLedgerSettings({ showBoardFieldToggle: false })}
+        boardFieldsSettings={renderPremiumBoardFieldsSettings()}
+        boardLayoutSettings={renderPremiumBoardLayoutSettings()}
+        dateTimeSettings={renderPremiumDateTimeSettings()}
+        highlightSettings={renderPremiumHighlightAndActions()}
       />
+    );
+  }
+
+  function renderPremiumBoardFieldsSettings() {
+    return (
+      <div className="premium-field-editor">
+        <div className="premium-field-header">
+          <span>항목명 / 내용</span>
+          <button className="small-btn outline" type="button" onClick={addField}>
+            <Plus size={15} /> 항목 추가
+          </button>
+        </div>
+        {renderBoardFieldEditor('advanced-field-list premium-field-list')}
+        {renderPremiumFieldActions()}
+      </div>
     );
   }
 
@@ -3399,23 +3435,12 @@ export default function App() {
           </button>
         </div>
         <div className="settings-tab-panel output-tab-panel">
-          {activeOutputSettingsTab === 'fields' && (
-            <div className="premium-field-editor">
-              <div className="premium-field-header">
-                <span>항목명 / 내용</span>
-                <button className="small-btn outline" type="button" onClick={addField}>
-                  <Plus size={15} /> 항목 추가
-                </button>
-              </div>
-              {renderBoardFieldEditor('advanced-field-list premium-field-list')}
-              {renderPremiumFieldActions()}
-            </div>
-          )}
+          {activeOutputSettingsTab === 'fields' && renderPremiumBoardFieldsSettings()}
           {activeOutputSettingsTab === 'datetime' && renderPremiumDateTimeSettings()}
           {activeOutputSettingsTab === 'layout' && renderPremiumBoardLayoutSettings()}
           {activeOutputSettingsTab === 'typography' && renderPremiumTypographySettings()}
           {activeOutputSettingsTab === 'highlight' && renderPremiumHighlightAndActions()}
-          {activeOutputSettingsTab === 'ledger' && renderPremiumPhotoLedgerSettings()}
+          {activeOutputSettingsTab === 'ledger' && renderPremiumPhotoLedgerSettings({ showBoardFieldToggle: settings.showBoard })}
         </div>
       </Card>
     );

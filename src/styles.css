@@ -4389,13 +4389,42 @@ body {
   line-height: 1.25;
 }
 
+.pro-workflow-slide-panel {
+  min-width: 0;
+  overflow: visible;
+}
+
 .pro-workflow-step-body,
 .pro-workflow-options,
 .pro-workflow-position-grid,
-.pro-workflow-output-actions {
+.pro-workflow-output-actions,
+.pro-workflow-step-stack {
   display: grid;
   gap: 8px;
   min-width: 0;
+}
+
+.pro-workflow-step-detail {
+  min-width: 0;
+  max-height: 300px;
+  overflow: auto;
+  padding: 8px;
+  border: 1px solid #e1e9f2;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.pro-workflow-step-detail.compact {
+  max-height: 230px;
+}
+
+.pro-workflow-step-detail .premium-settings-stack,
+.pro-workflow-step-detail .premium-field-editor {
+  gap: 8px;
+}
+
+.pro-workflow-step-detail .output-setting-section {
+  background: #fbfdff;
 }
 
 .pro-workflow-option {
@@ -4667,11 +4696,16 @@ body {
     border-color: #69a6e3;
     background: #f1f7ff;
     box-shadow: 0 10px 24px rgba(0, 91, 191, 0.16);
-    transform: translateY(-1px) scale(1.08);
+    transform: translateY(-2px) scale(1.12);
+  }
+
+  .pro-workflow-step.step-task .pro-workflow-option:not(:disabled):hover,
+  .pro-workflow-step.step-lower-band .pro-workflow-option:not(:disabled):hover {
+    transform: translateY(-2px) scale(1.16);
   }
 
   .pro-workflow-option.selected:not(:disabled):hover {
-    transform: translateY(-1px) scale(1.06);
+    transform: translateY(-1px) scale(1.08);
   }
 
   .pro-guided-workflow .small-btn:not(:disabled):hover {
@@ -4681,7 +4715,7 @@ body {
   }
 
   .pro-workflow-action-grid .small-btn:not(:disabled):hover {
-    transform: translateY(-1px) scale(1.08);
+    transform: translateY(-1px) scale(1.1);
   }
 }
 
@@ -5755,7 +5789,7 @@ body {
   }
 
   .output-grid {
-    grid-template-columns: 220px minmax(0, 1fr) 310px;
+    grid-template-columns: 200px minmax(280px, 0.8fr) minmax(400px, 1.2fr);
   }
 }
 
@@ -5825,7 +5859,9 @@ body {
 
   .basic-grid,
   .advanced-grid,
-  .advanced-settings-grid {
+  .advanced-settings-grid,
+  .output-grid,
+  .app:not(.start-active) .output-grid {
     grid-template-columns: 1fr;
   }
 
@@ -7306,13 +7342,14 @@ body {
 }
 
 .app:not(.start-active) .output-grid {
-  max-width: 1260px;
+  max-width: 1500px;
   gap: 12px;
-  grid-template-columns: 250px minmax(430px, 1fr) 340px;
+  grid-template-columns: 240px minmax(360px, 0.75fr) minmax(540px, 1.25fr);
 }
 
 .app:not(.start-active) .output-settings-card {
-  max-width: 340px;
+  max-width: none;
+  min-width: 0;
 }
 
 .app:not(.start-active) .premium-settings-tabs {
