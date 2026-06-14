@@ -193,3 +193,41 @@
   - Additional user manual update may be needed after UX is finalized.
 - Follow-up:
   - Revisit copy and screenshots after the guided PRO flow receives manual user feedback.
+
+## Task 2026-06-14 - PRO guided workflow motion follow-up
+
+- Phase: pro-guided-workflow-feedback
+- Branch: codex/pro-guided-workflow
+- Task type:
+  - UX improvement follow-up
+- Scope:
+  - Convert the top PRO workflow stepper into progress/status display.
+  - Advance to the next relevant step when the current option card is selected.
+  - Strengthen guided motion, option-card hover feedback, focus-visible feedback, and output status feedback.
+  - Keep output/PDF generation logic and existing setting values unchanged.
+- Changed files:
+  - src/components/pro-guided-workflow/ProGuidedWorkflow.tsx
+  - src/components/pro-guided-workflow/ProWorkflowStep.tsx
+  - src/components/pro-guided-workflow/ProWorkflowOptionCard.tsx
+  - src/components/pro-guided-workflow/ProWorkflowStepper.tsx
+  - src/components/pro-guided-workflow/OutputProgressStatus.tsx
+  - src/styles.css
+  - docs/CODEX_TASKS.md
+- Verification:
+  - git diff --check: PASS
+  - build: PASS
+  - verify:ui: PASS
+  - verify:board: PASS
+  - verify-output-settings: PASS
+  - package:win: PASS
+  - authenticated PRO guided workflow QA: PASS
+  - LITE visual smoke QA: PASS
+  - synthetic photo load/output generation manual QA: NOT_RUN - UI pass avoided file dialog/path exposure; automated output verification passed.
+  - reduced motion check: PASS - scoped CSS disables repeated/scale motion under prefers-reduced-motion.
+  - hidden/bidi/newline check: PASS
+  - no-exposure: PASS
+  - scope check: PASS
+- Known limitations:
+  - No fake percentage progress was added.
+  - The top stepper is now status display; returning is handled by summary edit and previous/next controls.
+  - Full manual photo import/output generation should be repeated with a synthetic image before the draft PR is promoted.

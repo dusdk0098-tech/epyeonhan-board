@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ReactNode, Ref } from 'react';
 import { CheckCircle2 } from 'lucide-react';
 
 interface ProWorkflowStepProps {
@@ -7,6 +7,8 @@ interface ProWorkflowStepProps {
   description: string;
   current?: boolean;
   completed?: boolean;
+  className?: string;
+  focusRef?: Ref<HTMLElement>;
   children: ReactNode;
 }
 
@@ -16,12 +18,20 @@ export function ProWorkflowStep({
   description,
   current = false,
   completed = false,
+  className,
+  focusRef,
   children
 }: ProWorkflowStepProps) {
   const statusClass = completed ? 'completed' : current ? 'current' : 'pending';
+  const stepClassName = ['pro-workflow-step', statusClass, className].filter(Boolean).join(' ');
 
   return (
-    <section className={`pro-workflow-step ${statusClass}`} aria-current={current ? 'step' : undefined}>
+    <section
+      ref={focusRef}
+      className={stepClassName}
+      aria-current={current ? 'step' : undefined}
+      tabIndex={current ? -1 : undefined}
+    >
       <div className="pro-workflow-step-head">
         <span className="pro-workflow-step-index" aria-hidden>
           {completed ? <CheckCircle2 size={16} /> : stepNumber}

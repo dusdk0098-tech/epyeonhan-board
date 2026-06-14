@@ -14,7 +14,7 @@ export function OutputProgressStatus({ feedback }: OutputProgressStatusProps) {
       : <Loader2 size={17} aria-hidden className={isGenerating ? 'spinning' : ''} />;
 
   return (
-    <div className={`pro-output-status ${feedback.state}`} aria-live="polite">
+    <div className={`pro-output-status ${feedback.state}`} aria-live="polite" role="status">
       <div className="pro-output-status-copy">
         {icon}
         <span>

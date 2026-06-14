@@ -21,10 +21,12 @@
   --motion-fast: 120ms;
   --motion-normal: 180ms;
   --motion-slow: 260ms;
+  --motion-reveal: 340ms;
   --motion-standard: cubic-bezier(0.2, 0, 0, 1);
   --motion-emphasized: cubic-bezier(0.16, 1, 0.3, 1);
   --guide-ring: rgba(0, 91, 191, 0.2);
   --guide-glow: 0 8px 22px rgba(0, 91, 191, 0.12);
+  --guide-strong-glow: 0 10px 26px rgba(0, 91, 191, 0.18);
 }
 
 html,
@@ -4244,9 +4246,11 @@ body {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
-.pro-workflow-stepper button,
 .pro-workflow-detail-links button,
 .pro-workflow-summary-row button {
   border: 1px solid #d7e2ef;
@@ -4261,7 +4265,7 @@ body {
     transform var(--motion-fast) var(--motion-standard);
 }
 
-.pro-workflow-stepper button {
+.pro-workflow-stepper li {
   display: inline-flex;
   align-items: center;
   justify-content: flex-start;
@@ -4269,11 +4273,21 @@ body {
   min-height: 27px;
   gap: 5px;
   padding: 4px 6px;
+  border: 1px solid #d7e2ef;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #3a4b63;
   font-size: 11px;
+  font-weight: 850;
   line-height: 1;
+  transition:
+    background var(--motion-fast) var(--motion-standard),
+    border-color var(--motion-fast) var(--motion-standard),
+    box-shadow var(--motion-fast) var(--motion-standard),
+    transform var(--motion-fast) var(--motion-standard);
 }
 
-.pro-workflow-stepper button span {
+.pro-workflow-stepper li span {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -4286,24 +4300,29 @@ body {
   font-size: 10px;
 }
 
-.pro-workflow-stepper button strong {
+.pro-workflow-stepper li strong {
   overflow: hidden;
   min-width: 0;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.pro-workflow-stepper button.current {
+.pro-workflow-stepper li.current {
   border-color: #005bbf;
   background: #eef6ff;
   color: #004b98;
   box-shadow: 0 0 0 2px var(--guide-ring);
+  transform: scale(1.02);
 }
 
-.pro-workflow-stepper button.completed {
+.pro-workflow-stepper li.completed {
   border-color: #8fc7bb;
   background: #eefbf7;
   color: #006b5f;
+}
+
+.pro-workflow-stepper li.recently-completed {
+  animation: pro-guide-complete var(--motion-normal) var(--motion-emphasized);
 }
 
 .pro-workflow-step {
@@ -4313,12 +4332,34 @@ body {
   border: 1px solid #d6e0ec;
   border-radius: 8px;
   background: #ffffff;
-  animation: pro-guide-enter var(--motion-slow) var(--motion-emphasized);
+  transform-origin: center top;
+  animation:
+    pro-guide-enter var(--motion-reveal) var(--motion-emphasized),
+    pro-guide-soft-ring var(--motion-reveal) var(--motion-emphasized);
 }
 
 .pro-workflow-step.current {
   border-color: #b8d2f0;
   box-shadow: var(--guide-glow);
+}
+
+.pro-workflow-step.revealed-after-selection {
+  box-shadow: var(--guide-strong-glow);
+}
+
+.pro-workflow-step.completed {
+  overflow: hidden;
+  opacity: 0.72;
+  transform: translateY(-3px) scale(0.98);
+}
+
+.pro-workflow-step:focus {
+  outline: none;
+}
+
+.pro-workflow-step:focus-visible {
+  outline: 2px solid rgba(0, 91, 191, 0.34);
+  outline-offset: 3px;
 }
 
 .pro-workflow-step-head {
@@ -4359,6 +4400,7 @@ body {
 
 .pro-workflow-option {
   position: relative;
+  z-index: 0;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
@@ -4371,6 +4413,7 @@ body {
   background: #fbfdff;
   color: #152840;
   text-align: left;
+  transform-origin: center;
   transition:
     background var(--motion-normal) var(--motion-standard),
     border-color var(--motion-normal) var(--motion-standard),
@@ -4409,10 +4452,16 @@ body {
   line-height: 1.35;
 }
 
+.pro-workflow-option-copy .pro-workflow-option-next {
+  color: #005bbf;
+  font-weight: 850;
+}
+
 .pro-workflow-option.selected {
   border-color: #005bbf;
   background: #eef6ff;
   box-shadow: inset 0 0 0 1px rgba(0, 91, 191, 0.12);
+  animation: pro-guide-selected var(--motion-normal) var(--motion-emphasized);
 }
 
 .pro-workflow-option.selected .pro-workflow-option-icon {
@@ -4422,7 +4471,7 @@ body {
 
 .pro-workflow-option-check {
   color: #006b5f;
-  animation: pro-guide-check var(--motion-fast) var(--motion-emphasized);
+  animation: pro-guide-check var(--motion-normal) var(--motion-emphasized);
 }
 
 .pro-workflow-option:disabled {
@@ -4520,6 +4569,17 @@ body {
   border: 1px solid #d6e0ec;
   border-radius: 8px;
   background: #f8fbff;
+  transition:
+    background var(--motion-normal) var(--motion-standard),
+    border-color var(--motion-normal) var(--motion-standard),
+    box-shadow var(--motion-normal) var(--motion-standard),
+    transform var(--motion-fast) var(--motion-standard);
+}
+
+.pro-output-status.generating {
+  border-color: #8bbbe8;
+  background: #f1f7ff;
+  box-shadow: var(--guide-glow);
 }
 
 .pro-output-status-copy {
@@ -4536,6 +4596,7 @@ body {
 .pro-output-status.success {
   border-color: #98cdbf;
   background: #f0fbf7;
+  animation: pro-guide-status-pop var(--motion-normal) var(--motion-emphasized);
 }
 
 .pro-output-status.success .pro-output-status-copy svg {
@@ -4545,6 +4606,7 @@ body {
 .pro-output-status.error {
   border-color: #f0b4b4;
   background: #fff4f4;
+  animation: pro-guide-status-pop var(--motion-normal) var(--motion-emphasized);
 }
 
 .pro-output-status.error .pro-output-status-copy svg {
@@ -4587,21 +4649,43 @@ body {
   animation: pro-guide-spin 900ms linear infinite;
 }
 
+.pro-workflow-button-spinner {
+  animation: pro-guide-spin 800ms linear infinite;
+}
+
 @media (hover: hover) and (pointer: fine) {
-  .pro-workflow-option:not(:disabled):hover,
-  .pro-workflow-stepper button:not(:disabled):hover,
   .pro-workflow-summary-row button:not(:disabled):hover,
-  .pro-workflow-detail-links button:not(:disabled):hover,
-  .pro-guided-workflow .small-btn:not(:disabled):hover {
+  .pro-workflow-detail-links button:not(:disabled):hover {
     border-color: #8bbbe8;
     background: #f1f7ff;
     box-shadow: 0 5px 15px rgba(0, 91, 191, 0.12);
-    transform: translateY(-1px);
+    transform: translateY(-1px) scale(1.04);
+  }
+
+  .pro-workflow-option:not(:disabled):hover {
+    z-index: 2;
+    border-color: #69a6e3;
+    background: #f1f7ff;
+    box-shadow: 0 10px 24px rgba(0, 91, 191, 0.16);
+    transform: translateY(-1px) scale(1.08);
+  }
+
+  .pro-workflow-option.selected:not(:disabled):hover {
+    transform: translateY(-1px) scale(1.06);
+  }
+
+  .pro-guided-workflow .small-btn:not(:disabled):hover {
+    border-color: #69a6e3;
+    box-shadow: 0 7px 18px rgba(0, 91, 191, 0.14);
+    transform: translateY(-1px) scale(1.06);
+  }
+
+  .pro-workflow-action-grid .small-btn:not(:disabled):hover {
+    transform: translateY(-1px) scale(1.08);
   }
 }
 
 .pro-workflow-option:not(:disabled):active,
-.pro-workflow-stepper button:not(:disabled):active,
 .pro-workflow-summary-row button:not(:disabled):active,
 .pro-workflow-detail-links button:not(:disabled):active,
 .pro-guided-workflow .small-btn:not(:disabled):active {
@@ -4609,7 +4693,6 @@ body {
 }
 
 .pro-workflow-option:focus-visible,
-.pro-workflow-stepper button:focus-visible,
 .pro-workflow-summary-row button:focus-visible,
 .pro-workflow-detail-links button:focus-visible,
 .pro-guided-workflow .small-btn:focus-visible {
@@ -4621,7 +4704,7 @@ body {
 @keyframes pro-guide-enter {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(8px) scale(0.985);
   }
   to {
     opacity: 1;
@@ -4629,11 +4712,61 @@ body {
   }
 }
 
+@keyframes pro-guide-soft-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgba(0, 91, 191, 0);
+  }
+  38% {
+    box-shadow: 0 0 0 3px rgba(0, 91, 191, 0.16), var(--guide-glow);
+  }
+  100% {
+    box-shadow: var(--guide-glow);
+  }
+}
+
+@keyframes pro-guide-selected {
+  0% {
+    transform: scale(0.985);
+  }
+  58% {
+    transform: scale(1.015);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
 @keyframes pro-guide-check {
   from {
-    transform: scale(0.86);
+    opacity: 0;
+    transform: scale(0.72) rotate(-8deg);
   }
   to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pro-guide-complete {
+  0% {
+    transform: scale(0.96);
+  }
+  60% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes pro-guide-status-pop {
+  0% {
+    transform: scale(0.985);
+  }
+  65% {
+    transform: scale(1.01);
+  }
+  100% {
     transform: scale(1);
   }
 }
@@ -4657,12 +4790,14 @@ body {
   .pro-workflow-step,
   .pro-workflow-option,
   .pro-workflow-option-check,
-  .pro-workflow-stepper button,
+  .pro-workflow-stepper li,
   .pro-workflow-summary-row button,
   .pro-workflow-detail-links button,
   .pro-guided-workflow .small-btn,
+  .pro-output-status,
   .pro-output-progress span,
-  .pro-output-status .spinning {
+  .pro-output-status .spinning,
+  .pro-workflow-button-spinner {
     animation-duration: 1ms;
     animation-iteration-count: 1;
     transition-duration: 1ms;

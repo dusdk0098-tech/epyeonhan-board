@@ -7,6 +7,7 @@ interface ProWorkflowOptionCardProps {
   selected?: boolean;
   disabled?: boolean;
   meta?: string;
+  nextHint?: string;
   icon?: ReactNode;
   onClick: () => void;
 }
@@ -17,6 +18,7 @@ export function ProWorkflowOptionCard({
   selected = false,
   disabled = false,
   meta,
+  nextHint,
   icon,
   onClick
 }: ProWorkflowOptionCardProps) {
@@ -35,6 +37,7 @@ export function ProWorkflowOptionCard({
         <strong>{title}</strong>
         <small>{description}</small>
         {meta && <em>{meta}</em>}
+        {nextHint && <em className="pro-workflow-option-next">{nextHint}</em>}
       </span>
       {selected && <CheckCircle2 className="pro-workflow-option-check" size={17} aria-hidden />}
     </button>

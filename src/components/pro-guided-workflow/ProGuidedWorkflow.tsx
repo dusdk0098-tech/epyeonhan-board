@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   CheckSquare,
   CircleDot,
@@ -6,6 +6,7 @@ import {
   FileSpreadsheet,
   LayoutGrid,
   ListChecks,
+  Loader2,
   MapPin,
   Play,
   Rows3,
@@ -111,6 +112,9 @@ export function ProGuidedWorkflow({
   onRunChecked
 }: ProGuidedWorkflowProps) {
   const [currentStepId, setCurrentStepId] = useState<ProWorkflowStepId>('task');
+  const [recentlyCompletedStepId, setRecentlyCompletedStepId] = useState<ProWorkflowStepId | null>(null);
+  const currentStepRef = useRef<HTMLElement | null>(null);
+  const shouldGuideFocusRef = useRef(false);
   const isBoardWorkflow = workflowMode === 'board';
   const usesBottomStrip = boardLayoutMode === 'bottom-strip';
 
@@ -118,7 +122,7 @@ export function ProGuidedWorkflow({
     const nextSteps: ProWorkflowStepItem[] = [
       {
         id: 'task',
-        title: '작업 유형 선택',
+        title: '어떤 결과물을 만들까요?',
         shortTitle: '작업',
         description: '사진대지만 만들지, 보드판 정보를 함께 넣을지 먼저 정합니다.'
       }
@@ -127,7 +131,7 @@ export function ProGuidedWorkflow({
     if (isBoardWorkflow) {
       nextSteps.push({
         id: 'lower-band',
-        title: '보드판과 하부띠',
+        title: '보드판을 어디에 넣을까요?',
         shortTitle: '보드',
         description: '보드판을 표형으로 넣을지, 사진 아래 하부띠로 넣을지 정합니다.'
       });
@@ -135,7 +139,7 @@ export function ProGuidedWorkflow({
 
     nextSteps.push({
       id: 'capture-time',
-      title: '촬영시간 입력',
+      title: '촬영시간을 어떻게 채울까요?',
       shortTitle: '시간',
       description: '기존 촬영시간 옵션 중 현장에 맞는 입력 방식을 선택합니다.'
     });
@@ -143,7 +147,7 @@ export function ProGuidedWorkflow({
     if (isBoardWorkflow && usesBottomStrip) {
       nextSteps.push({
         id: 'item-cells',
-        title: '항목칸 표시',
+        title: '항목칸을 보여줄까요?',
         shortTitle: '항목칸',
         description: '하부띠에 항목명 칸을 함께 표시할지 정합니다.'
       });
@@ -152,7 +156,7 @@ export function ProGuidedWorkflow({
     if (isBoardWorkflow && !usesBottomStrip) {
       nextSteps.push({
         id: 'position',
-        title: '보드판 위치',
+        title: '보드판을 어디에 둘까요?',
         shortTitle: '위치',
         description: '기존 위치 옵션 중 사진을 덜 가리는 위치를 선택합니다.'
       });
@@ -161,13 +165,13 @@ export function ProGuidedWorkflow({
     nextSteps.push(
       {
         id: 'highlight',
-        title: '원형강조',
+        title: '원형강조를 사용할까요?',
         shortTitle: '강조',
         description: '선택한 사진에서 강조 표시가 필요한지 정합니다.'
       },
       {
         id: 'output',
-        title: '미리보기와 생성',
+        title: '이제 무엇을 생성할까요?',
         shortTitle: '생성',
         description: '사진 방향과 순서를 확인한 뒤 결과물을 만듭니다.'
       }
@@ -182,12 +186,40 @@ export function ProGuidedWorkflow({
     }
   }, [currentStepId, steps]);
 
+  useEffect(() => {
+    if (!recentlyCompletedStepId) return;
+
+    const clearTimer = window.setTimeout(() => {
+      setRecentlyCompletedStepId(null);
+    }, 460);
+
+    return () => window.clearTimeout(clearTimer);
+  }, [recentlyCompletedStepId]);
+
+  useEffect(() => {
+    if (!shouldGuideFocusRef.current) return;
+
+    shouldGuideFocusRef.current = false;
+    const focusTarget = currentStepRef.current;
+    if (!focusTarget) return;
+
+    window.requestAnimationFrame(() => {
+      focusTarget.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      focusTarget.focus({ preventScroll: true });
+    });
+  }, [currentStepId]);
+
   const currentIndex = Math.max(0, steps.findIndex((step) => step.id === currentStepId));
   const currentStep = steps[currentIndex] ?? steps[0];
   const canGoBack = currentIndex > 0;
   const canGoNext = currentIndex < steps.length - 1;
   const canRunAny = photosCount > 0 && hasSaveDir && !isProcessing;
   const canRunSelected = canRunAny && hasSelectedPhoto;
+  const nextStepAfterCaptureTime: ProWorkflowStepId = isBoardWorkflow
+    ? usesBottomStrip
+      ? 'item-cells'
+      : 'position'
+    : 'highlight';
   const outputHint = photosCount === 0
     ? '먼저 사진을 추가해야 결과물을 만들 수 있습니다.'
     : hasSaveDir
@@ -239,14 +271,25 @@ export function ProGuidedWorkflow({
     }
   ];
 
+  function moveToStep(stepId: ProWorkflowStepId) {
+    shouldGuideFocusRef.current = true;
+    setCurrentStepId(stepId);
+  }
+
   function goToStep(stepId: string) {
     const step = steps.find((item) => item.id === stepId);
-    if (step) setCurrentStepId(step.id);
+    if (step) moveToStep(step.id);
   }
 
   function openDetail(tab: ProDetailTab, stepId: ProWorkflowStepId) {
     onOpenDetailTab(tab);
-    setCurrentStepId(stepId);
+    moveToStep(stepId);
+  }
+
+  function selectAndAdvance(completedStepId: ProWorkflowStepId, nextStepId: ProWorkflowStepId, onSelect: () => void) {
+    onSelect();
+    setRecentlyCompletedStepId(completedStepId);
+    moveToStep(nextStepId);
   }
 
   function renderCurrentStep() {
@@ -258,20 +301,26 @@ export function ProGuidedWorkflow({
               title="사진대지 만들기"
               description="여러 사진을 정리해 PDF 또는 출력용 대지로 만듭니다."
               selected={workflowMode === 'ledger'}
+              nextHint="선택하면 촬영시간 단계로 이어집니다."
               icon={<FileSpreadsheet size={18} />}
               onClick={() => {
-                onWorkflowModeChange('ledger');
-                onOpenDetailTab('ledger');
+                selectAndAdvance('task', 'capture-time', () => {
+                  onWorkflowModeChange('ledger');
+                  onOpenDetailTab('ledger');
+                });
               }}
             />
             <ProWorkflowOptionCard
               title="보드판 삽입하기"
               description="사진대지에 보드판 형식의 정보를 함께 표시합니다."
               selected={workflowMode === 'board'}
+              nextHint="선택하면 보드판 배치 단계로 이어집니다."
               icon={<LayoutGrid size={18} />}
               onClick={() => {
-                onWorkflowModeChange('board');
-                onOpenDetailTab('fields');
+                selectAndAdvance('task', 'lower-band', () => {
+                  onWorkflowModeChange('board');
+                  onOpenDetailTab('fields');
+                });
               }}
             />
           </div>
@@ -283,20 +332,26 @@ export function ProGuidedWorkflow({
               title="하부띠 삽입"
               description="사진 아래에 보드 내용을 띠 형태로 붙입니다."
               selected={usesBottomStrip}
+              nextHint="선택하면 촬영시간 단계로 이어집니다."
               icon={<Rows3 size={18} />}
               onClick={() => {
-                onBoardLayoutModeChange('bottom-strip');
-                onOpenDetailTab('layout');
+                selectAndAdvance('lower-band', 'capture-time', () => {
+                  onBoardLayoutModeChange('bottom-strip');
+                  onOpenDetailTab('layout');
+                });
               }}
             />
             <ProWorkflowOptionCard
               title="하부띠 없이 진행"
               description="기존 표형 보드판을 선택한 위치에 배치합니다."
               selected={!usesBottomStrip}
+              nextHint="선택하면 촬영시간 단계로 이어집니다."
               icon={<LayoutGrid size={18} />}
               onClick={() => {
-                onBoardLayoutModeChange('table');
-                onOpenDetailTab('layout');
+                selectAndAdvance('lower-band', 'capture-time', () => {
+                  onBoardLayoutModeChange('table');
+                  onOpenDetailTab('layout');
+                });
               }}
             />
           </div>
@@ -310,10 +365,13 @@ export function ProGuidedWorkflow({
                 title={timeModeCopy[mode].title}
                 description={timeModeCopy[mode].description}
                 selected={timeMode === mode}
+                nextHint="선택하면 다음 설정 단계로 이어집니다."
                 icon={<Clock3 size={18} />}
                 onClick={() => {
-                  onTimeModeChange(mode);
-                  onOpenDetailTab('datetime');
+                  selectAndAdvance('capture-time', nextStepAfterCaptureTime, () => {
+                    onTimeModeChange(mode);
+                    onOpenDetailTab('datetime');
+                  });
                 }}
               />
             ))}
@@ -326,20 +384,26 @@ export function ProGuidedWorkflow({
               title="항목칸 표시"
               description="하부띠에 항목명과 내용을 구분해서 보여줍니다."
               selected={bottomStripShowLabels}
+              nextHint="선택하면 원형강조 단계로 이어집니다."
               icon={<ListChecks size={18} />}
               onClick={() => {
-                onBottomStripShowLabelsChange(true);
-                onOpenDetailTab('layout');
+                selectAndAdvance('item-cells', 'highlight', () => {
+                  onBottomStripShowLabelsChange(true);
+                  onOpenDetailTab('layout');
+                });
               }}
             />
             <ProWorkflowOptionCard
               title="항목칸 표시 안 함"
               description="내용 중심으로 하부띠를 더 간결하게 표시합니다."
               selected={!bottomStripShowLabels}
+              nextHint="선택하면 원형강조 단계로 이어집니다."
               icon={<Rows3 size={18} />}
               onClick={() => {
-                onBottomStripShowLabelsChange(false);
-                onOpenDetailTab('layout');
+                selectAndAdvance('item-cells', 'highlight', () => {
+                  onBottomStripShowLabelsChange(false);
+                  onOpenDetailTab('layout');
+                });
               }}
             />
           </div>
@@ -353,10 +417,13 @@ export function ProGuidedWorkflow({
                 title={positionLabels[nextPosition]}
                 description="기존 보드판 위치 옵션입니다."
                 selected={position === nextPosition}
+                nextHint="선택하면 원형강조 단계로 이어집니다."
                 icon={<MapPin size={18} />}
                 onClick={() => {
-                  onPositionChange(nextPosition);
-                  onOpenDetailTab('layout');
+                  selectAndAdvance('position', 'highlight', () => {
+                    onPositionChange(nextPosition);
+                    onOpenDetailTab('layout');
+                  });
                 }}
               />
             ))}
@@ -369,10 +436,13 @@ export function ProGuidedWorkflow({
               title="원형강조 사용 안 함"
               description="사진을 그대로 보여줍니다."
               selected={!highlightEnabled}
+              nextHint="선택하면 생성 단계로 이어집니다."
               icon={<CircleDot size={18} />}
               onClick={() => {
-                onHighlightEnabledChange(false);
-                onOpenDetailTab('highlight');
+                selectAndAdvance('highlight', 'output', () => {
+                  onHighlightEnabledChange(false);
+                  onOpenDetailTab('highlight');
+                });
               }}
             />
             <ProWorkflowOptionCard
@@ -380,10 +450,13 @@ export function ProGuidedWorkflow({
               description={highlightDisabled ? '사진을 선택하면 원형강조를 켤 수 있습니다.' : '선택 사진의 중요한 위치를 원으로 강조합니다.'}
               selected={highlightEnabled}
               disabled={highlightDisabled}
+              nextHint="선택하면 생성 단계로 이어집니다."
               icon={<Sparkles size={18} />}
               onClick={() => {
-                onHighlightEnabledChange(true);
-                onOpenDetailTab('highlight');
+                selectAndAdvance('highlight', 'output', () => {
+                  onHighlightEnabledChange(true);
+                  onOpenDetailTab('highlight');
+                });
               }}
             />
           </div>
@@ -398,13 +471,16 @@ export function ProGuidedWorkflow({
                 <FileSpreadsheet size={15} /> 문서 미리보기
               </button>
               <button className="small-btn primary" type="button" disabled={!canRunAny} onClick={onCreateLedger}>
-                <FileSpreadsheet size={15} /> {isProcessing ? 'PDF 생성 중...' : '사진대지 만들기'}
+                {isProcessing ? <Loader2 className="pro-workflow-button-spinner" size={15} aria-hidden /> : <FileSpreadsheet size={15} />}
+                {isProcessing ? 'PDF 생성 중...' : '사진대지 만들기'}
               </button>
               <button className="small-btn blue" type="button" disabled={!canRunSelected} onClick={onRunSelected}>
-                <Play size={15} /> {isProcessing ? '작업 중...' : '선택 사진 작업'}
+                {isProcessing ? <Loader2 className="pro-workflow-button-spinner" size={15} aria-hidden /> : <Play size={15} />}
+                {isProcessing ? '작업 중...' : '선택 사진 작업'}
               </button>
               <button className="small-btn outline" type="button" disabled={checkedCount === 0 || !hasSaveDir || isProcessing} onClick={onRunChecked}>
-                <CheckSquare size={15} /> 체크 사진 작업
+                {isProcessing ? <Loader2 className="pro-workflow-button-spinner" size={15} aria-hidden /> : <CheckSquare size={15} />}
+                {isProcessing ? '작업 중...' : '체크 사진 작업'}
               </button>
             </div>
             <p className="pro-workflow-output-hint">{outputHint}</p>
@@ -423,14 +499,21 @@ export function ProGuidedWorkflow({
         </div>
       </div>
 
-      <ProWorkflowStepper steps={steps} currentStepId={currentStep.id} onStepSelect={goToStep} />
+      <ProWorkflowStepper
+        steps={steps}
+        currentStepId={currentStep.id}
+        recentlyCompletedStepId={recentlyCompletedStepId}
+      />
 
       <ProWorkflowStep
+        key={currentStep.id}
+        focusRef={currentStepRef}
         stepNumber={currentIndex + 1}
         title={currentStep.title}
         description={currentStep.description}
         current
         completed={false}
+        className={recentlyCompletedStepId ? 'revealed-after-selection' : undefined}
       >
         {renderCurrentStep()}
       </ProWorkflowStep>
@@ -446,11 +529,11 @@ export function ProGuidedWorkflow({
       </div>
 
       <div className="pro-workflow-nav">
-        <button type="button" className="small-btn outline" disabled={!canGoBack} onClick={() => setCurrentStepId(steps[currentIndex - 1].id)}>
+        <button type="button" className="small-btn outline" disabled={!canGoBack} onClick={() => moveToStep(steps[currentIndex - 1].id)}>
           이전 단계
         </button>
         <span>{currentIndex + 1} / {steps.length}</span>
-        <button type="button" className="small-btn primary" disabled={!canGoNext} onClick={() => setCurrentStepId(steps[currentIndex + 1].id)}>
+        <button type="button" className="small-btn primary" disabled={!canGoNext} onClick={() => moveToStep(steps[currentIndex + 1].id)}>
           다음 단계
         </button>
       </div>
