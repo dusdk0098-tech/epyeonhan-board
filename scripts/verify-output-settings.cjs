@@ -172,6 +172,7 @@ function verifyWorkspaceAndBridgeStatic() {
   const main = fs.readFileSync(path.join(__dirname, '..', 'electron', 'main.ts'), 'utf8');
   const api = fs.readFileSync(path.join(__dirname, '..', 'src', 'electron-api.d.ts'), 'utf8');
   const styles = fs.readFileSync(path.join(__dirname, '..', 'src', 'styles.css'), 'utf8');
+  const sharedTypes = fs.readFileSync(path.join(__dirname, '..', 'src', 'shared', 'types.ts'), 'utf8');
 
   assert(app.includes('Record<WorkspaceScreen, BoardWorkspaceState>'), 'work tab state must be isolated per workspace');
   assert(app.includes("label: 'LITE'"), 'basic tab label must be LITE');
@@ -183,6 +184,10 @@ function verifyWorkspaceAndBridgeStatic() {
   assert(preload.includes('copyPreviewImage') && main.includes("images:copy-preview") && api.includes('copyPreviewImage'), 'preview copy IPC bridge is incomplete');
   assert(preload.includes('renderPreviewImage') && main.includes("images:render-preview") && api.includes('renderPreviewImage'), 'preview render IPC bridge is incomplete');
   assert(preload.includes('printPreviewImage') && main.includes("images:print-preview") && api.includes('printPreviewImage'), 'preview print IPC bridge is incomplete');
+  assert(sharedTypes.includes('type PhotoRotation = 0 | 90 | 180 | 270') && sharedTypes.includes('rotation?: PhotoRotation'), 'photo rotation must be stored per photo');
+  assert(app.includes('renderPhotoRotationControls') && app.includes('rotateSelectedPhoto') && styles.includes('.photo-rotation-controls'), 'photo rotation UI is missing');
+  assert(preload.includes('getImageDataUrl: (photo: ImageDataSource)') && api.includes('getImageDataUrl: (photo: ImageDataSource)'), 'image preview bridge must accept photo rotation metadata');
+  assert(main.includes('loadPhotoBuffer') && main.includes('normalizePhotoRotation') && main.includes('.rotate(rotation)'), 'image rendering must apply per-photo rotation');
   assert(main.includes('validateImageFilePath') && main.includes('maxImageInputBytes'), 'image IPC paths must be validated and size-limited');
   assert(main.includes('validateSheetFilePath') && main.includes('maxSheetInputBytes'), 'sheet import paths must be validated and size-limited');
   assert(main.includes('sanitizeParsedRows') && main.includes('isUnsafeObjectKey'), 'sheet parser rows must be sanitized before mapping');

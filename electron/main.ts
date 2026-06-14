@@ -20,9 +20,11 @@ import type {
   DateTimeValue,
   DialogPhotoResult,
   FolderResult,
+  ImageDataSource,
   ImportSheetResult,
   PhotoHighlight,
   PhotoItem,
+  PhotoRotation,
   PrintImageResult,
   PrintPreviewImagePayload,
   ProcessImagesPayload,
@@ -1056,15 +1058,11 @@ async function openFolder(folderPath: string): Promise<{ ok: boolean; error?: st
   }
 }
 
-async function getImageDataUrl(photoPath: string) {
+async function getImageDataUrl(photo: ImageDataSource) {
   try {
-    const localPath = await validateImageFilePath(photoPath);
-    if (!localPath) {
-      return { ok: false, error: '지원하지 않는 이미지 형식입니다.' };
-    }
+    const rendered = await loadPhotoBuffer(photo);
 
-    const buffer = await sharp(localPath)
-      .rotate()
+    const buffer = await sharp(rendered.data)
       .flatten({ background: '#ffffff' })
       .jpeg({ quality: 92, mozjpeg: true })
       .toBuffer();
@@ -1073,6 +1071,49 @@ async function getImageDataUrl(photoPath: string) {
   } catch (error) {
     return { ok: false, error: toErrorMessage(error) };
   }
+}
+
+async function loadPhotoBuffer(photo: ImageDataSource, maxLongEdge = 0) {
+  const localPath = await validateImageFilePath(getImageDataSourcePath(photo));
+  if (!localPath) {
+    throw new Error('지원하지 않는 이미지 파일입니다.');
+  }
+
+  let imagePipeline = sharp(localPath).rotate();
+  if (maxLongEdge > 0) {
+    imagePipeline = imagePipeline.resize({
+      width: maxLongEdge,
+      height: maxLongEdge,
+      fit: 'inside',
+      withoutEnlargement: true
+    });
+  }
+
+  const oriented = await imagePipeline.toBuffer({ resolveWithObject: true });
+  const rotation = normalizePhotoRotation(typeof photo === 'string' ? 0 : photo.rotation);
+  if (rotation === 0) {
+    return {
+      data: oriented.data,
+      width: oriented.info.width ?? 0,
+      height: oriented.info.height ?? 0
+    };
+  }
+
+  const rotated = await sharp(oriented.data).rotate(rotation).toBuffer({ resolveWithObject: true });
+  return {
+    data: rotated.data,
+    width: rotated.info.width ?? 0,
+    height: rotated.info.height ?? 0
+  };
+}
+
+function getImageDataSourcePath(photo: ImageDataSource) {
+  return typeof photo === 'string' ? photo : photo.path;
+}
+
+function normalizePhotoRotation(value: unknown): PhotoRotation {
+  const normalized = ((Math.round(Number(value) || 0) % 360) + 360) % 360;
+  return normalized === 90 || normalized === 180 || normalized === 270 ? normalized : 0;
 }
 
 async function readPhotoDateTimes(photoPaths: string[]): Promise<ReadDateTimeResult> {
@@ -1430,26 +1471,11 @@ async function renderBoardImage(photo: PhotoItem, outputPath: string, fields: Bo
 }
 
 async function renderBoardCompositeBuffer(photo: PhotoItem, fields: BoardField[], settings: BoardSettings) {
-  const localPath = await validateImageFilePath(photo.path);
-  if (!localPath) {
-    throw new Error('지원하지 않는 이미지 파일입니다.');
-  }
-
-  let imagePipeline = sharp(localPath).rotate();
   const maxLongEdge = normalizeOutputMaxLongEdge(settings.outputMaxLongEdge);
-  if (maxLongEdge > 0) {
-    imagePipeline = imagePipeline.resize({
-      width: maxLongEdge,
-      height: maxLongEdge,
-      fit: 'inside',
-      withoutEnlargement: true
-    });
-  }
-
-  const oriented = await imagePipeline.toBuffer({ resolveWithObject: true });
-  const imageWidth = oriented.info.width;
-  const imageHeight = oriented.info.height;
-  let photoBuffer = oriented.data;
+  const rendered = await loadPhotoBuffer(photo, maxLongEdge);
+  const imageWidth = rendered.width;
+  const imageHeight = rendered.height;
+  let photoBuffer = rendered.data;
 
   if (settings.outputGrayscale) {
     photoBuffer = await sharp(photoBuffer).grayscale().toBuffer();

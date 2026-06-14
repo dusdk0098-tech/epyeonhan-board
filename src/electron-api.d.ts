@@ -4,6 +4,7 @@ import type {
   DialogPhotoResult,
   FolderResult,
   ImageDataResult,
+  ImageDataSource,
   ImportSheetResult,
   PrintImageResult,
   PrintPreviewImagePayload,
@@ -57,7 +58,7 @@ export interface ConstructViewApi {
   pasteClipboardImage: () => Promise<DialogPhotoResult>;
   selectSaveFolder: () => Promise<FolderResult>;
   openFolder: (folderPath: string) => Promise<{ ok: boolean; error?: string }>;
-  getImageDataUrl: (photoPath: string) => Promise<ImageDataResult>;
+  getImageDataUrl: (photo: ImageDataSource) => Promise<ImageDataResult>;
   readPhotoDateTimes: (photoPaths: string[]) => Promise<ReadDateTimeResult>;
   importDateTimeSheet: () => Promise<ImportSheetResult>;
   processImages: (payload: ProcessImagesPayload) => Promise<ProcessImagesResult>;

@@ -4374,6 +4374,15 @@ body {
   pointer-events: none;
 }
 
+.output-preview-card .preview-context-hint {
+  position: static;
+  justify-self: end;
+  width: max-content;
+  max-width: calc(100% - 20px);
+  margin: 5px 10px 8px auto;
+  text-align: right;
+}
+
 .admin-panel {
   border: 1px solid #d8dce8;
   border-radius: 12px;
@@ -6333,6 +6342,51 @@ body {
   width: 100%;
   padding-right: 10px;
   padding-left: 10px;
+}
+
+.photo-rotation-controls {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  padding: 7px;
+  border: 1px solid #d8e4f2;
+  border-radius: 8px;
+  background: #f8fbff;
+}
+
+.photo-rotation-controls > span,
+.photo-rotation-controls > strong {
+  color: #26374d;
+  font-size: 12.5px;
+  font-weight: 900;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.photo-rotation-controls > strong {
+  min-width: 42px;
+  color: #005bbf;
+  text-align: right;
+}
+
+.photo-rotation-controls .small-btn {
+  min-width: 0;
+  min-height: 30px;
+  padding-right: 8px;
+  padding-left: 8px;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.output-rotation-controls {
+  margin: 8px 10px 0;
+  grid-template-columns: auto minmax(98px, 1fr) minmax(104px, 1fr) auto;
+}
+
+.basic-rotation-controls {
+  margin-top: -2px;
 }
 
 .common-settings-shell {

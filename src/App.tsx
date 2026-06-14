@@ -26,6 +26,7 @@ import {
   Printer,
   RefreshCw,
   RotateCcw,
+  RotateCw,
   Save,
   Settings,
   ShieldCheck,
@@ -77,6 +78,7 @@ import type {
   PhotoHighlight,
   PhotoItem,
   PhotoLedgerInfo,
+  PhotoRotation,
   ProcessImagesPayload,
   TimeMode,
   TimeOptions
@@ -430,6 +432,7 @@ export default function App() {
   } = workspace;
 
   const selectedPhoto = photos.find((photo) => photo.path === selectedPhotoPath);
+  const selectedPhotoRotation = normalizePhotoRotation(selectedPhoto?.rotation);
   const selectedHighlight = selectedPhoto?.highlight;
   const selectedPhotoLedger = selectedPhoto?.photoLedger ?? defaultPhotoLedgerInfo;
   const selectedIndex = selectedPhoto ? photos.findIndex((photo) => photo.path === selectedPhoto.path) : -1;
@@ -504,9 +507,10 @@ export default function App() {
           valueTextColor: settings.valueTextColor,
           outputGrayscale: settings.outputGrayscale
         },
-        highlight: selectedPhoto?.highlight ?? null
+        highlight: selectedPhoto?.highlight ?? null,
+        rotation: selectedPhotoRotation
       }),
-    [previewFields, selectedPhotoPath, selectedPhoto?.highlight, settings]
+    [previewFields, selectedPhotoPath, selectedPhoto?.highlight, selectedPhotoRotation, settings]
   );
 
   function updateWorkspaceFor(key: WorkspaceScreen, updater: (current: BoardWorkspaceState) => BoardWorkspaceState) {
@@ -672,13 +676,13 @@ export default function App() {
 
   useEffect(() => {
     const workspaceKey = activeWorkspaceKey;
-    if (!selectedPhotoPath) {
+    if (!selectedPhoto?.path) {
       updateWorkspaceFor(workspaceKey, (current) => ({ ...current, previewDataUrl: '' }));
       return;
     }
 
     let canceled = false;
-    window.constructView.getImageDataUrl(selectedPhotoPath).then((result) => {
+    window.constructView.getImageDataUrl(selectedPhoto).then((result) => {
       if (canceled) return;
       if (result.ok && result.dataUrl) {
         updateWorkspaceFor(workspaceKey, (current) => ({ ...current, previewDataUrl: result.dataUrl ?? '' }));
@@ -691,7 +695,7 @@ export default function App() {
     return () => {
       canceled = true;
     };
-  }, [activeWorkspaceKey, selectedPhotoPath]);
+  }, [activeWorkspaceKey, selectedPhotoPath, selectedPhotoRotation]);
 
   useEffect(() => {
     const workspaceKey = activeWorkspaceKey;
@@ -1647,6 +1651,28 @@ export default function App() {
     setStatusMessage('success', `선택 사진을 ${nextIndex + 1}번 순서로 이동했습니다.`);
   }
 
+  function rotateSelectedPhoto(direction: -1 | 1) {
+    if (!selectedPhotoPath) {
+      setStatusMessage('info', '회전할 사진을 먼저 선택하세요.');
+      return;
+    }
+
+    const delta = direction > 0 ? 90 : -90;
+    setPhotos((current) =>
+      current.map((photo) => {
+        if (photo.path !== selectedPhotoPath) return photo;
+        const rotation = normalizePhotoRotation((photo.rotation ?? 0) + delta);
+        return {
+          ...photo,
+          rotation,
+          highlight: rotatePhotoHighlight(photo.highlight, direction)
+        };
+      })
+    );
+    refreshPreview();
+    setStatusMessage('success', direction > 0 ? '사진을 오른쪽으로 90도 회전했습니다.' : '사진을 왼쪽으로 90도 회전했습니다.');
+  }
+
   function togglePhotoChecked(pathValue: string) {
     setPhotos((current) =>
       current.map((photo) =>
@@ -2151,6 +2177,33 @@ export default function App() {
     );
   }
 
+  function renderPhotoRotationControls(className = '') {
+    return (
+      <div className={className ? `photo-rotation-controls ${className}` : 'photo-rotation-controls'}>
+        <span>사진 회전</span>
+        <button
+          className="small-btn outline"
+          type="button"
+          disabled={!selectedPhoto}
+          onClick={() => rotateSelectedPhoto(-1)}
+          title="선택한 사진을 왼쪽으로 90도 회전"
+        >
+          <RotateCcw size={15} /> 왼쪽 90도
+        </button>
+        <button
+          className="small-btn outline"
+          type="button"
+          disabled={!selectedPhoto}
+          onClick={() => rotateSelectedPhoto(1)}
+          title="선택한 사진을 오른쪽으로 90도 회전"
+        >
+          <RotateCw size={15} /> 오른쪽 90도
+        </button>
+        <strong>{selectedPhoto ? `${selectedPhotoRotation}도` : '-'}</strong>
+      </div>
+    );
+  }
+
   function renderBasicScreen() {
     return (
       <main className="page-shell basic-shell">
@@ -2361,6 +2414,7 @@ export default function App() {
                   ))}
                 </select>
               </div>
+              {renderPhotoRotationControls('basic-rotation-controls')}
               <div className="action-footer basic-action-footer">
                 <div className="button-row basic-preview-tools">
                   <button className="btn ghost" type="button" onClick={openLargePreview}>
@@ -3577,6 +3631,7 @@ export default function App() {
               onContextMenu={handlePreviewContextMenu}
               large
             />
+            {renderPhotoRotationControls('output-rotation-controls')}
             <div className="preview-context-hint">우클릭: 복사 / 클립보드 첨부</div>
           </Card>
 
@@ -4919,6 +4974,27 @@ function ledgerRectStyle(rect: { x: number; y: number; width: number; height: nu
   };
 }
 
+function normalizePhotoRotation(value: unknown): PhotoRotation {
+  const normalized = ((Math.round(Number(value) || 0) % 360) + 360) % 360;
+  return normalized === 90 || normalized === 180 || normalized === 270 ? normalized : 0;
+}
+
+function rotatePhotoHighlight(highlight: PhotoHighlight | undefined, direction: -1 | 1) {
+  if (!highlight?.enabled) return highlight;
+  const next = direction > 0
+    ? {
+        ...highlight,
+        xRatio: highlight.yRatio,
+        yRatio: 1 - highlight.xRatio
+      }
+    : {
+        ...highlight,
+        xRatio: 1 - highlight.yRatio,
+        yRatio: highlight.xRatio
+      };
+  return clampHighlight(next);
+}
+
 function clampHighlight(highlight: PhotoHighlight): PhotoHighlight {
   return {
     ...highlight,
@@ -4943,7 +5019,8 @@ function buildPhotoLedgerPreviewImageKey(photo: PhotoItem, fields: BoardField[],
     JSON.stringify({
       fields: fields.map((field) => ({ label: field.label, value: field.value })),
       settings,
-      highlight: photo.highlight ?? null
+      highlight: photo.highlight ?? null,
+      rotation: normalizePhotoRotation(photo.rotation)
     })
   )}`;
 }
