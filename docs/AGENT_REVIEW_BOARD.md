@@ -1,75 +1,65 @@
 # Agent Review Board
 
-PEDIT 작업은 구현자와 검증자를 분리한다. 구현 담당 Codex는 코드를 수정하고 Evidence Bundle을 만든다. 서브에이전트는 코드를 수정하지
-않고 독립 검증만 수행한다. 메인 에이전트만 검증 결과를 취합하고 우선순위를 결정한다.
-
+이 문서는 PEDIT 개발 결과를 여러 독립 서브에이전트가 검증하고, 메인 에이전트가 취합하는 운영 구조를 정의한다.
 
 ## Core Rules
 
-- 서브에이전트는 코드 수정 금지.
-- 서브에이전트는 Evidence Bundle과 명시 증거만 검증.
-- 증거 없는 PASS는 무효.
-- 메인 에이전트는 중복 이슈를 병합하고 심각도를 재분류한다.
-- S0/S1이 있으면 새 기능 개발 금지.
-
+- 개발 에이전트와 검증 에이전트를 분리한다.
+- 서브에이전트는 코드를 수정하지 않는다.
+- 서브에이전트는 Evidence Bundle과 증거만 보고 검증한다.
+- 메인 에이전트만 취합, 심각도 재분류, 다음 작업 우선순위 결정을 수행한다.
+- 증거 없는 PASS는 무효이며 PARTIAL 또는 NOT_RUN으로 낮춘다.
+- S0/S1 이슈가 있으면 새 기능 개발을 금지한다.
 
 ## Main Orchestrator
 
-- 작업 범위와 금지 범위를 확인한다.
-- Evidence Bundle을 작성한다.
-- 서브에이전트 검증 결과를 수집한다.
-- 중복/충돌 이슈를 병합하고 최종 verdict를 낸다.
-- 다음 작업 타입을 fix-only, stabilization, QA-only, feature continuation, release readiness 중 하나로 결정한다.
+- 서브에이전트 보고서를 취합한다.
+- 중복 이슈를 병합한다.
+- 충돌 의견을 증거 기준으로 해소한다.
+- PASS/PARTIAL/FAIL/NOT_RUN matrix를 작성한다.
+- GPT5.5PRO에 전달할 다음 지시문 요약을 만든다.
 
+## Required Subagents
 
-## Functional QA Agent
+### Functional QA Agent
 
-- 기능 요구사항 충족 여부 검증.
-- happy path와 edge case 검증.
-- 기존 기능 회귀 가능성 확인.
+- 기능 요구사항 충족 여부를 검증한다.
+- happy path와 edge case를 검증한다.
+- 기존 기능 회귀 가능성을 확인한다.
 
+### Design Regression Agent
 
-## Design Regression Agent
+- UI, 레이아웃, 반응형, spacing, typography, color, interaction 상태를 검증한다.
+- before/after screenshot 또는 브라우저 확인 증거 없이는 visual PASS를 허용하지 않는다.
 
-- UI, 레이아웃, 반응형, spacing, typography, color, interaction 상태 검증.
-- before/after screenshot 또는 브라우저 확인 증거 없이는 visual PASS 금지.
+### Code Quality & Architecture Agent
 
+- 코드 구조, 책임 분리, 중복, 타입 안정성, 예외 처리, 하드코딩, 기존 패턴 위반을 검증한다.
 
-## Code Quality & Architecture Agent
+### Security & Privacy Agent
 
-- 코드 구조, 책임 분리, 중복, 타입 안정성, 예외 처리, 하드코딩, 기존 패턴 위반 검증.
+- 민감값, 권한 우회, public URL, service role, 사용자 데이터 노출을 검증한다.
 
+### Test & Build Verification Agent
 
-## Security & Privacy Agent
+- `git diff --check`, lint, typecheck, test, build, NOT_RUN reason을 검증한다.
 
-- 민감값, 권한 우회, public URL, service role, 사용자 데이터 노출 검증.
+## Optional Subagents
 
+### API/DB Contract Agent
 
-## Test & Build Verification Agent
+- API request/response, DB migration, 기존 데이터 호환성, rollback 가능성을 검증한다.
 
-- git diff --check, lint, typecheck, test, build 실행 여부와 NOT_RUN reason 검증.
+### Product Requirements Agent
 
+- 원래 요구사항과 구현 결과의 일치 여부, 범위 초과, 누락 기능을 검증한다.
 
-## Optional API/DB Contract Agent
+### Release Risk Agent
 
-- API request/response, DB migration, 기존 데이터 호환성, rollback 가능성 검증.
-- Supabase migration과 Edge Function 변경이 있을 때 우선 사용한다.
+- 배포 가능성, known issue, rollback, monitoring, readiness를 검증한다.
 
+## Conflict Handling
 
-## Optional Product Requirements Agent
-
-- 원래 요구사항과 구현 결과 일치 여부 검증.
-- 범위 초과, 누락, 사용자 기대와 다른 결과를 확인한다.
-
-
-## Optional Release Risk Agent
-
-- 배포 가능성, known issue, rollback, monitoring, readiness 검증.
-- installer, update metadata, release note, 사용자 안내 자료를 확인한다.
-
-
-## Conflicting Opinions
-
-- 메인 에이전트는 충돌 의견을 같은 증거 기준으로 재검토한다.
-- 더 엄격한 판정이 타당하면 낮은 상태로 조정한다.
-- 증거가 부족하면 PASS로 올리지 않고 PARTIAL 또는 NOT_RUN으로 둔다.
+- 서브에이전트 의견이 충돌하면 증거가 더 강한 쪽을 채택한다.
+- 양쪽 모두 증거가 부족하면 NOT_RUN 또는 PARTIAL로 둔다.
+- 최종 결정과 이유를 Main Aggregated Review에 기록한다.

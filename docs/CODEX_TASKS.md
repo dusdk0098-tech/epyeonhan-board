@@ -1,8 +1,8 @@
 # Codex Task Ledger
 
-이 문서는 PEDIT에서 Codex 작업을 append-only 방식으로 기록하기 위한 ledger 구조를 정의한다. 작업 기록은 나중에 Evidence
-Bundle, 서브에이전트 검증, 메인 취합, 다음 지시문 생성의 입력으로 사용한다.
+이 문서는 PEDIT에서 Codex 작업을 append-only 방식으로 기록하기 위한 ledger 구조를 정의한다.
 
+작업 기록은 Evidence Bundle, 서브에이전트 검증, 메인 취합, 다음 지시문 생성의 입력으로 사용한다.
 
 ## Append-Only Rule
 
@@ -11,12 +11,9 @@ Bundle, 서브에이전트 검증, 메인 취합, 다음 지시문 생성의 입
 - NOT_RUN 항목은 숨기지 않고 다음 라운드 입력으로 넘긴다.
 - S0/S1 이슈가 있으면 다음 작업 성격을 `fix-only`로 전환한다.
 
-
 ## Task Record Template
 
 ```md
-
-
 ## Task YYYY-MM-DD - short title
 
 - Phase:
@@ -56,9 +53,7 @@ Bundle, 서브에이전트 검증, 메인 취합, 다음 지시문 생성의 입
 - Verdict:
   - PASS / PARTIAL / NOT_RUN / FAIL
 - Follow-up:
-
 ```
-
 
 ## Completion Tracking
 
@@ -66,7 +61,6 @@ Bundle, 서브에이전트 검증, 메인 취합, 다음 지시문 생성의 입
 - 미완료 항목은 이유와 다음 작업 조건을 기록한다.
 - 일부만 확인된 항목은 `PARTIAL`로 남기고, 부족한 증거를 명시한다.
 - 실행하지 않은 검증은 `NOT_RUN`과 이유를 기록한다.
-
 
 ## Fix-Only Escalation
 
@@ -77,8 +71,8 @@ Bundle, 서브에이전트 검증, 메인 취합, 다음 지시문 생성의 입
 - 인증/인가, 데이터 손실, 민감값 노출 가능성.
 - 주요 LITE/PRO/Admin/통합 설정 플로우 회귀.
 
-
 ## Current Process Seed
 
-이 문서는 다중 에이전트 개발 검증 프로세스 도입을 위한 초기 ledger 기준이다. 실제 작업 기록은 향후 PR마다 이 파일에 append-only로
-추가한다.
+이 문서는 다중 에이전트 개발 검증 프로세스 도입을 위한 초기 ledger 기준이다.
+
+실제 작업 기록은 향후 PR마다 이 파일에 append-only로 추가한다.
