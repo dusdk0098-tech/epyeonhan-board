@@ -641,3 +641,34 @@
   - review-artifacts/pr-6-ux-review/contact-sheet.png
   - review-artifacts/pr-6-ux-review.zip
   - Local-only and not committed.
+
+## Task 2026-06-15 - PR #6 final narrow CTA overlap fix
+
+- Phase: pr6-final-narrow-cta-overlap-fix
+- Branch: codex/pro-guided-workflow
+- Task type:
+  - targeted layout fix / review artifact refresh
+- Scope:
+  - Prevented the narrow Generate primary CTA from overlaying the status panel and output hint.
+  - Kept the primary CTA visible in normal flow while retaining the compact fixed previous/next control for narrow screens.
+  - Planned a refreshed local-only review artifact pack for the new HEAD.
+- Changed files:
+  - src/styles.css
+  - docs/CODEX_TASKS.md
+- Verification plan:
+  - git diff --check
+  - npm.cmd run build
+  - npm.cmd run verify:ui
+  - npm.cmd run verify:board
+  - node scripts/verify-output-settings.cjs
+  - npm.cmd run package:win
+  - hidden/bidi/newline final check
+  - no-exposure
+  - scope check
+- Review artifacts:
+  - review-artifacts/pr-6-ux-review/index.html
+  - review-artifacts/pr-6-ux-review/index.md
+  - review-artifacts/pr-6-ux-review/layout-metrics.json
+  - review-artifacts/pr-6-ux-review/contact-sheet.png
+  - review-artifacts/pr-6-ux-review.zip
+  - Local-only and not committed.

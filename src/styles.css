@@ -9604,7 +9604,7 @@ body {
   }
 
   .pro-workflow-stage-main:has(.pro-workflow-step.step-output) {
-    padding-bottom: calc((var(--pro-control-height) * 3) + 132px);
+    padding-bottom: calc(var(--pro-control-height) + 96px);
   }
 
   .pro-workflow-stage-main:has(.pro-workflow-step.step-output) .pro-workflow-step.step-output {
@@ -9612,8 +9612,8 @@ body {
   }
 
   .pro-workflow-stage-main:has(.pro-workflow-step.step-output) .pro-workflow-output-actions {
-    gap: 10px;
-    padding-bottom: calc((var(--pro-control-height) * 3) + 142px);
+    gap: 12px;
+    padding-bottom: 0;
   }
 
   .pro-workflow-stage-main:has(.pro-workflow-step.step-output) .pro-output-status {
@@ -9627,16 +9627,16 @@ body {
 
   .pro-workflow-stage-main:has(.pro-workflow-step.step-output) .pro-workflow-primary-action {
     order: 3;
-    position: fixed;
-    z-index: 19;
-    right: max(24px, calc(env(safe-area-inset-right) + 12px));
-    bottom: calc(var(--pro-control-height) + 42px);
-    left: max(24px, calc(env(safe-area-inset-left) + 12px));
-    padding: 8px;
+    position: static;
+    z-index: auto;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding: 10px;
     border: 1px solid #d7e4f2;
     border-radius: var(--pro-radius);
-    background: rgba(255, 255, 255, 0.98);
-    box-shadow: 0 -8px 22px rgba(18, 48, 84, 0.08);
+    background: #ffffff;
+    box-shadow: 0 12px 28px rgba(18, 48, 84, 0.1);
   }
 
   .pro-workflow-stage-main:has(.pro-workflow-step.step-output) .pro-workflow-nav {
