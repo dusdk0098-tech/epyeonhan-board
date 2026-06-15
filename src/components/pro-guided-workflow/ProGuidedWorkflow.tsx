@@ -90,6 +90,10 @@ interface ProGuidedWorkflowProps {
   highlightSettings: ReactNode;
 }
 
+function isReducedMotionPreferred() {
+  return typeof window !== 'undefined' && Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
+}
+
 const timeModeCopy: Record<TimeMode, { title: string; description: string }> = {
   manual: {
     title: '보드판 입력값 직접 사용',
@@ -269,7 +273,7 @@ export function ProGuidedWorkflow({
     if (!focusTarget) return;
 
     window.requestAnimationFrame(() => {
-      focusTarget.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      focusTarget.scrollIntoView({ block: 'nearest', behavior: isReducedMotionPreferred() ? 'auto' : 'smooth' });
       focusTarget.focus({ preventScroll: true });
     });
   }, [currentStepId]);

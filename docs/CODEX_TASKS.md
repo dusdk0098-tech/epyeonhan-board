@@ -537,3 +537,41 @@
   - review-artifacts/pr-6-ux-review/contact-sheet.png
   - review-artifacts/pr-6-ux-review.zip
   - Local-only and not committed.
+
+## Task 2026-06-15 - PR #6 must-fix closure
+
+- Phase: pr6-must-fix-closure
+- Branch: codex/pro-guided-workflow
+- Task type:
+  - accessibility / QA evidence / final verification
+- Scope:
+  - Fixed guided workflow step focus so `prefers-reduced-motion: reduce` uses non-animated `scrollIntoView` behavior.
+  - Added static output feedback QA evidence to `verify-output-settings.cjs`.
+  - Verified generating, success, error, progressbar, live-region, spinner/busy label, and duplicate-click prevention paths without adding production test toggles.
+  - Planned final HEAD build, UI/board verification, output settings verification, and Windows packaging rerun.
+  - Planned local-only review artifact refresh for the new HEAD.
+- Changed files:
+  - src/components/pro-guided-workflow/ProGuidedWorkflow.tsx
+  - scripts/verify-output-settings.cjs
+  - docs/CODEX_TASKS.md
+- Verification plan:
+  - git diff --check
+  - npm.cmd run build
+  - npm.cmd run verify:ui
+  - npm.cmd run verify:board
+  - node scripts/verify-output-settings.cjs
+  - npm.cmd run package:win
+  - hidden/bidi/newline final check
+  - no-exposure
+  - scope check
+- Known limitations:
+  - Real percentage progress is still not implemented.
+  - Full settings search/finder is still not implemented.
+  - Forced failure screenshot is replaced by equivalent automated source-level evidence for this pass.
+- Review artifacts:
+  - review-artifacts/pr-6-ux-review/index.html
+  - review-artifacts/pr-6-ux-review/index.md
+  - review-artifacts/pr-6-ux-review/layout-metrics.json
+  - review-artifacts/pr-6-ux-review/contact-sheet.png
+  - review-artifacts/pr-6-ux-review.zip
+  - Local-only and not committed.

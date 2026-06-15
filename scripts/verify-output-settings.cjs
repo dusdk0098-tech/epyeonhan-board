@@ -263,6 +263,29 @@ function verifyWorkspaceAndBridgeStatic() {
   assert(styles.includes('height: 366px;'), 'advanced preview card must keep a fixed height across settings tab changes');
 }
 
+function verifyGuidedWorkflowFeedbackStatic() {
+  const app = fs.readFileSync(path.join(__dirname, '..', 'src', 'App.tsx'), 'utf8');
+  const workflow = fs.readFileSync(path.join(__dirname, '..', 'src', 'components', 'pro-guided-workflow', 'ProGuidedWorkflow.tsx'), 'utf8');
+  const outputStatus = fs.readFileSync(path.join(__dirname, '..', 'src', 'components', 'pro-guided-workflow', 'OutputProgressStatus.tsx'), 'utf8');
+  const styles = fs.readFileSync(path.join(__dirname, '..', 'src', 'styles.css'), 'utf8');
+
+  assert(workflow.includes("matchMedia?.('(prefers-reduced-motion: reduce)').matches"), 'guided workflow must inspect prefers-reduced-motion before smooth scrolling');
+  assert(workflow.includes("behavior: isReducedMotionPreferred() ? 'auto' : 'smooth'"), 'guided workflow must use auto scroll when reduced motion is requested');
+  assert(!workflow.includes("scrollIntoView({ block: 'nearest', behavior: 'smooth' })"), 'guided workflow must not call unconditional smooth scroll');
+  assert(styles.includes('@media (prefers-reduced-motion: reduce)') && styles.includes('.pro-output-progress span'), 'reduced-motion CSS must cover guided output motion');
+
+  assert(workflow.includes("export type ProOutputFeedbackState = 'idle' | 'generating' | 'success' | 'error'"), 'output feedback state union must include idle/generating/success/error');
+  assert(outputStatus.includes('aria-live="polite"') && outputStatus.includes('role="status"'), 'output status must announce state changes');
+  assert(outputStatus.includes("feedback.state === 'generating'") && outputStatus.includes("feedback.state === 'success'") && outputStatus.includes("feedback.state === 'error'"), 'output status must branch for generating/success/error states');
+  assert(outputStatus.includes('role="progressbar"') && outputStatus.includes('isGenerating &&'), 'generating output state must expose a progressbar only while processing');
+  assert(outputStatus.includes('className={`pro-output-status ${feedback.state}`}'), 'output state class must reflect feedback state');
+  assert(styles.includes('.pro-output-status.generating') && styles.includes('.pro-output-status.success') && styles.includes('.pro-output-status.error'), 'output status styles must cover generating/success/error states');
+
+  assert(app.includes("setProFeedback('generating'") && app.includes("setProFeedback('success'") && app.includes("setProFeedback('error'"), 'runProcess must set generating/success/error feedback states');
+  assert(app.includes('disabled={isProcessing') && workflow.includes('!isProcessing'), 'output actions must prevent duplicate clicks while processing');
+  assert(workflow.includes('pro-workflow-button-spinner') && workflow.includes('primaryOutputBusyLabel'), 'generating state must show spinner and busy label evidence');
+}
+
 function verifyHighlightGeometry() {
   const highlight = {
     enabled: true,
@@ -361,10 +384,11 @@ function extractLabelWidth(svg) {
   verifyBottomStripLayout();
   verifyInputTableLayout();
   verifyWorkspaceAndBridgeStatic();
+  verifyGuidedWorkflowFeedbackStatic();
   verifyHighlightGeometry();
   await verifyOutsideGrayscaleMask();
   await verifyResizeBeforeBoardSize();
-  console.log(JSON.stringify({ ok: true, checked: 9 }, null, 2));
+  console.log(JSON.stringify({ ok: true, checked: 10 }, null, 2));
 })().catch((error) => {
   console.error(JSON.stringify({ ok: false, error: error.message }, null, 2));
   process.exit(1);
