@@ -471,3 +471,36 @@
   - review-artifacts/pr-6-ux-review/contact-sheet.png
   - review-artifacts/pr-6-ux-review.zip
   - Local-only and not committed.
+
+## Task 2026-06-15 - PRO narrow generate action visibility fix
+
+- Phase: pro-task-flow-narrow-generate-action-fix
+- Branch: codex/pro-guided-workflow
+- Task type:
+  - narrow/minimum layout fix / PR #6 Draft hardening
+- Scope:
+  - Kept the existing PR #6 guided workflow direction and avoided a new redesign pass.
+  - Fixed the narrow/minimum Generate step so the primary workflow action and step footer remain reachable in a 900x720-style viewport.
+  - Kept preview hidden on narrow Generate screens so the main task panel stays full-width.
+  - Added safe-area-aware bottom spacing for the fixed narrow Generate step footer so it does not cover content.
+  - Preserved 40px+ clickable control target expectations and separated non-clickable progress indicators in artifact metrics.
+- Changed files:
+  - src/styles.css
+  - docs/CODEX_TASKS.md
+- Verification plan:
+  - git diff --check
+  - npm.cmd run build
+  - npm run verify:ui
+  - npm run verify:board
+  - node scripts/verify-output-settings.cjs
+  - npm.cmd run package:win
+  - hidden/bidi/newline final check
+  - no-exposure
+  - scope check
+- Review artifacts:
+  - review-artifacts/pr-6-ux-review/index.html
+  - review-artifacts/pr-6-ux-review/index.md
+  - review-artifacts/pr-6-ux-review/layout-metrics.json
+  - review-artifacts/pr-6-ux-review/contact-sheet.png
+  - review-artifacts/pr-6-ux-review.zip
+  - Local-only and not committed.
