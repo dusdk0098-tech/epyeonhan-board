@@ -504,3 +504,36 @@
   - review-artifacts/pr-6-ux-review/contact-sheet.png
   - review-artifacts/pr-6-ux-review.zip
   - Local-only and not committed.
+
+## Task 2026-06-15 - PRO workspace horizontal overflow fix
+
+- Phase: pro-task-flow-horizontal-overflow-fix
+- Branch: codex/pro-guided-workflow
+- Task type:
+  - targeted layout fix / PR #6 Draft hardening
+- Scope:
+  - Kept the existing PR #6 layout direction and avoided a redesign pass.
+  - Fixed PRO default and fullscreen Generate screens so the preview rail content stays inside the workspace.
+  - Constrained preview rail width, preview stage width, placeholder width, toolbar wrapping, and rotation controls to prevent shell-level horizontal overflow.
+  - Preserved narrow/minimum Generate behavior with hidden preview rail and visible primary CTA.
+- Changed files:
+  - src/styles.css
+  - docs/CODEX_TASKS.md
+- Verification plan:
+  - git diff --check
+  - npm.cmd run build
+  - npm.cmd run verify:ui
+  - npm.cmd run verify:board
+  - node scripts/verify-output-settings.cjs
+  - npm.cmd run package:win
+  - Electron layout metrics for default/fullscreen/narrow horizontal overflow
+  - hidden/bidi/newline final check
+  - no-exposure
+  - scope check
+- Review artifacts:
+  - review-artifacts/pr-6-ux-review/index.html
+  - review-artifacts/pr-6-ux-review/index.md
+  - review-artifacts/pr-6-ux-review/layout-metrics.json
+  - review-artifacts/pr-6-ux-review/contact-sheet.png
+  - review-artifacts/pr-6-ux-review.zip
+  - Local-only and not committed.

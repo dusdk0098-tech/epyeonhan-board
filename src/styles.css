@@ -8901,7 +8901,7 @@ body {
   --pro-control-height: clamp(50px, 3vw, 74px);
   --pro-gap: clamp(16px, 1.12vw, 30px);
   --pro-radius: clamp(10px, 0.74vw, 16px);
-  --pro-rail-width: clamp(320px, 21vw, 500px);
+  --pro-rail-width: clamp(300px, 22vw, 430px);
   --pro-side-width: clamp(300px, 22vw, 500px);
   padding: clamp(10px, 1.25vw, 24px);
   background:
@@ -8974,12 +8974,58 @@ body {
   position: sticky;
   top: clamp(10px, 1vw, 18px);
   align-self: start;
+  max-width: 100%;
   max-height: calc(100vh - 128px);
+  overflow: hidden;
 }
 
 .pro-task-flow-grid .output-preview-card .preview-stage {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   min-height: clamp(240px, 34vh, 440px);
   max-height: clamp(280px, 46vh, 620px);
+}
+
+.pro-task-flow-grid .output-preview-card .card-header {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  overflow: hidden;
+}
+
+.pro-task-flow-grid .output-preview-card .card-action {
+  justify-self: stretch;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.pro-task-flow-grid .output-preview-card .preview-card-actions {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  max-width: 100%;
+}
+
+.pro-task-flow-grid .output-preview-card .preview-card-actions .small-btn {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.pro-task-flow-grid .output-preview-card .preview-placeholder {
+  box-sizing: border-box;
+  width: min(100%, 320px);
+  min-width: 0;
+  max-width: 100%;
+}
+
+.pro-task-flow-grid .output-rotation-controls {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-width: calc(100% - 20px);
+}
+
+.pro-task-flow-grid .output-rotation-controls > span,
+.pro-task-flow-grid .output-rotation-controls > strong {
+  white-space: normal;
 }
 
 .pro-guided-workflow {
