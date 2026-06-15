@@ -608,3 +608,36 @@
   - review-artifacts/pr-6-ux-review/contact-sheet.png
   - review-artifacts/pr-6-ux-review.zip
   - Local-only and not committed.
+
+## Task 2026-06-15 - PR #6 accessibility fix closure
+
+- Phase: pr6-accessibility-fix-closure
+- Branch: codex/pro-guided-workflow
+- Task type:
+  - targeted accessibility fix / QA evidence refresh
+- Scope:
+  - Closed shared `.btn` / `.small-btn` disabled hover leakage by gating hover selectors and adding a disabled-state transform reset.
+  - Raised shared LITE/PRO action button targets and visible PRO tabs/delete actions to the 40px minimum, while keeping primary PRO workflow actions above the 44px target.
+  - Added static verification for disabled-hover protection and target-size CSS evidence.
+  - Planned local-only review artifact refresh for the new HEAD with disabled-hover and target-size evidence.
+- Changed files:
+  - src/styles.css
+  - scripts/verify-output-settings.cjs
+  - docs/CODEX_TASKS.md
+- Verification plan:
+  - git diff --check
+  - npm.cmd run build
+  - npm.cmd run verify:ui
+  - npm.cmd run verify:board
+  - node scripts/verify-output-settings.cjs
+  - npm.cmd run package:win
+  - hidden/bidi/newline final check
+  - no-exposure
+  - scope check
+- Review artifacts:
+  - review-artifacts/pr-6-ux-review/index.html
+  - review-artifacts/pr-6-ux-review/index.md
+  - review-artifacts/pr-6-ux-review/layout-metrics.json
+  - review-artifacts/pr-6-ux-review/contact-sheet.png
+  - review-artifacts/pr-6-ux-review.zip
+  - Local-only and not committed.

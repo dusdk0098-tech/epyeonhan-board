@@ -286,6 +286,32 @@ function verifyGuidedWorkflowFeedbackStatic() {
   assert(workflow.includes('pro-workflow-button-spinner') && workflow.includes('primaryOutputBusyLabel'), 'generating state must show spinner and busy label evidence');
 }
 
+function verifyGuidedWorkflowAccessibilityStatic() {
+  const styles = fs.readFileSync(path.join(__dirname, '..', 'src', 'styles.css'), 'utf8');
+  const disabledGate = ':not(:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled)):hover';
+
+  assert(styles.includes(`.btn${disabledGate}`) && styles.includes(`.small-btn${disabledGate}`), 'shared button hover selectors must exclude disabled states');
+  assert(!styles.includes('.btn:hover,\n.small-btn:hover'), 'shared button hover must not apply to disabled buttons');
+  assert(styles.includes('.btn:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled)'), 'shared buttons need a disabled hover reset');
+  assert(styles.includes('transform: none !important;'), 'disabled hover reset must remove transform lift');
+
+  assert(/\.btn\s*\{[\s\S]*?min-height:\s*40px;[\s\S]*?\}/.test(styles), 'base .btn action target must be at least 40px high');
+  assert(/\.small-btn\s*\{[\s\S]*?min-height:\s*40px;[\s\S]*?\}/.test(styles), 'base .small-btn action target must be at least 40px high');
+  assert(/\.nav-brand\s*\{[\s\S]*?min-height:\s*40px;[\s\S]*?\}/.test(styles), 'top navigation brand action target must be at least 40px high');
+  assert(/\.nav-logout\s*\{[\s\S]*?min-height:\s*40px;[\s\S]*?\}/.test(styles), 'top navigation logout action target must be at least 40px high');
+  assert(/\.nav-link\s*\{[\s\S]*?min-height:\s*40px;[\s\S]*?\}/.test(styles), 'top navigation link action targets must be at least 40px high');
+  assert(/\.settings-tab\s*\{[\s\S]*?min-height:\s*40px;[\s\S]*?\}/.test(styles), 'settings tab action targets must be at least 40px high');
+  assert(/\.advanced-field-row button\s*\{[\s\S]*?min-height:\s*40px;[\s\S]*?\}/.test(styles), 'field row delete actions must be at least 40px high');
+  assert(/\.photo-list-row button\s*\{[\s\S]*?height:\s*40px;[\s\S]*?\}/.test(styles), 'photo list row actions must be at least 40px high');
+  assert(/\.output-photo-select-actions button\s*\{[\s\S]*?min-height:\s*40px;[\s\S]*?\}/.test(styles), 'output photo selection actions must be at least 40px high');
+  assert(/\.ledger-create-btn\s*\{[\s\S]*?min-height:\s*44px/.test(styles), 'photo ledger primary CTA must be at least 44px high');
+  assert(/\.app:not\(\.start-active\) \.basic-run-actions \.btn\.primary,[\s\S]*?\.app:not\(\.start-active\) \.basic-run-actions \.btn\.blue\s*\{[\s\S]*?min-height:\s*44px;[\s\S]*?\}/.test(styles), 'LITE run primary CTAs must be at least 44px high');
+  assert(/\.app:not\(\.start-active\) \.small-btn\s*\{[\s\S]*?min-height:\s*40px;[\s\S]*?\}/.test(styles), 'main LITE/PRO compact small buttons must remain at least 40px high');
+  assert(/\.pro-workflow-summary-row button,\s*[\r\n]+\.pro-workflow-detail-links button\s*\{[\s\S]*?min-height:\s*40px;[\s\S]*?\}/.test(styles), 'guided workflow edit/detail buttons must be at least 40px high');
+  assert(/\.pro-guided-workflow \.pro-workflow-step-detail button\s*\{[\s\S]*?min-height:\s*44px;[\s\S]*?\}/.test(styles), 'lower-band management buttons must be at least 44px high');
+  assert(/\.pro-workflow-primary-action \.btn\.wide\s*\{[\s\S]*?min-height:\s*calc\(var\(--pro-control-height\) \+ 24px\);[\s\S]*?\}/.test(styles), 'primary Generate CTA must remain above the 44px target');
+}
+
 function verifyHighlightGeometry() {
   const highlight = {
     enabled: true,
@@ -385,10 +411,11 @@ function extractLabelWidth(svg) {
   verifyInputTableLayout();
   verifyWorkspaceAndBridgeStatic();
   verifyGuidedWorkflowFeedbackStatic();
+  verifyGuidedWorkflowAccessibilityStatic();
   verifyHighlightGeometry();
   await verifyOutsideGrayscaleMask();
   await verifyResizeBeforeBoardSize();
-  console.log(JSON.stringify({ ok: true, checked: 10 }, null, 2));
+  console.log(JSON.stringify({ ok: true, checked: 11 }, null, 2));
 })().catch((error) => {
   console.error(JSON.stringify({ ok: false, error: error.message }, null, 2));
   process.exit(1);

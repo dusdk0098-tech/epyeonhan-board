@@ -63,7 +63,11 @@ textarea:focus-visible {
   outline-offset: 2px;
 }
 
-button:disabled {
+button:disabled,
+button[disabled],
+button[aria-disabled="true"],
+button.is-disabled,
+button.disabled {
   cursor: not-allowed;
   opacity: 0.62;
 }
@@ -76,7 +80,7 @@ button:disabled {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  min-height: 34px;
+  min-height: 40px;
   padding: 0 14px;
   border-radius: 6px;
   font-weight: 800;
@@ -88,7 +92,7 @@ button:disabled {
   color: #ffffff;
 }
 
-.primary-button:hover {
+.primary-button:not(:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled)):hover {
   background: var(--primary-hover);
 }
 
@@ -109,7 +113,7 @@ button:disabled {
 }
 
 .secondary-button.small {
-  min-height: 30px;
+  min-height: 40px;
   padding: 0 10px;
   font-size: 12px;
 }
@@ -125,7 +129,7 @@ button:disabled {
 }
 
 .text-danger-button {
-  min-height: 26px;
+  min-height: 40px;
   padding: 0 6px;
   color: var(--danger);
 }
@@ -208,6 +212,7 @@ input[type="radio"] {
 
 .nav-brand {
   height: 100%;
+  min-height: 40px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -248,7 +253,7 @@ input[type="radio"] {
 }
 
 .nav-link {
-  height: 100%;
+  min-height: 40px;
   padding: 0 12px;
   border: 0;
   border-bottom: 2px solid transparent;
@@ -282,7 +287,7 @@ input[type="radio"] {
 }
 
 .nav-logout {
-  height: 30px;
+  min-height: 40px;
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -855,18 +860,18 @@ input[type="radio"] {
 }
 
 .btn {
-  min-height: 38px;
+  min-height: 40px;
   padding: 8px 16px;
 }
 
 .small-btn {
-  min-height: 31px;
+  min-height: 40px;
   padding: 5px 10px;
   font-size: 13px;
 }
 
-.btn:hover,
-.small-btn:hover {
+.btn:not(:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled)):hover,
+.small-btn:not(:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled)):hover {
   transform: translateY(-1px);
 }
 
@@ -876,8 +881,8 @@ input[type="radio"] {
   color: #ffffff;
 }
 
-.btn.primary:hover,
-.small-btn.primary:hover {
+.btn.primary:not(:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled)):hover,
+.small-btn.primary:not(:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled)):hover {
   background: var(--teal-hover);
 }
 
@@ -888,8 +893,8 @@ input[type="radio"] {
   box-shadow: 0 4px 10px rgba(0, 63, 135, 0.22);
 }
 
-.btn.blue:hover,
-.small-btn.blue:hover {
+.btn.blue:not(:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled)):hover,
+.small-btn.blue:not(:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled)):hover {
   background: var(--primary-hover);
 }
 
@@ -900,8 +905,8 @@ input[type="radio"] {
   color: var(--primary);
 }
 
-.btn.outline:hover,
-.small-btn.outline:hover {
+.btn.outline:not(:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled)):hover,
+.small-btn.outline:not(:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled)):hover {
   background: var(--surface-soft);
 }
 
@@ -912,8 +917,8 @@ input[type="radio"] {
   color: var(--text);
 }
 
-.btn.ghost:hover,
-.small-btn.ghost:hover {
+.btn.ghost:not(:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled)):hover,
+.small-btn.ghost:not(:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled)):hover {
   background: var(--surface-soft);
 }
 
@@ -1372,9 +1377,9 @@ input[type="radio"] {
 
 .photo-list-row {
   display: grid;
-  grid-template-columns: 36px 1fr 28px;
+  grid-template-columns: 36px minmax(0, 1fr) 40px;
   align-items: center;
-  min-height: 31px;
+  min-height: 40px;
   padding: 2px 5px;
   border-radius: 5px;
   color: var(--text);
@@ -1394,8 +1399,8 @@ input[type="radio"] {
 }
 
 .photo-list-row button {
-  width: 24px;
-  height: 24px;
+  width: 40px;
+  height: 40px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1514,7 +1519,7 @@ input[type="radio"] {
 }
 
 .settings-tab {
-  min-height: 36px;
+  min-height: 40px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2539,13 +2544,13 @@ body {
 }
 
 .btn {
-  min-height: 32px;
+  min-height: 40px;
   padding: 6px 12px;
   font-size: 13px;
 }
 
 .small-btn {
-  min-height: 28px;
+  min-height: 40px;
   padding: 4px 8px;
   font-size: 12px;
 }
@@ -2758,14 +2763,14 @@ body {
 }
 
 .photo-list-row {
-  grid-template-columns: 30px 1fr 24px;
-  min-height: 26px;
+  grid-template-columns: 30px minmax(0, 1fr) 40px;
+  min-height: 40px;
   padding: 1px 4px;
 }
 
 .photo-list-row button {
-  width: 22px;
-  height: 22px;
+  width: 40px;
+  height: 40px;
 }
 
 .empty-list {
@@ -3328,7 +3333,7 @@ body {
 }
 
 .premium-settings-tabs .settings-tab {
-  min-height: 29px;
+  min-height: 40px;
   padding: 4px 6px;
   white-space: nowrap;
   font-size: 12px;
@@ -3381,6 +3386,7 @@ body {
 }
 
 .output-photo-select-actions button {
+  min-height: 40px;
   min-width: 0;
   padding-right: 3px;
   padding-left: 3px;
@@ -3429,6 +3435,7 @@ body {
 .output-photo-actions .text-action {
   grid-column: 1 / -1;
   justify-content: flex-start;
+  min-height: 40px;
 }
 
 .ledger-selected-photo {
@@ -3552,7 +3559,7 @@ body {
 }
 
 .ledger-create-btn {
-  min-height: 34px;
+  min-height: 44px !important;
 }
 
 .premium-board-toggle {
@@ -4048,7 +4055,7 @@ body {
 }
 
 .output-photo-select-actions button {
-  min-height: 25px;
+  min-height: 40px;
   border-radius: 6px;
   background: #f8f9fc;
 }
@@ -4089,11 +4096,15 @@ body {
 }
 
 .output-photo-actions .btn.wide {
-  min-height: 32px;
+  min-height: 40px;
   border-color: #cbd3e2;
   border-radius: 7px;
   background: #ffffff;
   color: #005bbf;
+}
+
+.output-photo-actions .ledger-create-btn {
+  min-height: 44px;
 }
 
 .output-photo-actions .btn.wide:hover {
@@ -4102,6 +4113,7 @@ body {
 
 .output-photo-actions .text-action {
   margin-top: 2px;
+  min-height: 40px;
   font-size: 12px;
 }
 
@@ -4549,8 +4561,9 @@ body {
   align-items: center;
   justify-content: center;
   gap: 3px;
-  min-height: 23px;
-  padding: 2px 6px;
+  min-width: 40px;
+  min-height: 40px;
+  padding: 6px 10px;
   color: #005bbf;
   font-size: 11px;
 }
@@ -4585,7 +4598,7 @@ body {
 
 .pro-workflow-nav .small-btn {
   width: 100%;
-  min-height: 30px;
+  min-height: 40px;
 }
 
 .pro-workflow-action-grid {
@@ -4596,7 +4609,7 @@ body {
 
 .pro-workflow-action-grid .small-btn {
   min-width: 0;
-  min-height: 32px;
+  min-height: 40px;
   padding-right: 7px;
   padding-left: 7px;
   white-space: normal;
@@ -4694,15 +4707,15 @@ body {
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .pro-workflow-summary-row button:not(:disabled):hover,
-  .pro-workflow-detail-links button:not(:disabled):hover {
+  .pro-workflow-summary-row button:not(:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled)):hover,
+  .pro-workflow-detail-links button:not(:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled)):hover {
     border-color: #8bbbe8;
     background: #f1f7ff;
     box-shadow: 0 5px 15px rgba(0, 91, 191, 0.12);
     transform: translateY(-1px) scale(1.04);
   }
 
-  .pro-workflow-option:not(:disabled):hover {
+  .pro-workflow-option:not(:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled)):hover {
     z-index: 2;
     border-color: #69a6e3;
     background: #f1f7ff;
@@ -4710,30 +4723,30 @@ body {
     transform: translateY(-2px) scale(1.12);
   }
 
-  .pro-workflow-step.step-task .pro-workflow-option:not(:disabled):hover,
-  .pro-workflow-step.step-lower-band .pro-workflow-option:not(:disabled):hover {
+  .pro-workflow-step.step-task .pro-workflow-option:not(:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled)):hover,
+  .pro-workflow-step.step-lower-band .pro-workflow-option:not(:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled)):hover {
     transform: translateY(-2px) scale(1.16);
   }
 
-  .pro-workflow-option.selected:not(:disabled):hover {
+  .pro-workflow-option.selected:not(:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled)):hover {
     transform: translateY(-1px) scale(1.08);
   }
 
-  .pro-guided-workflow .small-btn:not(:disabled):hover {
+  .pro-guided-workflow .small-btn:not(:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled)):hover {
     border-color: #69a6e3;
     box-shadow: 0 7px 18px rgba(0, 91, 191, 0.14);
     transform: translateY(-1px) scale(1.06);
   }
 
-  .pro-workflow-action-grid .small-btn:not(:disabled):hover {
+  .pro-workflow-action-grid .small-btn:not(:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled)):hover {
     transform: translateY(-1px) scale(1.1);
   }
 }
 
-.pro-workflow-option:not(:disabled):active,
-.pro-workflow-summary-row button:not(:disabled):active,
-.pro-workflow-detail-links button:not(:disabled):active,
-.pro-guided-workflow .small-btn:not(:disabled):active {
+.pro-workflow-option:not(:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled)):active,
+.pro-workflow-summary-row button:not(:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled)):active,
+.pro-workflow-detail-links button:not(:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled)):active,
+.pro-guided-workflow .small-btn:not(:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled)):active {
   transform: translateY(0) scale(0.99);
 }
 
@@ -7299,12 +7312,12 @@ body {
 }
 
 .app:not(.start-active) .btn {
-  min-height: 36px;
+  min-height: 40px;
   border-radius: 7px;
 }
 
 .app:not(.start-active) .small-btn {
-  min-height: 32px;
+  min-height: 40px;
   border-radius: 7px;
 }
 
@@ -7370,7 +7383,7 @@ body {
 }
 
 .app:not(.start-active) .premium-settings-tabs .settings-tab {
-  min-height: 31px;
+  min-height: 40px;
   border-radius: 6px;
   font-size: 13px;
 }
@@ -7790,7 +7803,7 @@ body {
 }
 
 .app:not(.start-active) .basic-setting-section .radio-group {
-  min-height: 26px;
+  min-height: 40px;
 }
 
 .app:not(.start-active) .position-preset,
@@ -8000,13 +8013,18 @@ body {
 .app:not(.start-active) .basic-preview-tools .btn,
 .app:not(.start-active) .basic-run-actions .btn {
   min-width: 0;
-  min-height: 34px;
+  min-height: 40px;
   justify-content: center;
   gap: 6px;
   padding-right: 9px;
   padding-left: 9px;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.app:not(.start-active) .basic-run-actions .btn.primary,
+.app:not(.start-active) .basic-run-actions .btn.blue {
+  min-height: 44px;
 }
 
 .app:not(.start-active) .basic-preview-tools {
@@ -8444,7 +8462,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 34px;
+  min-height: 40px;
   padding: 7px 10px;
   color: #005bbf;
   font-size: 12px;
@@ -8740,7 +8758,7 @@ body {
   width: auto;
   min-width: 92px;
   height: auto;
-  min-height: 36px;
+  min-height: 40px;
   gap: 4px;
   padding: 0 8px;
   white-space: nowrap;
@@ -8766,11 +8784,11 @@ body {
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .pro-workflow-option:not(:disabled):hover,
-  .pro-workflow-step.step-task .pro-workflow-option:not(:disabled):hover,
-  .pro-workflow-step.step-photo-ready .pro-workflow-option:not(:disabled):hover,
-  .pro-workflow-step.step-lower-band .pro-workflow-option:not(:disabled):hover,
-  .pro-workflow-option.selected:not(:disabled):hover {
+  .pro-workflow-option:not(:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled)):hover,
+  .pro-workflow-step.step-task .pro-workflow-option:not(:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled)):hover,
+  .pro-workflow-step.step-photo-ready .pro-workflow-option:not(:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled)):hover,
+  .pro-workflow-step.step-lower-band .pro-workflow-option:not(:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled)):hover,
+  .pro-workflow-option.selected:not(:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled)):hover {
     z-index: 3;
     border-color: #006fe0;
     background: #eef7ff;
@@ -8778,13 +8796,23 @@ body {
     transform: translateY(-3px) scale(1.12);
   }
 
-  .pro-guided-workflow .small-btn:not(:disabled):hover,
-  .pro-workflow-action-grid .small-btn:not(:disabled):hover,
-  .pro-workflow-summary-row button:not(:disabled):hover {
+  .pro-guided-workflow .small-btn:not(:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled)):hover,
+  .pro-workflow-action-grid .small-btn:not(:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled)):hover,
+  .pro-workflow-summary-row button:not(:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled)):hover {
     border-color: #006fe0;
     box-shadow: 0 12px 28px rgba(0, 91, 191, 0.18);
     transform: translateY(-2px) scale(1.07);
   }
+}
+
+.btn:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled),
+.small-btn:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled),
+.pro-workflow-option:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled),
+.pro-workflow-summary-row button:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled),
+.pro-workflow-detail-links button:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled) {
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none;
 }
 
 @media (max-width: 1180px) {
@@ -9484,11 +9512,11 @@ body {
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .pro-workflow-option:not(:disabled):hover,
-  .pro-workflow-step.step-task .pro-workflow-option:not(:disabled):hover,
-  .pro-workflow-step.step-photo-ready .pro-workflow-option:not(:disabled):hover,
-  .pro-workflow-step.step-lower-band .pro-workflow-option:not(:disabled):hover,
-  .pro-workflow-option.selected:not(:disabled):hover {
+  .pro-workflow-option:not(:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled)):hover,
+  .pro-workflow-step.step-task .pro-workflow-option:not(:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled)):hover,
+  .pro-workflow-step.step-photo-ready .pro-workflow-option:not(:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled)):hover,
+  .pro-workflow-step.step-lower-band .pro-workflow-option:not(:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled)):hover,
+  .pro-workflow-option.selected:not(:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled)):hover {
     z-index: 5;
     border-color: #005bbf;
     background: #eaf5ff;
@@ -9498,15 +9526,15 @@ body {
     transform: translateY(-4px) scale(1.075);
   }
 
-  .pro-workflow-primary-action .btn.primary:not(:disabled):hover {
+  .pro-workflow-primary-action .btn.primary:not(:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled)):hover {
     box-shadow: 0 26px 60px rgba(0, 120, 105, 0.28);
     transform: translateY(-3px) scale(1.08);
   }
 
-  .pro-guided-workflow .small-btn:not(:disabled):hover,
-  .pro-workflow-action-grid .small-btn:not(:disabled):hover,
-  .pro-workflow-summary-row button:not(:disabled):hover,
-  .pro-workflow-side-actions .small-btn:not(:disabled):hover {
+  .pro-guided-workflow .small-btn:not(:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled)):hover,
+  .pro-workflow-action-grid .small-btn:not(:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled)):hover,
+  .pro-workflow-summary-row button:not(:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled)):hover,
+  .pro-workflow-side-actions .small-btn:not(:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled)):hover {
     transform: translateY(-2px) scale(1.05);
   }
 }
