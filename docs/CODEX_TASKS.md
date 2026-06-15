@@ -437,3 +437,37 @@
   - review-artifacts/pr-6-ux-review/layout-metrics.json
   - review-artifacts/pr-6-ux-review.zip
   - Local-only and not committed.
+
+## Task 2026-06-15 - PRO task flow final UX blocker fix
+
+- Phase: pro-task-flow-final-ux-blocker-fix
+- Branch: codex/pro-guided-workflow
+- Task type:
+  - UX blocker fix / PR #6 Draft hardening
+- Scope:
+  - Strengthened fullscreen PRO workspace scaling with larger title/body/support typography, larger cards, wider spacing, and taller primary CTA targets.
+  - Fixed lower-band item added-state overflow by giving the item-management panel bounded internal scrolling and restoring a reachable sticky step navigation footer.
+  - Converted narrow preview/generate layouts to single-column stacking so the preview rail no longer squeezes the main task panel.
+  - Reduced hover scale while keeping strong shadow, border, and glow feedback to prevent neighboring card overlap.
+  - Made lower-band item rows larger, less dense, and easier to scan with larger inputs and delete controls.
+  - Regenerated local review artifacts after the fix, including a contact sheet with visible real screenshot thumbnails.
+- Changed files:
+  - src/styles.css
+  - docs/CODEX_TASKS.md
+- Verification plan:
+  - git diff --check
+  - npm.cmd run build
+  - npm.cmd run verify:ui
+  - npm.cmd run verify:board
+  - node scripts/verify-output-settings.cjs
+  - npm.cmd run package:win
+  - hidden/bidi/newline final check
+  - no-exposure
+  - scope check
+- Review artifacts:
+  - review-artifacts/pr-6-ux-review/index.html
+  - review-artifacts/pr-6-ux-review/index.md
+  - review-artifacts/pr-6-ux-review/layout-metrics.json
+  - review-artifacts/pr-6-ux-review/contact-sheet.png
+  - review-artifacts/pr-6-ux-review.zip
+  - Local-only and not committed.
