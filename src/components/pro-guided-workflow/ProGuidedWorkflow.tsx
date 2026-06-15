@@ -678,49 +678,87 @@ export function ProGuidedWorkflow({
 
   return (
     <section className="pro-guided-workflow" aria-label="PRO 단계별 작업 안내">
-      <div className="pro-guided-head">
-        <div>
-          <span className="pro-guided-eyebrow">PRO 작업 순서</span>
-          <h3>현재 단계만 집중해서 설정하세요</h3>
-          <p>필요한 설정만 보여주고, 세부 조정은 접힌 상세 설정 탭에서 계속 할 수 있습니다.</p>
+      <div className="pro-workflow-stage-layout">
+        <div className="pro-workflow-stage-main">
+          <div className="pro-guided-head">
+            <div>
+              <span className="pro-guided-eyebrow">PRO 작업 순서</span>
+              <h3>현재 단계만 집중해서 설정하세요</h3>
+              <p>사진 준비, 보드판 설정, 저장 위치, 생성까지 한 화면 안에서 순서대로 진행합니다.</p>
+            </div>
+          </div>
+
+          <ProWorkflowStepper
+            steps={steps}
+            currentStepId={currentStep.id}
+            recentlyCompletedStepId={recentlyCompletedStepId}
+          />
+
+          <div className="pro-workflow-slide-panel" aria-live="polite">
+            <ProWorkflowStep
+              key={currentStep.id}
+              focusRef={currentStepRef}
+              stepNumber={currentIndex + 1}
+              title={currentStep.title}
+              description={currentStep.description}
+              current
+              completed={false}
+              className={[
+                `step-${currentStep.id}`,
+                recentlyCompletedStepId ? 'revealed-after-selection' : ''
+              ].filter(Boolean).join(' ')}
+            >
+              {renderCurrentStep()}
+            </ProWorkflowStep>
+          </div>
+
+          <div className="pro-workflow-nav">
+            <button type="button" className="small-btn outline" disabled={!canGoBack} onClick={() => moveToStep(steps[currentIndex - 1].id)}>
+              이전 단계
+            </button>
+            <span>{currentIndex + 1} / {steps.length}</span>
+            <button type="button" className="small-btn primary" disabled={!canGoNext} onClick={() => moveToStep(steps[currentIndex + 1].id)}>
+              다음 단계
+            </button>
+          </div>
         </div>
+
+        <aside className="pro-workflow-stage-side" aria-label="PRO 진행 상태와 바로가기">
+          <div className="pro-workflow-side-card pro-workflow-side-card-primary">
+            <span>다음 행동</span>
+            <strong>{currentStep.shortTitle}</strong>
+            <p>{currentStep.description}</p>
+          </div>
+
+          <div className="pro-workflow-side-card">
+            <span>사진</span>
+            <strong>{photoStatus}</strong>
+            <div className="pro-workflow-side-actions">
+              <button className="small-btn outline" type="button" onClick={onSelectPhotos}>
+                <Camera size={15} /> 사진 추가
+              </button>
+              <button className="small-btn outline" type="button" onClick={onSelectPhotoFolder}>
+                <FolderOpen size={15} /> 폴더
+              </button>
+            </div>
+          </div>
+
+          <div className="pro-workflow-side-card">
+            <span>저장</span>
+            <strong>{saveStatus}</strong>
+            <div className="pro-workflow-side-actions">
+              <button className="small-btn outline" type="button" onClick={onSelectSaveFolder}>
+                <Save size={15} /> 지정
+              </button>
+              <button className="small-btn outline" type="button" disabled={!hasSaveDir} onClick={onOpenSaveFolder}>
+                <FolderOpen size={15} /> 열기
+              </button>
+            </div>
+          </div>
+
+          <ProWorkflowSummary items={summaryItems} onEdit={goToStep} />
+        </aside>
       </div>
-
-      <ProWorkflowStepper
-        steps={steps}
-        currentStepId={currentStep.id}
-        recentlyCompletedStepId={recentlyCompletedStepId}
-      />
-
-      <div className="pro-workflow-slide-panel" aria-live="polite">
-        <ProWorkflowStep
-          key={currentStep.id}
-          focusRef={currentStepRef}
-          stepNumber={currentIndex + 1}
-          title={currentStep.title}
-          description={currentStep.description}
-          current
-          completed={false}
-          className={[
-            `step-${currentStep.id}`,
-            recentlyCompletedStepId ? 'revealed-after-selection' : ''
-          ].filter(Boolean).join(' ')}
-        >
-          {renderCurrentStep()}
-        </ProWorkflowStep>
-      </div>
-
-      <div className="pro-workflow-nav">
-        <button type="button" className="small-btn outline" disabled={!canGoBack} onClick={() => moveToStep(steps[currentIndex - 1].id)}>
-          이전 단계
-        </button>
-        <span>{currentIndex + 1} / {steps.length}</span>
-        <button type="button" className="small-btn primary" disabled={!canGoNext} onClick={() => moveToStep(steps[currentIndex + 1].id)}>
-          다음 단계
-        </button>
-      </div>
-
-      <ProWorkflowSummary items={summaryItems} onEdit={goToStep} />
     </section>
   );
 }

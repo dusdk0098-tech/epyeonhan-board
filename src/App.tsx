@@ -3380,7 +3380,7 @@ export default function App() {
         onSelectSaveFolder={handleSelectSaveFolder}
         onOpenSaveFolder={handleOpenSaveFolder}
         ledgerSettings={renderPremiumPhotoLedgerSettings({ showBoardFieldToggle: false, showOutputActions: false })}
-        boardFieldsSettings={renderPremiumBoardFieldsSettings({ showActions: false })}
+        boardFieldsSettings={renderPremiumBoardFieldsSettings({ showActions: false, proLayout: true })}
         boardLayoutSettings={renderPremiumBoardLayoutSettings()}
         dateTimeSettings={renderPremiumDateTimeSettings()}
         highlightSettings={renderPremiumHighlightAndActions({ showActionSection: false })}
@@ -3388,18 +3388,22 @@ export default function App() {
     );
   }
 
-  function renderPremiumBoardFieldsSettings(options: { showActions?: boolean } = {}) {
+  function renderPremiumBoardFieldsSettings(options: { showActions?: boolean; proLayout?: boolean } = {}) {
     const showActions = options.showActions ?? true;
+    const proLayout = options.proLayout ?? false;
+    const editorClassName = proLayout ? 'premium-field-editor pro-field-editor-large' : 'premium-field-editor';
+    const listClassName = proLayout ? 'advanced-field-list premium-field-list pro-lower-field-list' : 'advanced-field-list premium-field-list';
 
     return (
-      <div className="premium-field-editor">
+      <div className={editorClassName}>
         <div className="premium-field-header">
           <span>항목명 / 내용</span>
           <button className="small-btn outline" type="button" onClick={addField}>
             <Plus size={15} /> 항목 추가
           </button>
         </div>
-        {renderBoardFieldEditor('advanced-field-list premium-field-list')}
+        {proLayout && <p className="pro-field-editor-hint">하부띠에 표시할 항목명과 내용을 크게 확인하면서 편집하세요. 빈 항목은 필요에 맞게 채우거나 삭제할 수 있습니다.</p>}
+        {renderBoardFieldEditor(listClassName)}
         {showActions && renderPremiumFieldActions()}
       </div>
     );
@@ -3626,7 +3630,17 @@ export default function App() {
   function renderOutputScreen() {
     const proTaskWorkspaceMode = resolveProTaskWorkspaceMode(proWorkflowStepId);
     const outputShellClassName = `page-shell output-shell pro-task-flow-shell pro-mode-${proTaskWorkspaceMode}`;
-    const outputGridClassName = `output-grid pro-task-flow-grid pro-mode-${proTaskWorkspaceMode}`;
+    const shouldShowPreviewRail =
+      proTaskWorkspaceMode === 'preview' ||
+      proTaskWorkspaceMode === 'generate' ||
+      (proTaskWorkspaceMode === 'photo' && Boolean(selectedPhoto));
+    const outputGridClassName = [
+      'output-grid',
+      'pro-task-flow-grid',
+      `pro-mode-${proTaskWorkspaceMode}`,
+      shouldShowPreviewRail ? 'pro-preview-visible' : 'pro-preview-collapsed',
+      photos.length > 0 ? 'pro-has-photos' : 'pro-no-photos'
+    ].join(' ');
 
     return (
       <main className={outputShellClassName}>

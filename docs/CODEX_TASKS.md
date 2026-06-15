@@ -400,3 +400,40 @@
   - Run subagent review after this senior redesign pass.
   - Repeat authenticated manual QA with synthetic photos before promoting the Draft PR.
   - Decide whether the user manual should be updated after UX acceptance.
+
+## Task 2026-06-15 - PRO task flow UX reset pass
+
+- Phase: pro-task-flow-ux-reset-pass
+- Branch: codex/pro-guided-workflow
+- Task type:
+  - UX reset pass / PRO task-first workspace acceptance hardening
+- Scope:
+  - Applied a fullscreen scaling fix with wider workspace use, fluid typography, fluid card spacing, and larger controls.
+  - Fixed default-window overflow risk by making the guided workflow a real stage layout with inline detail content and reachable navigation.
+  - Restored hover, selected, current, completed, and focus visibility with stronger border, shadow, scale, badge, and surface cues.
+  - Added a preview visibility policy so empty start/configure work does not reserve a dead preview rail, while preview/generate work keeps a stable right rail.
+  - Added board insertion photo and save-folder actions inside the guided side panel so required actions remain visible in the flow.
+  - Enlarged lower-band item management with roomier rows, input targets, visible delete text, and a helper hint.
+  - Reframed the guide as app-like stage content with main task, side status, summary, and reduced-motion fallbacks.
+  - Refreshed the local numeric layout metrics and screenshot review artifact under review-artifacts/pr-6-ux-review.
+- Changed files:
+  - src/App.tsx
+  - src/components/pro-guided-workflow/ProGuidedWorkflow.tsx
+  - src/styles.css
+  - docs/CODEX_TASKS.md
+- Verification plan:
+  - git diff --check
+  - npm.cmd run build
+  - npm run verify:ui
+  - npm run verify:board
+  - node scripts/verify-output-settings.cjs
+  - npm run package:win
+  - hidden/bidi/newline final check
+  - no-exposure
+  - scope check
+- Review artifacts:
+  - review-artifacts/pr-6-ux-review/index.html
+  - review-artifacts/pr-6-ux-review/index.md
+  - review-artifacts/pr-6-ux-review/layout-metrics.json
+  - review-artifacts/pr-6-ux-review.zip
+  - Local-only and not committed.
