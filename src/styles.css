@@ -9576,7 +9576,7 @@ body {
   }
 
   .pro-workflow-stage-main:has(.pro-workflow-step.step-output) {
-    padding-bottom: calc(var(--pro-control-height) + 38px);
+    padding-bottom: calc((var(--pro-control-height) * 3) + 132px);
   }
 
   .pro-workflow-stage-main:has(.pro-workflow-step.step-output) .pro-workflow-step.step-output {
@@ -9585,7 +9585,7 @@ body {
 
   .pro-workflow-stage-main:has(.pro-workflow-step.step-output) .pro-workflow-output-actions {
     gap: 10px;
-    padding-bottom: calc((var(--pro-control-height) * 2) + 86px);
+    padding-bottom: calc((var(--pro-control-height) * 3) + 142px);
   }
 
   .pro-workflow-stage-main:has(.pro-workflow-step.step-output) .pro-output-status {

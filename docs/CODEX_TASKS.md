@@ -575,3 +575,36 @@
   - review-artifacts/pr-6-ux-review/contact-sheet.png
   - review-artifacts/pr-6-ux-review.zip
   - Local-only and not committed.
+
+## Task 2026-06-15 - PR #6 final evidence closure
+
+- Phase: pr6-final-evidence-closure
+- Branch: codex/pro-guided-workflow
+- Task type:
+  - targeted layout fix / authenticated runtime QA evidence
+- Scope:
+  - Fixed the narrow Generate/output step so the fixed primary CTA no longer covers the output status or next-action copy.
+  - Re-ran authenticated Electron visual evidence with synthetic QA image data and masked account display text.
+  - Captured PRO output idle, generating, success, and test-only failure feedback states.
+  - Captured LITE empty, photo-added, rotation-applied, save-ready, and save-success smoke evidence.
+  - Refreshed lower-band item management screenshots to keep prior PR #6 UX evidence current.
+- Changed files:
+  - src/styles.css
+  - docs/CODEX_TASKS.md
+- Verification plan:
+  - git diff --check
+  - npm.cmd run build
+  - npm.cmd run verify:ui
+  - npm.cmd run verify:board
+  - node scripts/verify-output-settings.cjs
+  - npm.cmd run package:win
+  - hidden/bidi/newline final check
+  - no-exposure
+  - scope check
+- Review artifacts:
+  - review-artifacts/pr-6-ux-review/index.html
+  - review-artifacts/pr-6-ux-review/index.md
+  - review-artifacts/pr-6-ux-review/layout-metrics.json
+  - review-artifacts/pr-6-ux-review/contact-sheet.png
+  - review-artifacts/pr-6-ux-review.zip
+  - Local-only and not committed.
