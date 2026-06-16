@@ -4,21 +4,25 @@
 
 | Criterion | Required result | Blocker level | Required evidence |
 |---|---|---|---|
-| `defaultRequiredScrollToCtaPx` | `<= 120` | S1 | Layout metrics JSON and default screenshot |
+| Current task title | Visible in the default window | S1 | Default task screenshot |
+| Primary controls | Visible or short-scroll reachable | S1 | Default active-step screenshot |
+| Previous and next controls | Visible or short-scroll reachable | S1 | Default active-step screenshot |
+| `defaultRequiredScrollToCtaPx` | `<= 120` | S1 | Layout metrics JSON |
 | `defaultMainCtaVisible` | `true` or short-scroll reachable | S1 | Default generate-ready screenshot |
 | `defaultBottomOverflowDetected` | `false` | S1 | Layout metrics JSON |
-| `horizontalOverflowPx` | `<= 1` | S1 | DOM metrics for document, body, workspace |
+| `horizontalOverflowPx` | `<= 1` | S1 | DOM metrics |
 | Visual horizontal scrollbar | Not visible | S1 | Default packaged-window screenshot |
-| Control overlap | No overlap | S1 | Default screenshots across active steps |
-| Information density | One primary task canvas is dominant | S2 | Default task and settings screenshots |
-| Preview clipping | Preview toolbar and buttons stay inside viewport | S1 | Default preview screenshot |
+| Control overlap | No overlap | S1 | Screenshot set |
+| Information density | One primary task canvas is dominant | S2 | Default flow screenshots |
+| Preview clipping | Preview toolbar stays inside viewport | S1 | Default preview screenshot |
 
 ## Photo Rail
 
 | Criterion | Required result | Blocker level | Required evidence |
 |---|---|---|---|
-| Large photo rail | Visible only on photo preparation | S2 | Photo step and non-photo step screenshots |
+| Large photo rail | Visible only on photo preparation steps | S2 | Photo step and non-photo step screenshots |
 | Compact photo status | Used on non-photo steps | S2 | Content and generate-ready screenshots |
+| Return action | User can return to photo management | S2 | Content step screenshot |
 | Photo loaded state | At least one synthetic photo is visible | S1 | Photo loaded screenshot |
 | Photo selected state | Selected or checked state is visible | S1 | Photo selected screenshot |
 | Rotation state | Rotation-applied state is visible | S2 | Rotation evidence screenshot |
@@ -32,9 +36,10 @@
 | `boardSizeStepPreviewVisible` | `true` | S1 | Board size step screenshot |
 | `boardSizePreviewNearControls` | `true` | S1 | Board size and position screenshot |
 | Preview consistency | Preview matches selected job and photo state | S1 | Generate-ready screenshot |
-| Preview toolbar | Buttons are not clipped | S1 | Default and fullscreen preview screenshots |
+| Preview toolbar | Buttons are not clipped | S1 | Preview screenshot |
 | Preview panel width | Does not force body overflow | S1 | Layout metrics JSON |
 | Preview in narrow mode | Hidden, compact, or stacked without overflow | S2 | Narrow screenshot |
+| Preview absence | Hidden when not useful | S3 | Task choice and content screenshots |
 
 ## Lower Band
 
@@ -47,6 +52,7 @@
 | Delete control target | At least 40px | S2 | Layout metrics or screenshot annotation |
 | Density | Controls are not cramped | S2 | Lower-band screenshots |
 | Row actions | Row-level edit or delete is understandable | S2 | Added and delete-ready screenshots |
+| Hidden when unused | Item manager hidden when lower band is off | S2 | Lower-band off screenshot |
 
 ## Fullscreen
 
@@ -56,6 +62,8 @@
 | Empty margin inflation | Not the primary scaling effect | S2 | Fullscreen comparison screenshot |
 | Active task canvas | Remains visually dominant | S2 | Fullscreen active-step screenshot |
 | Preview capacity | Preview gains useful space when appropriate | S2 | Fullscreen preview screenshot |
+| Typography scale | Text scales within approved bounds | S3 | Metrics and screenshot |
+| Control scale | Primary controls remain comfortable | S3 | Metrics and screenshot |
 | Horizontal overflow | `horizontalOverflowPx <= 1` | S1 | Fullscreen DOM metrics |
 | Visual scrollbar | No horizontal scrollbar | S1 | Fullscreen screenshot |
 
@@ -70,6 +78,7 @@
 | Core CTA | Visible or short-scroll reachable | S1 | Narrow generate-ready screenshot |
 | Action target | `>= 40px` | S2 | Metrics or screenshot annotation |
 | Primary CTA | `>= 44px` | S1 | Metrics or screenshot annotation |
+| Focus ring | Not clipped | S1 | Keyboard focus screenshot or QA notes |
 
 ## Accessibility
 
@@ -81,6 +90,8 @@
 | Color independence | State does not rely on color only | S2 | Visual QA notes |
 | Button wording | Purpose-centered labels | S3 | Copy review notes |
 | Icon-only core action | Not used for critical actions | S2 | Screen review notes |
+| Action targets | Minimum 40px | S2 | Target-size metrics |
+| Primary CTA | Minimum 44px | S1 | Target-size metrics |
 
 ## Packaging
 
