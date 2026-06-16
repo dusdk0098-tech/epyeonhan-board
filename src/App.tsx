@@ -108,6 +108,13 @@ import {
 } from './shared/photoLedgerRenderer';
 import { calculateContainedSize } from './shared/previewFit';
 import type { UpdateStatusPayload } from './electron-api';
+import {
+  ProGuidedWorkflow,
+  type ProDetailTab,
+  type ProOutputFeedback,
+  type ProWorkflowMode,
+  type ProWorkflowStepId
+} from './components/pro-guided-workflow/ProGuidedWorkflow';
 
 type Screen = 'start' | 'help' | 'basic' | 'advanced' | 'output' | 'commonSettings' | 'contact' | 'admin';
 type WorkspaceScreen = 'basic' | 'advanced' | 'output';
@@ -117,6 +124,7 @@ type OAuthFlow = 'signin' | 'link';
 type AdminView = 'all' | 'new' | 'social' | 'devices';
 type AdminNewUserWindow = 7 | 30 | 0;
 type StateAction<T> = T | ((current: T) => T);
+type ProTaskWorkspaceMode = 'start' | 'configure' | 'photo' | 'preview' | 'generate';
 type CommonOutputSettings = Pick<
   BoardSettings,
   | 'jpgQuality'
@@ -405,8 +413,14 @@ export default function App() {
   const [activeAdvancedSettingsTab, setActiveAdvancedSettingsTab] = useState<'datetime' | 'board'>('datetime');
   const [activeAdvancedBoardTab, setActiveAdvancedBoardTab] = useState<'layout' | 'typography'>('layout');
   const [activeOutputSettingsTab, setActiveOutputSettingsTab] = useState<'fields' | 'datetime' | 'layout' | 'typography' | 'highlight' | 'ledger'>('fields');
+  const [proWorkflowStepId, setProWorkflowStepId] = useState<ProWorkflowStepId>('task');
   const [status, setStatus] = useState<StatusMessage | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [proOutputFeedback, setProOutputFeedback] = useState<ProOutputFeedback>({
+    state: 'idle',
+    title: '생성 준비',
+    message: '사진과 저장 경로를 확인한 뒤 결과물을 생성하세요.'
+  });
   const [isDragTargetActive, setIsDragTargetActive] = useState(false);
   const [previewContextMenu, setPreviewContextMenu] = useState<{ x: number; y: number } | null>(null);
   const [showPhotoList, setShowPhotoList] = useState(false);
@@ -1794,21 +1808,38 @@ export default function App() {
   }
 
   async function runProcess(mode: ProcessImagesPayload['mode'], options: { createPhotoLedgerPdf?: boolean } = {}) {
+    const shouldTrackProOutput = activeWorkspaceKey === 'output';
+    const proFeedbackTitle = options.createPhotoLedgerPdf
+      ? '사진대지 PDF 생성'
+      : mode === 'checked'
+        ? '체크 사진 작업'
+        : mode === 'selected'
+          ? '선택 사진 작업'
+          : '전체 사진 작업';
+    const setProFeedback = (state: ProOutputFeedback['state'], message: string) => {
+      if (!shouldTrackProOutput) return;
+      setProOutputFeedback({ state, title: proFeedbackTitle, message });
+    };
+
     if (photos.length === 0) {
       setStatusMessage('error', '처리할 사진을 먼저 불러오세요.');
+      setProFeedback('error', '처리할 사진을 먼저 불러오세요.');
       return;
     }
     if (!saveDir) {
       setStatusMessage('error', '저장 경로를 먼저 지정하세요.');
+      setProFeedback('error', '저장 경로를 먼저 지정하세요.');
       return;
     }
     if ((mode === 'selected' && !selectedPhotoPath) || (mode === 'checked' && !photos.some((photo) => photo.selectedForProcessing))) {
       setStatusMessage('error', '처리할 사진을 선택하세요.');
+      setProFeedback('error', '처리할 사진을 선택하세요.');
       return;
     }
 
     setIsProcessing(true);
     setStatusMessage('info', '사진을 처리하는 중입니다.');
+    setProFeedback('generating', options.createPhotoLedgerPdf ? 'PDF를 저장하는 중입니다. 완료될 때까지 기다려주세요.' : '사진을 저장하는 중입니다. 중복 클릭은 잠시 막아둡니다.');
 
     const processSettings = normalizeSettings({
       ...mergeCommonOutputSettings(settings),
@@ -1829,6 +1860,7 @@ export default function App() {
 
     if (!result.ok) {
       setStatusMessage('error', result.error ?? '작업을 완료하지 못했습니다.');
+      setProFeedback('error', result.error ?? '작업을 완료하지 못했습니다.');
       return;
     }
 
@@ -1842,7 +1874,9 @@ export default function App() {
     if (processSettings.openFolderAfterProcessing) {
       successMessages.push('결과 폴더를 열었습니다.');
     }
-    setStatusMessage('success', successMessages.join(' ') || '작업을 완료했습니다.');
+    const successMessage = successMessages.join(' ') || '작업을 완료했습니다.';
+    setStatusMessage('success', successMessage);
+    setProFeedback('success', successMessage);
   }
 
   async function handleCopyPreviewImage() {
@@ -2968,6 +3002,7 @@ export default function App() {
             <input value={field.value} onInput={(event) => updateField(field.id, { value: event.currentTarget.value })} />
             <button type="button" onClick={() => deleteField(field.id)} aria-label="항목 삭제">
               <Trash2 size={16} />
+              <span>항목 삭제</span>
             </button>
           </div>
         ))}
@@ -3064,7 +3099,9 @@ export default function App() {
     );
   }
 
-  function renderPremiumHighlightAndActions() {
+  function renderPremiumHighlightAndActions(options: { showActionSection?: boolean } = {}) {
+    const showActionSection = options.showActionSection ?? true;
+
     return (
       <div className="premium-settings-stack">
         <div className="output-setting-section">
@@ -3097,17 +3134,19 @@ export default function App() {
             <Trash2 size={15} /> 강조 삭제
           </button>
         </div>
-        <div className="output-setting-section">
-          <h4>작업 실행</h4>
-          <div className="button-row">
-            <button className="btn primary" type="button" disabled={isProcessing} onClick={() => void runProcess('selected')}>
-              <Play size={17} /> 선택 사진 작업
-            </button>
-            <button className="btn blue" type="button" disabled={isProcessing} onClick={() => void runProcess('checked')}>
-              <CheckSquare size={17} /> 체크 사진 작업
-            </button>
+        {showActionSection && (
+          <div className="output-setting-section">
+            <h4>작업 실행</h4>
+            <div className="button-row">
+              <button className="btn primary" type="button" disabled={isProcessing} onClick={() => void runProcess('selected')}>
+                <Play size={17} /> 선택 사진 작업
+              </button>
+              <button className="btn blue" type="button" disabled={isProcessing} onClick={() => void runProcess('checked')}>
+                <CheckSquare size={17} /> 체크 사진 작업
+              </button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     );
   }
@@ -3123,7 +3162,12 @@ export default function App() {
           <input
             type="checkbox"
             checked={settings.showBoard}
-            onChange={(event) => updateSettings({ showBoard: event.target.checked })}
+            onChange={(event) =>
+              updateSettings({
+                showBoard: event.target.checked,
+                photoLedgerUseBoardFields: event.target.checked
+              })
+            }
           />
           보드판 삽입
         </label>
@@ -3139,8 +3183,11 @@ export default function App() {
     );
   }
 
-  function renderPremiumPhotoLedgerSettings() {
-    const manualLedgerDisabled = settings.photoLedgerUseBoardFields || !selectedPhoto;
+  function renderPremiumPhotoLedgerSettings(options: { showBoardFieldToggle?: boolean; showOutputActions?: boolean } = {}) {
+    const showBoardFieldToggle = options.showBoardFieldToggle ?? true;
+    const showOutputActions = options.showOutputActions ?? true;
+    const useBoardFields = showBoardFieldToggle && settings.photoLedgerUseBoardFields;
+    const manualLedgerDisabled = useBoardFields || !selectedPhoto;
     const dateLedgerDisabled = manualLedgerDisabled || settings.photoLedgerUsePhotoDate;
     const selectedPhotoInfoDate = resolvePhotoInfoDateForLedger(selectedPhoto);
     return (
@@ -3150,15 +3197,19 @@ export default function App() {
           <div className="settings-form board-pdf-form premium-ledger-form">
             <label>문서 제목</label>
             <input value={settings.pdfTitle} onChange={(event) => updateSettings({ pdfTitle: event.target.value })} />
-            <label>적용 방식</label>
-            <label className="check-label compact-check">
-              <input
-                type="checkbox"
-                checked={settings.photoLedgerUseBoardFields}
-                onChange={(event) => updateSettings({ photoLedgerUseBoardFields: event.target.checked })}
-              />
-              보드판 입력값 자동 적용
-            </label>
+            {showBoardFieldToggle && (
+              <>
+                <label>적용 방식</label>
+                <label className="check-label compact-check">
+                  <input
+                    type="checkbox"
+                    checked={settings.photoLedgerUseBoardFields}
+                    onChange={(event) => updateSettings({ photoLedgerUseBoardFields: event.target.checked })}
+                  />
+                  보드판 입력값 자동 적용
+                </label>
+              </>
+            )}
             <label>촬영일자</label>
             <label className="check-label compact-check">
               <input
@@ -3191,7 +3242,7 @@ export default function App() {
             </button>
           </div>
 
-          {settings.photoLedgerUseBoardFields ? (
+          {useBoardFields ? (
             <div className="ledger-auto-note">
               <ListChecks size={16} aria-hidden />
               <span>보드 입력값으로 위치와 내용 자동 구성</span>
@@ -3247,108 +3298,205 @@ export default function App() {
             </>
           )}
 
-          <div className="ledger-action-row single">
-            <button
-              className="small-btn outline"
-              type="button"
-              disabled={photos.length === 0}
-              onClick={openPhotoLedgerPreview}
-            >
-              <Eye size={15} /> 문서 미리보기
-            </button>
-          </div>
+          {showOutputActions && (
+            <>
+              <div className="ledger-action-row single">
+                <button
+                  className="small-btn outline"
+                  type="button"
+                  disabled={photos.length === 0}
+                  onClick={openPhotoLedgerPreview}
+                >
+                  <Eye size={15} /> 문서 미리보기
+                </button>
+              </div>
 
-          <button className="btn primary wide ledger-create-btn" type="button" disabled={isProcessing} onClick={() => void runProcess('all', { createPhotoLedgerPdf: true })}>
-            <FileSpreadsheet size={17} /> 사진대지 만들기
-          </button>
-          <p className="output-help-text compact">
-            {settings.photoLedgerUseBoardFields
-              ? 'PDF 생성 시 보드 입력값을 문서 하단정보로 사용합니다.'
-              : '사진별 하단정보와 출력 순서를 지정해 PDF에 반영합니다.'}
-          </p>
+              <button className="btn primary wide ledger-create-btn" type="button" disabled={isProcessing} onClick={() => void runProcess('all', { createPhotoLedgerPdf: true })}>
+                <FileSpreadsheet size={17} /> 사진대지 만들기
+              </button>
+              <p className="output-help-text compact">
+                {useBoardFields
+                  ? 'PDF 생성 시 보드 입력값을 문서 하단정보로 사용합니다.'
+                  : '사진별 하단정보와 출력 순서를 지정해 PDF에 반영합니다.'}
+              </p>
+            </>
+          )}
         </div>
       </div>
     );
   }
 
+  function resolveProTaskWorkspaceMode(stepId: ProWorkflowStepId): ProTaskWorkspaceMode {
+    if (stepId === 'task') return 'start';
+    if (stepId === 'photo-ready') return 'photo';
+    if (stepId === 'ledger-detail') return 'photo';
+    if (stepId === 'lower-band') return 'preview';
+    if (stepId === 'item-cells') return 'preview';
+    if (stepId === 'position') return 'preview';
+    if (stepId === 'highlight') return 'preview';
+    if (stepId === 'save-ready') return 'generate';
+    if (stepId === 'output') return 'generate';
+    return 'configure';
+  }
+
+  function renderProGuidedWorkflow() {
+    const workflowMode: ProWorkflowMode = settings.showBoard ? 'board' : 'ledger';
+    const checkedCount = photos.filter((photo) => photo.selectedForProcessing).length;
+    const openDetailTab = (tab: ProDetailTab) => setActiveOutputSettingsTab(tab);
+
+    return (
+      <ProGuidedWorkflow
+        currentStepId={proWorkflowStepId}
+        workflowMode={workflowMode}
+        boardLayoutMode={settings.boardLayoutMode}
+        timeMode={timeOptions.mode}
+        bottomStripShowLabels={settings.bottomStripShowLabels}
+        position={settings.position}
+        positionLabels={positionLabels}
+        highlightEnabled={Boolean(selectedHighlight?.enabled)}
+        highlightDisabled={!selectedPhoto}
+        photosCount={photos.length}
+        checkedCount={checkedCount}
+        hasSelectedPhoto={Boolean(selectedPhoto)}
+        hasSaveDir={Boolean(saveDir)}
+        isProcessing={isProcessing}
+        outputFeedback={proOutputFeedback}
+        onCurrentStepChange={setProWorkflowStepId}
+        onWorkflowModeChange={(mode) =>
+          updateSettings({
+            showBoard: mode === 'board',
+            photoLedgerUseBoardFields: mode === 'board'
+          })
+        }
+        onBoardLayoutModeChange={(mode) => updateSettings({ boardLayoutMode: mode })}
+        onTimeModeChange={setTimeMode}
+        onBottomStripShowLabelsChange={(value) => updateSettings({ bottomStripShowLabels: value })}
+        onPositionChange={(nextPosition) => updateSettings({ position: nextPosition })}
+        onHighlightEnabledChange={setSelectedHighlightEnabled}
+        onOpenDetailTab={openDetailTab}
+        onPreviewLedger={openPhotoLedgerPreview}
+        onCreateLedger={() => void runProcess('all', { createPhotoLedgerPdf: true })}
+        onRunSelected={() => void runProcess('selected')}
+        onRunChecked={() => void runProcess('checked')}
+        onSelectPhotos={handleSelectPhotos}
+        onSelectPhotoFolder={handleSelectPhotoFolder}
+        onSelectSaveFolder={handleSelectSaveFolder}
+        onOpenSaveFolder={handleOpenSaveFolder}
+        ledgerSettings={renderPremiumPhotoLedgerSettings({ showBoardFieldToggle: false, showOutputActions: false })}
+        boardFieldsSettings={renderPremiumBoardFieldsSettings({ showActions: false, proLayout: true })}
+        boardLayoutSettings={renderPremiumBoardLayoutSettings()}
+        dateTimeSettings={renderPremiumDateTimeSettings()}
+        highlightSettings={renderPremiumHighlightAndActions({ showActionSection: false })}
+      />
+    );
+  }
+
+  function renderPremiumBoardFieldsSettings(options: { showActions?: boolean; proLayout?: boolean } = {}) {
+    const showActions = options.showActions ?? true;
+    const proLayout = options.proLayout ?? false;
+    const editorClassName = proLayout ? 'premium-field-editor pro-field-editor-large' : 'premium-field-editor';
+    const listClassName = proLayout ? 'advanced-field-list premium-field-list pro-lower-field-list' : 'advanced-field-list premium-field-list';
+
+    return (
+      <div className={editorClassName}>
+        <div className="premium-field-header">
+          <span>항목명 / 내용</span>
+          <button className="small-btn outline" type="button" onClick={addField}>
+            <Plus size={15} /> 항목 추가
+          </button>
+        </div>
+        {proLayout && <p className="pro-field-editor-hint">하부띠에 표시할 항목명과 내용을 크게 확인하면서 편집하세요. 빈 항목은 필요에 맞게 채우거나 삭제할 수 있습니다.</p>}
+        {renderBoardFieldEditor(listClassName)}
+        {showActions && renderPremiumFieldActions()}
+      </div>
+    );
+  }
+
+  function openPremiumDetailDrawer(tab: ProDetailTab) {
+    setActiveOutputSettingsTab(tab);
+    window.requestAnimationFrame(() => {
+      document.querySelector<HTMLDetailsElement>('.premium-detail-drawer')?.setAttribute('open', '');
+    });
+  }
+
   function renderPremiumSettingsCard() {
     return (
       <Card title="설정" icon={<Settings size={17} />} className="output-settings-card premium-settings-card">
-        <div className="settings-tabs premium-settings-tabs" role="tablist" aria-label="PRO 설정">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeOutputSettingsTab === 'fields'}
-            className={activeOutputSettingsTab === 'fields' ? 'settings-tab active' : 'settings-tab'}
-            onClick={() => setActiveOutputSettingsTab('fields')}
-          >
-            보드 내용
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeOutputSettingsTab === 'datetime'}
-            className={activeOutputSettingsTab === 'datetime' ? 'settings-tab active' : 'settings-tab'}
-            onClick={() => setActiveOutputSettingsTab('datetime')}
-          >
-            날짜/시간
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeOutputSettingsTab === 'layout'}
-            className={activeOutputSettingsTab === 'layout' ? 'settings-tab active' : 'settings-tab'}
-            onClick={() => setActiveOutputSettingsTab('layout')}
-          >
-            크기/배치
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeOutputSettingsTab === 'typography'}
-            className={activeOutputSettingsTab === 'typography' ? 'settings-tab active' : 'settings-tab'}
-            onClick={() => setActiveOutputSettingsTab('typography')}
-          >
-            글자/테두리
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeOutputSettingsTab === 'highlight'}
-            className={activeOutputSettingsTab === 'highlight' ? 'settings-tab active' : 'settings-tab'}
-            onClick={() => setActiveOutputSettingsTab('highlight')}
-          >
-            강조/실행
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeOutputSettingsTab === 'ledger'}
-            className={activeOutputSettingsTab === 'ledger' ? 'settings-tab active' : 'settings-tab'}
-            onClick={() => setActiveOutputSettingsTab('ledger')}
-          >
-            사진대지
-          </button>
+        <div className="premium-detail-shortcuts" aria-label="PRO 상세 설정 바로가기">
+          <span>상세 설정</span>
+          <button type="button" onClick={() => openPremiumDetailDrawer('fields')}>보드 내용</button>
+          <button type="button" onClick={() => openPremiumDetailDrawer('datetime')}>날짜/시간</button>
+          <button type="button" onClick={() => openPremiumDetailDrawer('layout')}>크기/배치</button>
+          <button type="button" onClick={() => openPremiumDetailDrawer('highlight')}>강조/실행</button>
         </div>
-        <div className="settings-tab-panel output-tab-panel">
-          {activeOutputSettingsTab === 'fields' && (
-            <div className="premium-field-editor">
-              <div className="premium-field-header">
-                <span>항목명 / 내용</span>
-                <button className="small-btn outline" type="button" onClick={addField}>
-                  <Plus size={15} /> 항목 추가
-                </button>
-              </div>
-              {renderBoardFieldEditor('advanced-field-list premium-field-list')}
-              {renderPremiumFieldActions()}
-            </div>
-          )}
-          {activeOutputSettingsTab === 'datetime' && renderPremiumDateTimeSettings()}
-          {activeOutputSettingsTab === 'layout' && renderPremiumBoardLayoutSettings()}
-          {activeOutputSettingsTab === 'typography' && renderPremiumTypographySettings()}
-          {activeOutputSettingsTab === 'highlight' && renderPremiumHighlightAndActions()}
-          {activeOutputSettingsTab === 'ledger' && renderPremiumPhotoLedgerSettings()}
-        </div>
+        {renderProGuidedWorkflow()}
+        <details className="premium-detail-drawer">
+          <summary>상세 설정 탭 열기</summary>
+          <div className="settings-tabs premium-settings-tabs" role="tablist" aria-label="PRO 설정">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeOutputSettingsTab === 'fields'}
+              className={activeOutputSettingsTab === 'fields' ? 'settings-tab active' : 'settings-tab'}
+              onClick={() => setActiveOutputSettingsTab('fields')}
+            >
+              보드 내용
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeOutputSettingsTab === 'datetime'}
+              className={activeOutputSettingsTab === 'datetime' ? 'settings-tab active' : 'settings-tab'}
+              onClick={() => setActiveOutputSettingsTab('datetime')}
+            >
+              날짜/시간
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeOutputSettingsTab === 'layout'}
+              className={activeOutputSettingsTab === 'layout' ? 'settings-tab active' : 'settings-tab'}
+              onClick={() => setActiveOutputSettingsTab('layout')}
+            >
+              크기/배치
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeOutputSettingsTab === 'typography'}
+              className={activeOutputSettingsTab === 'typography' ? 'settings-tab active' : 'settings-tab'}
+              onClick={() => setActiveOutputSettingsTab('typography')}
+            >
+              글자/테두리
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeOutputSettingsTab === 'highlight'}
+              className={activeOutputSettingsTab === 'highlight' ? 'settings-tab active' : 'settings-tab'}
+              onClick={() => setActiveOutputSettingsTab('highlight')}
+            >
+              강조/실행
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeOutputSettingsTab === 'ledger'}
+              className={activeOutputSettingsTab === 'ledger' ? 'settings-tab active' : 'settings-tab'}
+              onClick={() => setActiveOutputSettingsTab('ledger')}
+            >
+              사진대지
+            </button>
+          </div>
+          <div className="settings-tab-panel output-tab-panel">
+            {activeOutputSettingsTab === 'fields' && renderPremiumBoardFieldsSettings()}
+            {activeOutputSettingsTab === 'datetime' && renderPremiumDateTimeSettings()}
+            {activeOutputSettingsTab === 'layout' && renderPremiumBoardLayoutSettings()}
+            {activeOutputSettingsTab === 'typography' && renderPremiumTypographySettings()}
+            {activeOutputSettingsTab === 'highlight' && renderPremiumHighlightAndActions()}
+            {activeOutputSettingsTab === 'ledger' && renderPremiumPhotoLedgerSettings({ showBoardFieldToggle: settings.showBoard })}
+          </div>
+        </details>
       </Card>
     );
   }
@@ -3497,9 +3645,22 @@ export default function App() {
   }
 
   function renderOutputScreen() {
+    const proTaskWorkspaceMode = resolveProTaskWorkspaceMode(proWorkflowStepId);
+    const outputShellClassName = `page-shell output-shell pro-task-flow-shell pro-mode-${proTaskWorkspaceMode}`;
+    const shouldShowPreviewRail =
+      proTaskWorkspaceMode === 'preview' ||
+      proTaskWorkspaceMode === 'generate';
+    const outputGridClassName = [
+      'output-grid',
+      'pro-task-flow-grid',
+      `pro-mode-${proTaskWorkspaceMode}`,
+      shouldShowPreviewRail ? 'pro-preview-visible' : 'pro-preview-collapsed',
+      photos.length > 0 ? 'pro-has-photos' : 'pro-no-photos'
+    ].join(' ');
+
     return (
-      <main className="page-shell output-shell">
-        <div className="output-grid">
+      <main className={outputShellClassName}>
+        <div className={outputGridClassName} data-workspace-mode={proTaskWorkspaceMode} data-workflow-step={proWorkflowStepId}>
           <Card
             title="사진 목록"
             icon={<ListChecks size={17} />}

@@ -155,3 +155,554 @@
   - 04_PRO image was sanitized/replaced with a demo-safe version before commit.
 - Follow-up:
   - Link images from user manual document if needed.
+
+## Task 2026-06-14 - PRO guided workflow feedback
+
+- Phase: pro-guided-workflow-feedback
+- Branch: codex/pro-guided-workflow
+- Task type:
+  - UX improvement
+- Scope:
+  - Guided workflow, micro-interactions, button feedback, and generation status feedback for PRO options.
+- Changed files:
+  - src/App.tsx
+  - src/components/pro-guided-workflow/ProGuidedWorkflow.tsx
+  - src/components/pro-guided-workflow/ProWorkflowStep.tsx
+  - src/components/pro-guided-workflow/ProWorkflowOptionCard.tsx
+  - src/components/pro-guided-workflow/ProWorkflowSummary.tsx
+  - src/components/pro-guided-workflow/ProWorkflowStepper.tsx
+  - src/components/pro-guided-workflow/OutputProgressStatus.tsx
+  - src/styles.css
+  - docs/CODEX_TASKS.md
+- Verification:
+  - git diff --check: PASS
+  - build: PASS
+  - verify:ui: PASS
+  - verify:board: PASS
+  - verify-output-settings: PASS
+  - package:win: PASS
+  - browser auth-gate smoke: PASS
+  - LITE/PRO manual QA: NOT_RUN - local preview requires an authenticated session before the workflow screens render.
+  - reduced motion check: PASS - scoped CSS disables repeated motion under prefers-reduced-motion.
+  - no-exposure: PASS
+  - scope check: PASS
+- Known limitations:
+  - Full settings search/finder is not included.
+  - Real percentage progress is not included.
+  - Automatic carousel is intentionally not used.
+  - Additional user manual update may be needed after UX is finalized.
+- Follow-up:
+  - Revisit copy and screenshots after the guided PRO flow receives manual user feedback.
+
+## Task 2026-06-14 - PRO guided workflow accessibility fix
+
+- Phase: pro-guided-workflow-accessibility-fix
+- Branch: codex/pro-guided-workflow
+- Task type:
+  - UX fix / guided workflow stabilization
+- Scope:
+  - Corrected conditional flow so photo-ledger-only mode no longer exposes board-only workflow options.
+  - Restored photo ledger content fields and per-photo detail editing inside the guided flow.
+  - Restored circular highlight detail controls, including existing color and black-white options.
+  - Rebalanced PRO preview/settings columns to give workflow and settings more room.
+  - Moved step navigation directly under the active slide panel so previous/next actions remain visible.
+  - Kept the top stepper as progress/status display and preserved summary edit links.
+  - Strengthened hover scale feedback while preserving reduced-motion handling.
+- Changed files:
+  - src/App.tsx
+  - src/components/pro-guided-workflow/ProGuidedWorkflow.tsx
+  - src/styles.css
+  - docs/CODEX_TASKS.md
+- Verification:
+  - git diff --check: PASS
+  - build: PASS
+  - verify:ui: PASS
+  - verify:board: PASS
+  - verify-output-settings: PASS
+  - package:win: PASS
+  - photo ledger flow QA: PASS with a synthetic clipboard image.
+  - board insertion flow QA: PASS with a synthetic clipboard image.
+  - existing option accessibility QA: PASS
+  - step carousel / slide panel QA: PASS
+  - layout QA: PASS
+  - hover / animation QA: PASS
+  - output generation feedback QA: PARTIAL - automated output verification passed; manual failure-state forcing was not run.
+  - LITE regression QA: PASS visual smoke; PRO guided workflow did not appear in LITE.
+  - hidden/bidi/newline check: PASS for bidi, zero-width, BOM, NBSP, lone CR, and CR-only newline.
+  - no-exposure: PASS
+  - scope check: PASS
+- Known limitations:
+  - Real percentage progress is still not included.
+  - Full settings search/finder is not included.
+  - Further user manual screenshot updates may be needed after UX acceptance.
+  - Manual forced failure-state verification remains a follow-up candidate.
+- Follow-up:
+  - Repeat full output failure-path QA with a controlled error fixture before moving the draft PR to ready.
+
+## Task 2026-06-14 - PRO guided workflow motion follow-up
+
+- Phase: pro-guided-workflow-feedback
+- Branch: codex/pro-guided-workflow
+- Task type:
+  - UX improvement follow-up
+- Scope:
+  - Convert the top PRO workflow stepper into progress/status display.
+  - Advance to the next relevant step when the current option card is selected.
+  - Strengthen guided motion, option-card hover feedback, focus-visible feedback, and output status feedback.
+  - Keep output/PDF generation logic and existing setting values unchanged.
+- Changed files:
+  - src/components/pro-guided-workflow/ProGuidedWorkflow.tsx
+  - src/components/pro-guided-workflow/ProWorkflowStep.tsx
+  - src/components/pro-guided-workflow/ProWorkflowOptionCard.tsx
+  - src/components/pro-guided-workflow/ProWorkflowStepper.tsx
+  - src/components/pro-guided-workflow/OutputProgressStatus.tsx
+  - src/styles.css
+  - docs/CODEX_TASKS.md
+- Verification:
+  - git diff --check: PASS
+  - build: PASS
+  - verify:ui: PASS
+  - verify:board: PASS
+  - verify-output-settings: PASS
+  - package:win: PASS
+  - authenticated PRO guided workflow QA: PASS
+  - LITE visual smoke QA: PASS
+  - synthetic photo load/output generation manual QA: NOT_RUN - UI pass avoided file dialog/path exposure; automated output verification passed.
+  - reduced motion check: PASS - scoped CSS disables repeated/scale motion under prefers-reduced-motion.
+  - hidden/bidi/newline check: PASS
+  - no-exposure: PASS
+  - scope check: PASS
+- Known limitations:
+  - No fake percentage progress was added.
+  - The top stepper is now status display; returning is handled by summary edit and previous/next controls.
+  - Full manual photo import/output generation should be repeated with a synthetic image before the draft PR is promoted.
+
+## Task 2026-06-14 - PRO task flow workspace redesign
+
+- Phase: pro-task-flow-workspace-redesign
+- Branch: codex/pro-guided-workflow
+- Task type:
+  - UX improvement / PRO workflow layout refinement
+- Scope:
+  - Reworked the PRO output screen into a task-flow workspace that centers the active guided step.
+  - Converted the top workflow stepper into a compact progress/status strip with numbered dots.
+  - Added mode-based workspace layout classes so start/configure/photo/preview/generate steps can show only the relevant settings, preview, or photo-list areas.
+  - Moved legacy detailed PRO settings into a collapsed detail drawer while preserving access to the existing tabbed controls.
+  - Reduced duplicate output action prominence by keeping 사진대지 만들기 as the primary action and moving secondary actions into a collapsed section.
+  - Tuned hover/focus/active motion to avoid large layout-shifting scale effects and kept reduced-motion handling.
+- Changed files:
+  - src/App.tsx
+  - src/components/pro-guided-workflow/ProGuidedWorkflow.tsx
+  - src/components/pro-guided-workflow/ProWorkflowStepper.tsx
+  - src/styles.css
+  - docs/CODEX_TASKS.md
+- Verification:
+  - git diff --check: PASS
+  - build: PASS
+  - verify:ui: PASS
+  - verify:board: PASS
+  - verify-output-settings: PASS
+  - package:win: PASS
+  - lint: NOT_RUN - no lint script is defined.
+  - typecheck: NOT_RUN - no typecheck script is defined.
+  - test: NOT_RUN - no test script is defined.
+  - authenticated PRO task-flow visual QA: PASS for start and configure steps; mode-based hiding and preview/settings balance were confirmed in Electron.
+  - LITE visual smoke QA: PASS; existing LITE setup, preview, rotation controls, and run buttons remained visible.
+  - photo import/output generation manual QA: NOT_RUN - file-dialog path entry was avoided; automated output verification passed.
+  - design regression / large-window QA: PASS; no overlap found in checked PRO/LITE views.
+  - reduced motion check: PASS by CSS review; new motion selectors are covered by prefers-reduced-motion.
+  - hidden/bidi/newline check: PASS for BOM, bidi controls, zero-width characters, NBSP, lone CR, CR-only newline, and unusual invisible controls.
+  - no-exposure: PASS
+  - scope check: PASS
+- Known limitations:
+  - Small-window manual resizing was not exhaustively repeated in Electron for every PRO step.
+  - Manual PDF failure-state forcing remains a follow-up candidate.
+  - Full photo import/output manual QA should be repeated with a synthetic image before promoting the draft PR.
+
+## Task 2026-06-14 - PRO task flow modern UX redesign
+
+- Phase: pro-task-flow-modern-ux-redesign
+- Branch: codex/pro-guided-workflow
+- Task type:
+  - UX improvement / PRO workflow workspace refinement
+- Scope:
+  - Kept the preview in a stable right rail across guided PRO steps on wide screens.
+  - Made the preview more compact so the active task and detail controls keep priority.
+  - Added responsive workspace sizing variables for larger text, larger controls, and cleaner fullscreen scaling.
+  - Reused the existing board-field editor inside the lower-band item step so add/delete controls are available when the lower band is enabled.
+  - Added visible text to item delete buttons to avoid icon-only critical controls.
+  - Preserved existing PRO output/PDF logic, option values, and generated output structure.
+- Changed files:
+  - src/App.tsx
+  - src/components/pro-guided-workflow/ProGuidedWorkflow.tsx
+  - src/styles.css
+  - docs/CODEX_TASKS.md
+- Verification:
+  - preview placement QA: PASS - Electron smoke confirmed the preview rail stays on the right after lower-band and item-cell step changes.
+  - detail options panel QA: PASS - step content stays in the main task panel and lower-band item controls appear in the active step.
+  - lower band item management QA: PASS - existing add/delete board-field controls are available in the lower-band item step.
+  - 40+ usability QA: PASS - larger controls and visible delete labels were added.
+  - fullscreen/responsive QA: PASS for maximized Electron smoke; compact/narrow breakpoints are covered by CSS review.
+  - modern design QA: PASS - task panel and preview rail have clearer hierarchy without a broad redesign.
+  - duplicate/missing button QA: PASS - lower-band item add/delete controls are visible and primary output actions remain unchanged.
+  - flow QA: PASS - lower-band selection advances to item-cell setup without changing output logic.
+  - regression QA: PASS by automated build/verification commands and manual PRO visual smoke.
+  - reduced-motion/animation QA: PASS by CSS review; existing reduced-motion rules remain in place.
+  - no-exposure: PASS
+  - scope check: PASS
+- Known limitations:
+  - Small-window Electron resizing was not exhaustively repeated for every PRO step.
+  - Manual PDF failure-state forcing remains a follow-up candidate.
+  - Full authenticated photo import/output QA should be repeated before promoting the draft PR.
+
+## Task 2026-06-14 - PRO task flow senior redesign
+
+- Phase: pro-task-flow-senior-redesign
+- Branch: codex/pro-guided-workflow
+- Task type:
+  - senior UX redesign / accessibility / verification improvement
+- Scope:
+  - Added a guided photo preparation step so board insertion and ledger flows expose photo-add actions before configuration.
+  - Added a guided save-folder confirmation step before generation.
+  - Kept board-mode generation on the existing checked-photo output path and kept ledger-mode PDF generation on the existing PDF path.
+  - Strengthened fullscreen scaling with fluid typography, larger controls, larger cards, wider workspace use, and responsive density variables.
+  - Modernized PRO card/surface hierarchy with stronger selected, current, hover, and primary CTA treatment.
+  - Kept preview placement stable as a right rail on wide screens and stacked/compact at narrower widths.
+  - Improved default-window accessibility with sticky guided navigation and clearer prerequisite status cards.
+  - Preserved lower-band item management through the existing board-field editor and visible add/delete labels.
+  - Created local screenshot, layout-metrics, and review index artifacts under review-artifacts/pr-6-ux-review.
+  - Applied 40+ usability criteria for larger text, 44px+ control targets, clearer copy, and stronger state cues.
+- Changed files:
+  - src/App.tsx
+  - src/components/pro-guided-workflow/ProGuidedWorkflow.tsx
+  - src/styles.css
+  - docs/CODEX_TASKS.md
+- Verification:
+  - senior review board: PASS - five read-only review roles completed and were aggregated into a local plan artifact.
+  - fullscreen scaling QA: PASS by CSS review and fullscreen-like screenshot artifact.
+  - visual design QA: PASS - stronger surface hierarchy, selected states, and CTA hierarchy applied.
+  - hover regression QA: PASS by CSS review; hover uses scale, border, shadow, and background cues.
+  - default window overflow QA: PASS for captured default window; sticky nav keeps step controls reachable.
+  - board insertion flow QA: PASS - photo-add, folder-load, save-folder, checked-photo generation, and board setup are visible in the flow.
+  - preview placement QA: PASS - wide layout keeps preview on the right rail.
+  - lower band item management QA: PARTIAL - code path reuses the existing board-field editor; coordinate-driven screenshot capture repeatedly landed on the alternate position path.
+  - task screen transition QA: PASS - task, photo, configure, save, preview, and generate steps have distinct centered task content.
+  - review artifact QA: PASS - local screenshot gallery, layout-metrics.json, index.md, and index.html were generated and left uncommitted.
+  - reduced-motion QA: PASS by CSS review.
+  - no-exposure: PASS
+  - scope check: PASS
+- Known limitations:
+  - Forced output progress and failure-state screenshots were not generated.
+  - Lower-band item-management visual capture should be repeated with a more deterministic UI automation path.
+  - Screenshot/layout review artifacts are local-only and not committed.
+  - Further polish may be needed after user review of the packaged build.
+- Follow-up:
+  - Run subagent review after this senior redesign pass.
+  - Repeat authenticated manual QA with synthetic photos before promoting the Draft PR.
+  - Decide whether the user manual should be updated after UX acceptance.
+
+## Task 2026-06-15 - PRO task flow UX reset pass
+
+- Phase: pro-task-flow-ux-reset-pass
+- Branch: codex/pro-guided-workflow
+- Task type:
+  - UX reset pass / PRO task-first workspace acceptance hardening
+- Scope:
+  - Applied a fullscreen scaling fix with wider workspace use, fluid typography, fluid card spacing, and larger controls.
+  - Fixed default-window overflow risk by making the guided workflow a real stage layout with inline detail content and reachable navigation.
+  - Restored hover, selected, current, completed, and focus visibility with stronger border, shadow, scale, badge, and surface cues.
+  - Added a preview visibility policy so empty start/configure work does not reserve a dead preview rail, while preview/generate work keeps a stable right rail.
+  - Added board insertion photo and save-folder actions inside the guided side panel so required actions remain visible in the flow.
+  - Enlarged lower-band item management with roomier rows, input targets, visible delete text, and a helper hint.
+  - Reframed the guide as app-like stage content with main task, side status, summary, and reduced-motion fallbacks.
+  - Refreshed the local numeric layout metrics and screenshot review artifact under review-artifacts/pr-6-ux-review.
+- Changed files:
+  - src/App.tsx
+  - src/components/pro-guided-workflow/ProGuidedWorkflow.tsx
+  - src/styles.css
+  - docs/CODEX_TASKS.md
+- Verification plan:
+  - git diff --check
+  - npm.cmd run build
+  - npm run verify:ui
+  - npm run verify:board
+  - node scripts/verify-output-settings.cjs
+  - npm run package:win
+  - hidden/bidi/newline final check
+  - no-exposure
+  - scope check
+- Review artifacts:
+  - review-artifacts/pr-6-ux-review/index.html
+  - review-artifacts/pr-6-ux-review/index.md
+  - review-artifacts/pr-6-ux-review/layout-metrics.json
+  - review-artifacts/pr-6-ux-review.zip
+  - Local-only and not committed.
+
+## Task 2026-06-15 - PRO task flow final UX blocker fix
+
+- Phase: pro-task-flow-final-ux-blocker-fix
+- Branch: codex/pro-guided-workflow
+- Task type:
+  - UX blocker fix / PR #6 Draft hardening
+- Scope:
+  - Strengthened fullscreen PRO workspace scaling with larger title/body/support typography, larger cards, wider spacing, and taller primary CTA targets.
+  - Fixed lower-band item added-state overflow by giving the item-management panel bounded internal scrolling and restoring a reachable sticky step navigation footer.
+  - Converted narrow preview/generate layouts to single-column stacking so the preview rail no longer squeezes the main task panel.
+  - Reduced hover scale while keeping strong shadow, border, and glow feedback to prevent neighboring card overlap.
+  - Made lower-band item rows larger, less dense, and easier to scan with larger inputs and delete controls.
+  - Regenerated local review artifacts after the fix, including a contact sheet with visible real screenshot thumbnails.
+- Changed files:
+  - src/styles.css
+  - docs/CODEX_TASKS.md
+- Verification plan:
+  - git diff --check
+  - npm.cmd run build
+  - npm.cmd run verify:ui
+  - npm.cmd run verify:board
+  - node scripts/verify-output-settings.cjs
+  - npm.cmd run package:win
+  - hidden/bidi/newline final check
+  - no-exposure
+  - scope check
+- Review artifacts:
+  - review-artifacts/pr-6-ux-review/index.html
+  - review-artifacts/pr-6-ux-review/index.md
+  - review-artifacts/pr-6-ux-review/layout-metrics.json
+  - review-artifacts/pr-6-ux-review/contact-sheet.png
+  - review-artifacts/pr-6-ux-review.zip
+  - Local-only and not committed.
+
+## Task 2026-06-16 - PR #6 packaged UX acceptance fix
+
+- Phase: pr6-packaged-ux-acceptance-fix
+- Branch: codex/pro-guided-workflow
+- Task type:
+  - targeted PRO workspace layout fix / packaged QA refresh
+- Scope:
+  - Removed the photo-selected three-column pressure by keeping the photo step to photo list plus guided workflow.
+  - Restored the right preview rail for board size, position, lower-band, item-cell, highlight, save-ready, and output steps.
+  - Added an above-fold detail-settings shortcut strip so reviewers do not need to scroll to the bottom to open the legacy settings tabs.
+  - Reduced default-window card density, hover scale, and side summary width so the default packaged window keeps the main CTA, board preview, and task controls visible.
+  - Kept hover/focus feedback visible while preventing hover transforms from creating neighbor overlap or horizontal overflow.
+- Changed files:
+  - src/App.tsx
+  - src/styles.css
+  - docs/CODEX_TASKS.md
+- Verification plan:
+  - git diff --check
+  - npm.cmd run build
+  - npm.cmd run verify:ui
+  - npm.cmd run verify:board
+  - node scripts/verify-output-settings.cjs
+  - npm.cmd run package:win
+  - hidden/bidi/newline final check
+  - no-exposure
+  - scope check
+- Review artifacts:
+  - review-artifacts/pr-6-ux-review/index.html
+  - review-artifacts/pr-6-ux-review/index.md
+  - review-artifacts/pr-6-ux-review/layout-metrics.json
+  - review-artifacts/pr-6-ux-review/contact-sheet.png
+  - review-artifacts/pr-6-ux-review.zip
+  - Local-only and not committed.
+
+## Task 2026-06-15 - PRO narrow generate action visibility fix
+
+- Phase: pro-task-flow-narrow-generate-action-fix
+- Branch: codex/pro-guided-workflow
+- Task type:
+  - narrow/minimum layout fix / PR #6 Draft hardening
+- Scope:
+  - Kept the existing PR #6 guided workflow direction and avoided a new redesign pass.
+  - Fixed the narrow/minimum Generate step so the primary workflow action and step footer remain reachable in a 900x720-style viewport.
+  - Kept preview hidden on narrow Generate screens so the main task panel stays full-width.
+  - Added safe-area-aware bottom spacing for the fixed narrow Generate step footer so it does not cover content.
+  - Preserved 40px+ clickable control target expectations and separated non-clickable progress indicators in artifact metrics.
+- Changed files:
+  - src/styles.css
+  - docs/CODEX_TASKS.md
+- Verification plan:
+  - git diff --check
+  - npm.cmd run build
+  - npm run verify:ui
+  - npm run verify:board
+  - node scripts/verify-output-settings.cjs
+  - npm.cmd run package:win
+  - hidden/bidi/newline final check
+  - no-exposure
+  - scope check
+- Review artifacts:
+  - review-artifacts/pr-6-ux-review/index.html
+  - review-artifacts/pr-6-ux-review/index.md
+  - review-artifacts/pr-6-ux-review/layout-metrics.json
+  - review-artifacts/pr-6-ux-review/contact-sheet.png
+  - review-artifacts/pr-6-ux-review.zip
+  - Local-only and not committed.
+
+## Task 2026-06-15 - PRO workspace horizontal overflow fix
+
+- Phase: pro-task-flow-horizontal-overflow-fix
+- Branch: codex/pro-guided-workflow
+- Task type:
+  - targeted layout fix / PR #6 Draft hardening
+- Scope:
+  - Kept the existing PR #6 layout direction and avoided a redesign pass.
+  - Fixed PRO default and fullscreen Generate screens so the preview rail content stays inside the workspace.
+  - Constrained preview rail width, preview stage width, placeholder width, toolbar wrapping, and rotation controls to prevent shell-level horizontal overflow.
+  - Preserved narrow/minimum Generate behavior with hidden preview rail and visible primary CTA.
+- Changed files:
+  - src/styles.css
+  - docs/CODEX_TASKS.md
+- Verification plan:
+  - git diff --check
+  - npm.cmd run build
+  - npm.cmd run verify:ui
+  - npm.cmd run verify:board
+  - node scripts/verify-output-settings.cjs
+  - npm.cmd run package:win
+  - Electron layout metrics for default/fullscreen/narrow horizontal overflow
+  - hidden/bidi/newline final check
+  - no-exposure
+  - scope check
+- Review artifacts:
+  - review-artifacts/pr-6-ux-review/index.html
+  - review-artifacts/pr-6-ux-review/index.md
+  - review-artifacts/pr-6-ux-review/layout-metrics.json
+  - review-artifacts/pr-6-ux-review/contact-sheet.png
+  - review-artifacts/pr-6-ux-review.zip
+  - Local-only and not committed.
+
+## Task 2026-06-15 - PR #6 must-fix closure
+
+- Phase: pr6-must-fix-closure
+- Branch: codex/pro-guided-workflow
+- Task type:
+  - accessibility / QA evidence / final verification
+- Scope:
+  - Fixed guided workflow step focus so `prefers-reduced-motion: reduce` uses non-animated `scrollIntoView` behavior.
+  - Added static output feedback QA evidence to `verify-output-settings.cjs`.
+  - Verified generating, success, error, progressbar, live-region, spinner/busy label, and duplicate-click prevention paths without adding production test toggles.
+  - Planned final HEAD build, UI/board verification, output settings verification, and Windows packaging rerun.
+  - Planned local-only review artifact refresh for the new HEAD.
+- Changed files:
+  - src/components/pro-guided-workflow/ProGuidedWorkflow.tsx
+  - scripts/verify-output-settings.cjs
+  - docs/CODEX_TASKS.md
+- Verification plan:
+  - git diff --check
+  - npm.cmd run build
+  - npm.cmd run verify:ui
+  - npm.cmd run verify:board
+  - node scripts/verify-output-settings.cjs
+  - npm.cmd run package:win
+  - hidden/bidi/newline final check
+  - no-exposure
+  - scope check
+- Known limitations:
+  - Real percentage progress is still not implemented.
+  - Full settings search/finder is still not implemented.
+  - Forced failure screenshot is replaced by equivalent automated source-level evidence for this pass.
+- Review artifacts:
+  - review-artifacts/pr-6-ux-review/index.html
+  - review-artifacts/pr-6-ux-review/index.md
+  - review-artifacts/pr-6-ux-review/layout-metrics.json
+  - review-artifacts/pr-6-ux-review/contact-sheet.png
+  - review-artifacts/pr-6-ux-review.zip
+  - Local-only and not committed.
+
+## Task 2026-06-15 - PR #6 final evidence closure
+
+- Phase: pr6-final-evidence-closure
+- Branch: codex/pro-guided-workflow
+- Task type:
+  - targeted layout fix / authenticated runtime QA evidence
+- Scope:
+  - Fixed the narrow Generate/output step so the fixed primary CTA no longer covers the output status or next-action copy.
+  - Re-ran authenticated Electron visual evidence with synthetic QA image data and masked account display text.
+  - Captured PRO output idle, generating, success, and test-only failure feedback states.
+  - Captured LITE empty, photo-added, rotation-applied, save-ready, and save-success smoke evidence.
+  - Refreshed lower-band item management screenshots to keep prior PR #6 UX evidence current.
+- Changed files:
+  - src/styles.css
+  - docs/CODEX_TASKS.md
+- Verification plan:
+  - git diff --check
+  - npm.cmd run build
+  - npm.cmd run verify:ui
+  - npm.cmd run verify:board
+  - node scripts/verify-output-settings.cjs
+  - npm.cmd run package:win
+  - hidden/bidi/newline final check
+  - no-exposure
+  - scope check
+- Review artifacts:
+  - review-artifacts/pr-6-ux-review/index.html
+  - review-artifacts/pr-6-ux-review/index.md
+  - review-artifacts/pr-6-ux-review/layout-metrics.json
+  - review-artifacts/pr-6-ux-review/contact-sheet.png
+  - review-artifacts/pr-6-ux-review.zip
+  - Local-only and not committed.
+
+## Task 2026-06-15 - PR #6 accessibility fix closure
+
+- Phase: pr6-accessibility-fix-closure
+- Branch: codex/pro-guided-workflow
+- Task type:
+  - targeted accessibility fix / QA evidence refresh
+- Scope:
+  - Closed shared `.btn` / `.small-btn` disabled hover leakage by gating hover selectors and adding a disabled-state transform reset.
+  - Raised shared LITE/PRO action button targets and visible PRO tabs/delete actions to the 40px minimum, while keeping primary PRO workflow actions above the 44px target.
+  - Added static verification for disabled-hover protection and target-size CSS evidence.
+  - Planned local-only review artifact refresh for the new HEAD with disabled-hover and target-size evidence.
+- Changed files:
+  - src/styles.css
+  - scripts/verify-output-settings.cjs
+  - docs/CODEX_TASKS.md
+- Verification plan:
+  - git diff --check
+  - npm.cmd run build
+  - npm.cmd run verify:ui
+  - npm.cmd run verify:board
+  - node scripts/verify-output-settings.cjs
+  - npm.cmd run package:win
+  - hidden/bidi/newline final check
+  - no-exposure
+  - scope check
+- Review artifacts:
+  - review-artifacts/pr-6-ux-review/index.html
+  - review-artifacts/pr-6-ux-review/index.md
+  - review-artifacts/pr-6-ux-review/layout-metrics.json
+  - review-artifacts/pr-6-ux-review/contact-sheet.png
+  - review-artifacts/pr-6-ux-review.zip
+  - Local-only and not committed.
+
+## Task 2026-06-15 - PR #6 final narrow CTA overlap fix
+
+- Phase: pr6-final-narrow-cta-overlap-fix
+- Branch: codex/pro-guided-workflow
+- Task type:
+  - targeted layout fix / review artifact refresh
+- Scope:
+  - Prevented the narrow Generate primary CTA from overlaying the status panel and output hint.
+  - Kept the primary CTA visible in normal flow while retaining the compact fixed previous/next control for narrow screens.
+  - Planned a refreshed local-only review artifact pack for the new HEAD.
+- Changed files:
+  - src/styles.css
+  - docs/CODEX_TASKS.md
+- Verification plan:
+  - git diff --check
+  - npm.cmd run build
+  - npm.cmd run verify:ui
+  - npm.cmd run verify:board
+  - node scripts/verify-output-settings.cjs
+  - npm.cmd run package:win
+  - hidden/bidi/newline final check
+  - no-exposure
+  - scope check
+- Review artifacts:
+  - review-artifacts/pr-6-ux-review/index.html
+  - review-artifacts/pr-6-ux-review/index.md
+  - review-artifacts/pr-6-ux-review/layout-metrics.json
+  - review-artifacts/pr-6-ux-review/contact-sheet.png
+  - review-artifacts/pr-6-ux-review.zip
+  - Local-only and not committed.
