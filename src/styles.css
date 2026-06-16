@@ -9675,3 +9675,390 @@ body {
     justify-self: stretch;
   }
 }
+
+/* PR #6 packaged UX acceptance fix: keep the default PRO workspace inside the viewport. */
+.pro-task-flow-shell {
+  --pro-font-title: clamp(18px, 1vw, 26px);
+  --pro-font-body: clamp(14px, 0.76vw, 17px);
+  --pro-font-support: clamp(13px, 0.66vw, 15px);
+  --pro-card-padding: clamp(12px, 0.78vw, 20px);
+  --pro-control-height: clamp(44px, 2.2vw, 58px);
+  --pro-gap: clamp(10px, 0.74vw, 18px);
+  --pro-rail-width: clamp(292px, 24vw, 400px);
+  --pro-side-width: clamp(230px, 18vw, 320px);
+  box-sizing: border-box;
+  overflow-x: clip;
+}
+
+.app:not(.start-active) .pro-task-flow-grid {
+  width: 100%;
+  max-width: min(1760px, 100%);
+  min-height: 0;
+  box-sizing: border-box;
+  overflow: visible;
+}
+
+.app:not(.start-active) .pro-task-flow-grid.pro-mode-start,
+.app:not(.start-active) .pro-task-flow-grid.pro-mode-configure {
+  max-width: min(1260px, 100%);
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.app:not(.start-active) .pro-task-flow-grid.pro-mode-photo,
+.app:not(.start-active) .pro-task-flow-grid.pro-mode-photo.pro-preview-visible {
+  grid-template-columns: minmax(220px, 320px) minmax(0, 1fr);
+}
+
+.app:not(.start-active) .pro-task-flow-grid.pro-mode-photo .output-preview-card,
+.app:not(.start-active) .pro-task-flow-grid.pro-mode-photo.pro-preview-visible .output-preview-card {
+  display: none;
+}
+
+.app:not(.start-active) .pro-task-flow-grid.pro-mode-preview.pro-preview-visible,
+.app:not(.start-active) .pro-task-flow-grid.pro-mode-generate.pro-preview-visible {
+  grid-template-columns: minmax(0, 1fr) minmax(292px, var(--pro-rail-width));
+}
+
+.pro-task-flow-grid .output-settings-card,
+.pro-task-flow-grid .output-photo-card,
+.pro-task-flow-grid .output-preview-card,
+.pro-task-flow-grid .card-header,
+.pro-task-flow-grid .card-action,
+.pro-task-flow-grid .preview-card-actions {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.pro-task-flow-grid .output-settings-card {
+  padding: clamp(8px, 0.58vw, 14px);
+}
+
+.pro-task-flow-grid .output-preview-card {
+  width: 100%;
+  overflow: hidden;
+}
+
+.pro-task-flow-grid .output-preview-card .preview-stage {
+  min-height: clamp(220px, 30vh, 380px);
+  max-height: clamp(260px, 42vh, 500px);
+}
+
+.pro-task-flow-grid.pro-mode-preview .output-preview-card .preview-stage,
+.pro-task-flow-grid.pro-mode-generate .output-preview-card .preview-stage {
+  min-height: clamp(236px, 34vh, 420px);
+  max-height: clamp(280px, 44vh, 520px);
+}
+
+.pro-task-flow-grid .output-preview-card .preview-card-actions {
+  justify-content: flex-start;
+  gap: 6px;
+}
+
+.pro-task-flow-grid .output-preview-card .preview-card-actions .small-btn {
+  flex: 1 1 128px;
+  min-height: 40px;
+  white-space: normal;
+}
+
+.premium-detail-shortcuts {
+  display: grid;
+  grid-template-columns: auto repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  align-items: center;
+  margin: 0 0 var(--pro-gap);
+  padding: 8px;
+  border: 1px solid #d3e1ee;
+  border-radius: var(--pro-radius);
+  background: #f7fbff;
+}
+
+.premium-detail-shortcuts span {
+  color: #2b5279;
+  font-size: var(--pro-font-support);
+  font-weight: 900;
+}
+
+.premium-detail-shortcuts button {
+  min-width: 0;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid #c9d8e8;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #12304f;
+  font-size: var(--pro-font-support);
+  font-weight: 850;
+}
+
+.premium-detail-shortcuts button:hover {
+  border-color: #8db9e5;
+  background: #eef7ff;
+}
+
+.pro-guided-workflow {
+  padding: var(--pro-card-padding);
+  box-shadow: 0 12px 30px rgba(18, 48, 84, 0.1);
+}
+
+.pro-guided-head {
+  gap: 4px;
+}
+
+.pro-guided-head p,
+.pro-workflow-step-head p {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.pro-workflow-stage-layout {
+  grid-template-columns: minmax(0, 1fr) minmax(220px, var(--pro-side-width));
+  gap: var(--pro-gap);
+}
+
+.pro-workflow-stage-main {
+  gap: var(--pro-gap);
+}
+
+.pro-workflow-stage-side {
+  gap: 8px;
+}
+
+.pro-workflow-side-card {
+  padding: 10px;
+}
+
+.pro-workflow-side-card p {
+  line-height: 1.35;
+}
+
+.pro-workflow-side-actions {
+  gap: 6px;
+}
+
+.pro-workflow-stepper.compact {
+  padding: 8px 10px;
+}
+
+.pro-workflow-stepper.compact .pro-workflow-progress-dots {
+  gap: 4px;
+}
+
+.pro-workflow-stepper.compact .pro-workflow-progress-dots li {
+  flex-basis: 22px;
+  width: 22px;
+  min-width: 22px;
+  height: 22px;
+  min-height: 22px;
+}
+
+.pro-workflow-progress-copy small {
+  display: none;
+}
+
+.pro-workflow-step {
+  gap: 10px;
+  min-height: 0;
+  padding: var(--pro-card-padding);
+}
+
+.pro-workflow-step-index {
+  width: 34px;
+  height: 34px;
+}
+
+.pro-workflow-step-body,
+.pro-workflow-options,
+.pro-workflow-position-grid,
+.pro-workflow-output-actions,
+.pro-workflow-step-stack {
+  gap: 10px;
+}
+
+.pro-workflow-options {
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
+  gap: 8px;
+}
+
+.pro-workflow-position-grid {
+  grid-template-columns: repeat(auto-fit, minmax(188px, 1fr));
+}
+
+.pro-workflow-option {
+  min-height: 72px;
+  padding: 10px 12px;
+  border-width: 1px;
+  box-shadow: 0 6px 16px rgba(18, 48, 84, 0.08);
+}
+
+.pro-workflow-option-icon {
+  width: 36px;
+  height: 36px;
+}
+
+.pro-workflow-option-copy strong {
+  font-size: clamp(15px, 0.78vw, 18px);
+}
+
+.pro-workflow-option.selected {
+  box-shadow:
+    inset 5px 0 0 #005bbf,
+    inset 0 0 0 1px rgba(0, 91, 191, 0.2),
+    0 12px 30px rgba(0, 91, 191, 0.14);
+}
+
+.pro-workflow-readiness-card {
+  min-height: 0;
+  padding: 10px;
+}
+
+.pro-workflow-next-action {
+  margin: 0;
+  padding: 10px 12px;
+}
+
+.pro-workflow-step-detail {
+  max-height: min(34vh, 300px);
+  padding: 10px;
+  overflow: auto;
+}
+
+.pro-workflow-step-detail.compact {
+  max-height: min(30vh, 240px);
+}
+
+.pro-lower-band-items-panel {
+  gap: 10px;
+  max-height: min(38vh, 420px);
+  padding-right: 8px;
+}
+
+.premium-settings-card .pro-lower-field-list .advanced-field-row,
+.app:not(.start-active) .premium-settings-card .pro-lower-field-list .advanced-field-row {
+  grid-template-columns: minmax(126px, 0.24fr) minmax(0, 1fr) minmax(132px, auto);
+  gap: 10px;
+  min-height: 64px;
+  padding: 10px;
+}
+
+.pro-lower-field-list .advanced-field-row input,
+.pro-lower-field-list .advanced-field-row textarea,
+.pro-lower-field-list .advanced-field-row button {
+  min-height: 44px;
+}
+
+.pro-lower-field-list .advanced-field-row button {
+  min-width: 132px;
+}
+
+.pro-workflow-nav {
+  min-height: calc(var(--pro-control-height) + 6px);
+  padding: 8px;
+}
+
+.pro-workflow-primary-action .btn.wide {
+  min-height: max(54px, var(--pro-control-height));
+  font-size: clamp(16px, 0.86vw, 20px);
+}
+
+.pro-workflow-primary-action .btn.primary:disabled,
+.pro-workflow-primary-action .btn.primary[disabled],
+.pro-guided-workflow .small-btn:disabled,
+.pro-guided-workflow .small-btn[disabled] {
+  border-color: #cfd8e3;
+  background: #eef2f6;
+  color: #667085;
+  box-shadow: none;
+  transform: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .pro-workflow-option:not(:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled)):hover,
+  .pro-workflow-step.step-task .pro-workflow-option:not(:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled)):hover,
+  .pro-workflow-step.step-photo-ready .pro-workflow-option:not(:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled)):hover,
+  .pro-workflow-step.step-lower-band .pro-workflow-option:not(:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled)):hover,
+  .pro-workflow-option.selected:not(:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled)):hover {
+    z-index: 4;
+    box-shadow:
+      0 0 0 3px rgba(0, 91, 191, 0.16),
+      0 14px 32px rgba(0, 91, 191, 0.18);
+    transform: translateY(-1px) scale(1.015);
+  }
+
+  .pro-workflow-primary-action .btn.primary:not(:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled)):hover {
+    box-shadow: 0 16px 36px rgba(0, 120, 105, 0.24);
+    transform: translateY(-1px) scale(1.012);
+  }
+
+  .pro-guided-workflow .small-btn:not(:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled)):hover,
+  .pro-workflow-action-grid .small-btn:not(:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled)):hover,
+  .pro-workflow-summary-row button:not(:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled)):hover,
+  .pro-workflow-side-actions .small-btn:not(:where(:disabled, [disabled], [aria-disabled="true"], .is-disabled, .disabled)):hover {
+    transform: translateY(-1px) scale(1.01);
+  }
+}
+
+@media (max-width: 1460px) {
+  .pro-workflow-stage-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pro-workflow-stage-side {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .pro-workflow-stage-side .pro-workflow-summary {
+    grid-column: 1 / -1;
+  }
+
+  .pro-workflow-side-card p {
+    display: none;
+  }
+}
+
+@media (max-width: 1180px) {
+  .app:not(.start-active) .pro-task-flow-grid.pro-mode-preview.pro-preview-visible,
+  .app:not(.start-active) .pro-task-flow-grid.pro-mode-generate.pro-preview-visible,
+  .app:not(.start-active) .pro-task-flow-grid.pro-mode-photo,
+  .app:not(.start-active) .pro-task-flow-grid.pro-mode-photo.pro-preview-visible {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pro-task-flow-grid .output-preview-card {
+    position: static;
+  }
+
+  .premium-detail-shortcuts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .premium-detail-shortcuts span {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 900px) {
+  .pro-task-flow-shell {
+    overflow-x: hidden;
+  }
+
+  .app:not(.start-active) .pro-task-flow-grid {
+    max-width: 100%;
+  }
+
+  .pro-workflow-stage-side,
+  .premium-detail-shortcuts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pro-guided-head p {
+    display: none;
+  }
+
+  .premium-settings-card .pro-lower-field-list .advanced-field-row,
+  .app:not(.start-active) .premium-settings-card .pro-lower-field-list .advanced-field-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

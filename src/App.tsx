@@ -3330,6 +3330,9 @@ export default function App() {
     if (stepId === 'task') return 'start';
     if (stepId === 'photo-ready') return 'photo';
     if (stepId === 'ledger-detail') return 'photo';
+    if (stepId === 'lower-band') return 'preview';
+    if (stepId === 'item-cells') return 'preview';
+    if (stepId === 'position') return 'preview';
     if (stepId === 'highlight') return 'preview';
     if (stepId === 'save-ready') return 'generate';
     if (stepId === 'output') return 'generate';
@@ -3409,9 +3412,23 @@ export default function App() {
     );
   }
 
+  function openPremiumDetailDrawer(tab: ProDetailTab) {
+    setActiveOutputSettingsTab(tab);
+    window.requestAnimationFrame(() => {
+      document.querySelector<HTMLDetailsElement>('.premium-detail-drawer')?.setAttribute('open', '');
+    });
+  }
+
   function renderPremiumSettingsCard() {
     return (
       <Card title="설정" icon={<Settings size={17} />} className="output-settings-card premium-settings-card">
+        <div className="premium-detail-shortcuts" aria-label="PRO 상세 설정 바로가기">
+          <span>상세 설정</span>
+          <button type="button" onClick={() => openPremiumDetailDrawer('fields')}>보드 내용</button>
+          <button type="button" onClick={() => openPremiumDetailDrawer('datetime')}>날짜/시간</button>
+          <button type="button" onClick={() => openPremiumDetailDrawer('layout')}>크기/배치</button>
+          <button type="button" onClick={() => openPremiumDetailDrawer('highlight')}>강조/실행</button>
+        </div>
         {renderProGuidedWorkflow()}
         <details className="premium-detail-drawer">
           <summary>상세 설정 탭 열기</summary>
@@ -3632,8 +3649,7 @@ export default function App() {
     const outputShellClassName = `page-shell output-shell pro-task-flow-shell pro-mode-${proTaskWorkspaceMode}`;
     const shouldShowPreviewRail =
       proTaskWorkspaceMode === 'preview' ||
-      proTaskWorkspaceMode === 'generate' ||
-      (proTaskWorkspaceMode === 'photo' && Boolean(selectedPhoto));
+      proTaskWorkspaceMode === 'generate';
     const outputGridClassName = [
       'output-grid',
       'pro-task-flow-grid',

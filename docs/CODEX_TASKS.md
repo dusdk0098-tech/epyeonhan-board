@@ -472,6 +472,40 @@
   - review-artifacts/pr-6-ux-review.zip
   - Local-only and not committed.
 
+## Task 2026-06-16 - PR #6 packaged UX acceptance fix
+
+- Phase: pr6-packaged-ux-acceptance-fix
+- Branch: codex/pro-guided-workflow
+- Task type:
+  - targeted PRO workspace layout fix / packaged QA refresh
+- Scope:
+  - Removed the photo-selected three-column pressure by keeping the photo step to photo list plus guided workflow.
+  - Restored the right preview rail for board size, position, lower-band, item-cell, highlight, save-ready, and output steps.
+  - Added an above-fold detail-settings shortcut strip so reviewers do not need to scroll to the bottom to open the legacy settings tabs.
+  - Reduced default-window card density, hover scale, and side summary width so the default packaged window keeps the main CTA, board preview, and task controls visible.
+  - Kept hover/focus feedback visible while preventing hover transforms from creating neighbor overlap or horizontal overflow.
+- Changed files:
+  - src/App.tsx
+  - src/styles.css
+  - docs/CODEX_TASKS.md
+- Verification plan:
+  - git diff --check
+  - npm.cmd run build
+  - npm.cmd run verify:ui
+  - npm.cmd run verify:board
+  - node scripts/verify-output-settings.cjs
+  - npm.cmd run package:win
+  - hidden/bidi/newline final check
+  - no-exposure
+  - scope check
+- Review artifacts:
+  - review-artifacts/pr-6-ux-review/index.html
+  - review-artifacts/pr-6-ux-review/index.md
+  - review-artifacts/pr-6-ux-review/layout-metrics.json
+  - review-artifacts/pr-6-ux-review/contact-sheet.png
+  - review-artifacts/pr-6-ux-review.zip
+  - Local-only and not committed.
+
 ## Task 2026-06-15 - PRO narrow generate action visibility fix
 
 - Phase: pro-task-flow-narrow-generate-action-fix
