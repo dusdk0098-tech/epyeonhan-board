@@ -2,12 +2,14 @@
 
 ## Objective
 
-PRO Task Workspace v2 is a design-first reset after PR #6 packaged-build UX acceptance did not pass.
+PRO Task Workspace v2 is a design-first reset after PR #6 packaged-build UX acceptance
+did not pass.
 
 PR #6 remains a Draft experimental branch.
 
-This spec defines the target workflow before any further product-code implementation. The goal is not to add
-another CSS patch on top of PR #6. The goal is to agree on a stable screen model that helps public users
+This spec defines the target workflow before any further product-code implementation.
+The goal is not to add another CSS patch on top of PR #6. The goal is to agree on a
+stable screen model that helps public users
 understand:
 
 - what kind of PRO output they are creating
@@ -16,13 +18,14 @@ understand:
 - where the preview is
 - when the final generate action is safe
 
-The default packaged window is the primary design baseline. Fullscreen should make the workspace more useful,
-not only add whitespace. Narrow windows should keep the next action visible with short scroll.
+The default packaged window is the primary design baseline. Fullscreen should make the
+workspace more useful, not only add whitespace. Narrow windows should keep the next
+action visible with short scroll.
 
 ## Why PR #6 Is Not Patched Further
 
-PR #6 proved that a guided PRO workflow is useful, but the packaged-build UX review found structural problems
-that small patches could not resolve cleanly.
+PR #6 proved that a guided PRO workflow is useful, but the packaged-build UX review
+found structural problems that small patches could not resolve cleanly.
 
 Current blockers from PR #6:
 
@@ -36,8 +39,8 @@ Current blockers from PR #6:
 
 V2 handles these as design constraints rather than bug-by-bug layout patches.
 
-PR #6 should therefore stay Draft as an experimental reference branch. Implementation should continue only after
-this v2 spec and prototype are reviewed.
+PR #6 should therefore stay Draft as an experimental reference branch. Implementation
+should continue only after this v2 spec and prototype are reviewed.
 
 ## V2 Core Principles
 
@@ -110,7 +113,8 @@ Excluded from this job:
 
 ## Global Layout Model
 
-The workspace uses one primary task canvas, one contextual side panel, and one reserved action footer.
+The workspace uses one primary task canvas, one contextual side panel, and one reserved
+action footer.
 
 Default-window rule:
 
@@ -155,7 +159,8 @@ Global state model:
 
 ## Screen Visibility Policy
 
-The visibility policy is the contract that prevents PR #6's panel competition from returning.
+The visibility policy is the contract that prevents PR #6's panel competition from
+returning.
 
 | Screen | Large photo rail | Compact photo status | Preview | Detail settings | Main CTA |
 |---|---|---|---|---|---|
@@ -448,8 +453,8 @@ The local prototype at `review-artifacts/pro-task-workspace-v2/` must show:
 - Narrow Flow
 - Acceptance Mapping
 
-The prototype is not production code. It is a static review artifact that should make the v2 layout decisions
-visible before implementation starts.
+The prototype is not production code. It is a static review artifact that should make
+the v2 layout decisions visible before implementation starts.
 
 Required visual evidence in the prototype:
 
@@ -517,7 +522,8 @@ Never expose:
 - real customer document content
 - image, PDF, or workbook binary/base64 content
 
-Review artifacts must remain local-only unless a later task explicitly asks to commit them.
+Review artifacts must remain local-only unless a later task explicitly asks to commit
+them.
 
 ## Implementation Split
 
@@ -533,7 +539,8 @@ Recommended sequence:
 8. Regenerate review artifacts only after the screen model is stable.
 9. Run build, UI verification, board verification, output-settings verification, direct package check, no-exposure, and packaged default-window QA before Ready for review.
 
-Implementation should replace layered override patches with a coherent step-kind layout model.
+Implementation should replace layered override patches with a coherent step-kind layout
+model.
 
 Implementation PR split:
 
@@ -544,5 +551,5 @@ Implementation PR split:
 5. Shared generate, result, and failure states.
 6. Packaged QA evidence and user-facing polish.
 
-Each implementation PR should keep its scope small enough to review without mixing layout, output internals, and
-packaging changes.
+Each implementation PR should keep its scope small enough to review without mixing
+layout, output internals, and packaging changes.
