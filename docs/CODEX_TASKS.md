@@ -155,3 +155,62 @@
   - 04_PRO image was sanitized/replaced with a demo-safe version before commit.
 - Follow-up:
   - Link images from user manual document if needed.
+
+## Task 2026-06-16 - PRO Task Workspace v2 design spec
+
+- Phase: pro-task-workspace-v2-design-spec
+- Branch: design/pro-task-workspace-v2-spec
+- PR: Draft PR to be created after docs commit.
+- Task type:
+  - docs-only QA / design spec
+- Scope:
+  - Allowed:
+    - Define a design-first reset spec for PRO Task Workspace v2.
+    - Add acceptance criteria for default, fullscreen, narrow, accessibility, packaging, and no-exposure gates.
+    - Create local-only static prototype artifacts under `review-artifacts/pro-task-workspace-v2/`.
+  - Forbidden:
+    - Product code changes.
+    - PR #6 merge or further PR #6 implementation patches.
+    - package/package-lock changes.
+    - DB/public/CI changes.
+    - user manual PNG changes.
+    - generated/release output commits.
+    - committed review artifacts.
+- Changed files:
+  - docs/PRO_TASK_WORKSPACE_V2_SPEC.md
+  - docs/PRO_TASK_WORKSPACE_V2_ACCEPTANCE.md
+  - docs/CODEX_TASKS.md
+- Local-only artifacts:
+  - review-artifacts/pro-task-workspace-v2/index.html
+  - review-artifacts/pro-task-workspace-v2/prototype.css
+  - review-artifacts/pro-task-workspace-v2/README.md
+  - review-artifacts/pro-task-workspace-v2/layout-metrics.json
+- Evidence Bundle:
+  - Location or summary: five read-only design/QA subagent reviews were synthesized into the v2 spec, acceptance matrix, and static prototype.
+- Verification:
+  - git diff --check: PASS
+  - lint: NOT_RUN - no lint script expected for docs-only spec work.
+  - typecheck: NOT_RUN - docs-only spec work; build will cover TypeScript compilation.
+  - tests: NOT_RUN - no standalone test script expected.
+  - build: PASS - `npm.cmd run build`.
+  - package:win: PASS with caveat - direct `npm.cmd run package:win` hit a local Windows EPERM rename lock; prepackaged installer generation and update bridge completed after safe local recovery.
+  - browser QA: NOT_RUN - local static prototype only; no production UI implementation.
+  - migration check: PASS - no DB migration changes intended.
+  - no-exposure check: PASS
+  - docs-only scope: PASS
+- Subagent reviews:
+  - Senior UX Designer: PASS - recommended default-window-first design, one primary task per step, and no merge for PR #6.
+  - Senior Product Designer: PASS - split PRO into board image and photo ledger PDF jobs with explicit decision order.
+  - Senior Frontend Layout Architect: PASS - defined primary canvas, contextual panel, footer, and responsive metrics.
+  - Senior Visual Designer: PASS - defined restrained surface, typography, state, motion, and accessibility guidance.
+  - Senior QA Engineer: PASS - defined acceptance matrix, required screenshots, metrics fields, and packaging caveat wording.
+- Main aggregation result:
+  - Overall: PASS for design-spec readiness.
+  - Safe to merge: PARTIAL - this docs PR can proceed through review; product implementation must wait for design acceptance.
+  - Safe to start next feature: PARTIAL - implementation should start only after this v2 design spec is accepted.
+- Verdict:
+  - PARTIAL
+- Follow-up:
+  - Review and approve the v2 design spec and static prototype.
+  - Start a fresh implementation branch after design acceptance.
+  - Keep PR #6 as a Draft experimental reference branch.
