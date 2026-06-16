@@ -259,3 +259,36 @@
 - Follow-up:
   - Review the prototype zip before implementation starts.
   - Keep PR #6 Draft until a separate v2 implementation path is approved.
+## Task 2026-06-16 - PRO Task Workspace v2 Markdown hard rewrite
+
+- Phase: pro-task-workspace-v2-markdown-hard-rewrite
+- Branch: design/pro-task-workspace-v2-spec
+- PR: #7
+- Task type:
+  - docs-only markdown hard rewrite
+- Scope:
+  - Allowed:
+    - Rewrite SPEC as LF Markdown.
+    - Rewrite ACCEPTANCE as LF Markdown.
+    - Preserve design meaning.
+    - Append this task record.
+  - Forbidden:
+    - Product code changes.
+    - `src/**` changes.
+    - `scripts/**` changes.
+    - package/package-lock changes.
+    - DB/public/CI changes.
+    - user manual PNG changes.
+    - generated/release output commits.
+    - committed review artifacts or prototype artifacts.
+- Changed files:
+  - docs/PRO_TASK_WORKSPACE_V2_SPEC.md
+  - docs/PRO_TASK_WORKSPACE_V2_ACCEPTANCE.md
+  - docs/CODEX_TASKS.md
+- Verification planned:
+  - local byte LF/CR check
+  - staged blob LF/CR check
+  - origin object LF/CR check
+  - raw first 40 lines visual check
+  - docs-only scope check
+  - no-exposure check

@@ -2,256 +2,133 @@
 
 ## Default Window
 
-| Criterion | Required result | Blocker level |
-|---|---|---|
-| Current task title is visible | PASS | S1 |
-| Primary controls are visible | PASS | S1 |
-| Previous/next or main CTA is visible or within short scroll | `defaultRequiredScrollToCtaPx <= 120` | S1 |
-| Generate-ready CTA is visible | `defaultMainCtaVisible = true` | S1 |
-| Horizontal overflow | `horizontalOverflowPx <= 1` and no visual horizontal scrollbar | S0/S1 |
-| Bottom overflow | `defaultBottomOverflowDetected = false` | S1 |
-| Sticky/footer overlap | `defaultStickyFooterOverlapsContent = false` | S1 |
-| Control overlap | `controlOverlapDetected = false` | S0/S1 |
-| Photo-added state | No three-panel pressure from large photo rail, settings, and preview | S1 |
-| Default-window density | Repeated cards and summary rows do not crowd the main task | S2 |
-
-Required screenshots:
-
-- PRO task choice
-- PRO photo empty
-- PRO photo loaded
-- PRO photo selected/checked with rotation controls
-- board content entry
-- board size/position with live preview
-- lower-band item management empty
-- lower-band item added
-- lower-band item delete-ready
-- generate-ready with selected photo and preview
-- generated result
+| Criterion | Required result | Blocker level | Required evidence |
+|---|---|---|---|
+| `defaultRequiredScrollToCtaPx` | `<= 120` | S1 | Layout metrics JSON and default screenshot |
+| `defaultMainCtaVisible` | `true` or short-scroll reachable | S1 | Default generate-ready screenshot |
+| `defaultBottomOverflowDetected` | `false` | S1 | Layout metrics JSON |
+| `horizontalOverflowPx` | `<= 1` | S1 | DOM metrics for document, body, workspace |
+| Visual horizontal scrollbar | Not visible | S1 | Default packaged-window screenshot |
+| Control overlap | No overlap | S1 | Default screenshots across active steps |
+| Information density | One primary task canvas is dominant | S2 | Default task and settings screenshots |
+| Preview clipping | Preview toolbar and buttons stay inside viewport | S1 | Default preview screenshot |
 
 ## Photo Rail
 
-| Criterion | Required result | Blocker level |
-|---|---|---|
-| Large photo rail appears only in photo preparation | `photoRailLargeOnlyOnPhotoStep = true` | S1 |
-| Non-photo steps show compact photo readiness | PASS | S1 |
-| Photo loaded evidence uses synthetic photo | `evidenceUsesSyntheticPhoto = true` | S0 |
-| Selected/checked state is visible | PASS | S1 |
-| Rotation-applied state is visible | PASS | S1 |
-| Return to photo management is clear | PASS | S2 |
-| Photo rail does not create horizontal overflow | `horizontalOverflowPx <= 1` | S1 |
-
-Required states:
-
-- empty
-- loaded
-- selected/checked
-- rotation-applied
-- error or invalid photo
+| Criterion | Required result | Blocker level | Required evidence |
+|---|---|---|---|
+| Large photo rail | Visible only on photo preparation | S2 | Photo step and non-photo step screenshots |
+| Compact photo status | Used on non-photo steps | S2 | Content and generate-ready screenshots |
+| Photo loaded state | At least one synthetic photo is visible | S1 | Photo loaded screenshot |
+| Photo selected state | Selected or checked state is visible | S1 | Photo selected screenshot |
+| Rotation state | Rotation-applied state is visible | S2 | Rotation evidence screenshot |
+| Empty state | Explains add or drop action | S2 | Empty photo step screenshot |
+| Photo evidence safety | Synthetic data only | S0 | No-exposure review notes |
 
 ## Preview
 
-| Criterion | Required result | Blocker level |
-|---|---|---|
-| Board size/position preview is visible | `boardSizeStepPreviewVisible = true` | S1 |
-| Preview is near controls | `boardSizePreviewNearControls = true` | S1 |
-| Lower-band preview matches selected mode | `lowerBandPreviewMatchesMode = true` | S1 |
-| Generate-ready preview matches selected photo | `generateReadyPhotoPreviewCtaConsistent = true` | S0/S1 |
-| Preview does not overlap primary controls | `previewOverlapsStage = false` | S1 |
-| Preview panel has useful width in default window | `previewRailUsefulWidth >= 360` when required | S2 |
-| Fullscreen preview uses extra space | `fullscreenPreviewAreaRatio >= 1.5` versus default | S2 |
-
-Visual adjustment steps requiring preview:
-
-- board size
-- board position
-- lower-band mode
-- item-cell visibility
-- highlight settings
-- generate-ready
+| Criterion | Required result | Blocker level | Required evidence |
+|---|---|---|---|
+| `boardSizeStepPreviewVisible` | `true` | S1 | Board size step screenshot |
+| `boardSizePreviewNearControls` | `true` | S1 | Board size and position screenshot |
+| Preview consistency | Preview matches selected job and photo state | S1 | Generate-ready screenshot |
+| Preview toolbar | Buttons are not clipped | S1 | Default and fullscreen preview screenshots |
+| Preview panel width | Does not force body overflow | S1 | Layout metrics JSON |
+| Preview in narrow mode | Hidden, compact, or stacked without overflow | S2 | Narrow screenshot |
 
 ## Lower Band
 
-| Criterion | Required result | Blocker level |
-|---|---|---|
-| Empty state captured | PASS | S1 |
-| Added state captured | PASS | S1 |
-| Delete-ready state captured | PASS | S1 |
-| Add/delete controls visible | `lowerBandAddDeleteControlsVisible = true` | S1 |
-| Add/delete target height | At least 40px | S1 |
-| Lower-band settings do not hide the CTA | PASS | S1 |
-| Lower-band preview updates near controls | PASS | S1 |
-| Deletion is clearly reversible or confirmed | PASS | S2 |
-
-Evidence must show actual rows, not only an empty settings panel.
+| Criterion | Required result | Blocker level | Required evidence |
+|---|---|---|---|
+| Empty state | Clear add action is visible | S2 | Lower-band empty screenshot |
+| Added state | Real row with label and value is visible | S1 | Lower-band added screenshot |
+| Delete-ready state | Row removal target is clear | S2 | Lower-band delete-ready screenshot |
+| Add control target | At least 40px | S2 | Layout metrics or screenshot annotation |
+| Delete control target | At least 40px | S2 | Layout metrics or screenshot annotation |
+| Density | Controls are not cramped | S2 | Lower-band screenshots |
+| Row actions | Row-level edit or delete is understandable | S2 | Added and delete-ready screenshots |
 
 ## Fullscreen
 
-| Criterion | Required result | Blocker level |
-|---|---|---|
-| Meaningful workspace expansion | Preview or active controls gain useful area | S2 |
-| Preview stage growth | `fullscreenPreviewAreaRatio >= 1.5` versus default for adjustment screens | S2 |
-| Side summary bounded | PASS | S2 |
-| No horizontal overflow | `horizontalOverflowPx <= 1` | S1 |
-| Generate CTA remains visible | PASS | S1 |
-| Extra space is not only empty margins | PASS | S2 |
-
-Required screenshots:
-
-- fullscreen board size/position with preview
-- fullscreen generate-ready with preview and CTA
+| Criterion | Required result | Blocker level | Required evidence |
+|---|---|---|---|
+| Useful scaling | Extra space improves preview or work area | S2 | Fullscreen screenshot and metrics |
+| Empty margin inflation | Not the primary scaling effect | S2 | Fullscreen comparison screenshot |
+| Active task canvas | Remains visually dominant | S2 | Fullscreen active-step screenshot |
+| Preview capacity | Preview gains useful space when appropriate | S2 | Fullscreen preview screenshot |
+| Horizontal overflow | `horizontalOverflowPx <= 1` | S1 | Fullscreen DOM metrics |
+| Visual scrollbar | No horizontal scrollbar | S1 | Fullscreen screenshot |
 
 ## Narrow
 
-| Criterion | Required result | Blocker level |
-|---|---|---|
-| Single-column layout | PASS | S1 |
-| No horizontal overflow | `horizontalOverflowPx <= 1` | S1 |
-| Generate CTA visible or short-scroll reachable | `narrowRequiredScrollToCtaPx <= 120` | S1 |
-| Preview is compact or hidden when lower priority | PASS | S2 |
-| Visual adjustment preview remains reachable | PASS | S1 |
-| Touch targets preserved | Action target >= 40px, primary CTA >= 44px | S1 |
-| Focus ring not clipped | `focusVisibleClippedCount = 0` | S2 |
-
-Required screenshots:
-
-- narrow photo step
-- narrow board size/position step
-- narrow generate-ready with CTA visible
+| Criterion | Required result | Blocker level | Required evidence |
+|---|---|---|---|
+| Horizontal overflow | `horizontalOverflowPx <= 1` | S1 | Narrow DOM metrics |
+| Visual scrollbar | No horizontal scrollbar | S1 | Narrow screenshot |
+| Main panel | Stacked and usable | S1 | Narrow active-step screenshot |
+| Preview | Hidden, compact, or below main panel | S2 | Narrow generate-ready screenshot |
+| Core CTA | Visible or short-scroll reachable | S1 | Narrow generate-ready screenshot |
+| Action target | `>= 40px` | S2 | Metrics or screenshot annotation |
+| Primary CTA | `>= 44px` | S1 | Metrics or screenshot annotation |
 
 ## Accessibility
 
-| Criterion | Required result | Blocker level |
-|---|---|---|
-| General action target size | `minActionTargetHeight >= 40` | S1/S2 |
-| Primary CTA target size | `minPrimaryCtaHeight >= 44` | S1 |
-| Focus ring visibility | `focusVisibleClippedCount = 0` | S2 |
-| Keyboard order follows visual order | PASS | S2 |
-| Disabled actions have no hover lift | PASS | S2 |
-| Busy state blocks duplicate submit | PASS | S1 |
-| Error message appears near related panel | PASS | S1 |
-| Reduced motion keeps state feedback visible | `reducedMotionStateFeedbackVisible = true` | S2 |
+| Criterion | Required result | Blocker level | Required evidence |
+|---|---|---|---|
+| Keyboard focus | `focus-visible` is clear | S1 | Keyboard QA notes or screenshot |
+| Focus clipping | Focus ring is not clipped | S1 | Default and narrow screenshots |
+| Reduced motion | State remains visible with reduced motion | S2 | Reduced-motion QA notes |
+| Color independence | State does not rely on color only | S2 | Visual QA notes |
+| Button wording | Purpose-centered labels | S3 | Copy review notes |
+| Icon-only core action | Not used for critical actions | S2 | Screen review notes |
 
 ## Packaging
 
-| Criterion | Required result | Blocker level |
-|---|---|---|
-| Build | `npm.cmd run build` PASS | S1 |
-| UI verification | `npm.cmd run verify:ui` PASS | S1 |
-| Board verification | `npm.cmd run verify:board` PASS | S1 |
-| Output settings verification | `node scripts/verify-output-settings.cjs` PASS | S1 |
-| Direct packaging | `npm.cmd run package:win` PASS | S1 |
-| Packaging caveat | Any EPERM or fallback path is documented as caveat, not clean PASS | S1 |
-| Generated output | Not committed | S0 |
-
-Preferred packaging wording for caveats:
-
-```text
-package:win: PASS with caveat.
-Direct npm.cmd run package:win hit a local Windows EPERM rename lock.
-Manual recovery plus prepackaged builder completed and installer was generated.
-Treat as not a clean direct-script PASS until a fresh direct package:win run passes.
-```
+| Criterion | Required result | Blocker level | Required evidence |
+|---|---|---|---|
+| `npm.cmd run build` | PASS | S1 | Command output summary |
+| `npm.cmd run verify:ui` | PASS when product code changes | S1 | Command output summary |
+| `npm.cmd run verify:board` | PASS when product code changes | S1 | Command output summary |
+| `node scripts/verify-output-settings.cjs` | PASS when product code changes | S1 | Command output summary |
+| `npm.cmd run package:win` | Direct PASS preferred | S1 | Command output summary |
+| EPERM fallback | Document as caveat if used | S2 | Packaging notes |
+| Generated output | Not committed | S0 | Git status and scope check |
 
 ## No-Exposure
 
-| Criterion | Required result | Blocker level |
-|---|---|---|
-| Synthetic photos only | `evidenceUsesSyntheticPhoto = true` | S0 |
-| Sensitive local path absent | `evidenceContainsSensitivePath = false` | S0 |
-| Real customer data absent | `evidenceContainsRealCustomerData = false` | S0 |
-| Token/signed URL absent | `evidenceContainsTokenOrSignedUrl = false` | S0 |
-| Account/personal identifiers absent | PASS | S0 |
-| Image/PDF/workbook binary or base64 absent | PASS | S0 |
-| Review artifacts local-only | PASS unless explicitly requested otherwise | S1 |
-
-No-exposure scan targets:
-
-- Markdown evidence
-- JSON metrics
-- HTML index
-- screenshot visual review
-- PR body
+| Criterion | Required result | Blocker level | Required evidence |
+|---|---|---|---|
+| Synthetic data | Only synthetic photos and text | S0 | Evidence review notes |
+| Real customer data | Not present | S0 | Evidence review notes |
+| Sensitive path | Not present | S0 | No-exposure scan |
+| Token or key | Not present | S0 | No-exposure scan |
+| Signed URL or storage path | Not present | S0 | No-exposure scan |
+| Full UUID or internal ID | Not present | S0 | No-exposure scan |
+| Binary or base64 in reports | Not present | S0 | Artifact inspection |
 
 ## Artifact Consistency
 
-| Criterion | Required result | Blocker level |
-|---|---|---|
-| Commit file | `COMMIT.txt` equals reviewed HEAD | S1 |
-| Screenshot count | zip, index.md, index.html, and metrics count match | S1 |
-| Contact sheet | Shows actual thumbnails | S1 |
-| Required evidence docs | Present when claimed in PR body | S1 |
-| Metrics contain numbers | Not only string PASS values | S1 |
-| Artifacts untracked | `review-artifacts` not staged or committed | S1 |
-
-Required metrics fields:
-
-```json
-{
-  "commit": "",
-  "screenshotCount": 0,
-  "viewport": {
-    "width": 0,
-    "height": 0,
-    "mode": "default"
-  },
-  "defaultRequiredScrollToCtaPx": 0,
-  "defaultMainCtaVisible": true,
-  "defaultBottomOverflowDetected": false,
-  "defaultStickyFooterOverlapsContent": false,
-  "horizontalOverflowPx": 0,
-  "visualHorizontalScrollbarVisible": false,
-  "controlOverlapDetected": false,
-  "photoRailLargeOnlyOnPhotoStep": true,
-  "detailSettingsAccessibleAboveFold": true,
-  "boardSizeStepPreviewVisible": true,
-  "boardSizePreviewNearControls": true,
-  "lowerBandPreviewMatchesMode": true,
-  "lowerBandAddDeleteControlsVisible": true,
-  "generateReadyPhotoPreviewCtaConsistent": true,
-  "failedActionTargets": 0,
-  "minActionTargetHeight": 40,
-  "minPrimaryCtaHeight": 44,
-  "focusVisibleClippedCount": 0,
-  "reducedMotionStateFeedbackVisible": true,
-  "evidenceUsesSyntheticPhoto": true,
-  "evidenceContainsSensitivePath": false,
-  "evidenceContainsRealCustomerData": false,
-  "evidenceContainsTokenOrSignedUrl": false
-}
-```
+| Criterion | Required result | Blocker level | Required evidence |
+|---|---|---|---|
+| `COMMIT.txt` | Matches implementation HEAD | S1 | Zip inspection |
+| Screenshot count | Matches metrics, index, and zip listing | S1 | Artifact validation output |
+| `index.md` refs | Match screenshot count | S1 | Artifact validation output |
+| `index.html` refs | Match screenshot count | S1 | Artifact validation output |
+| `layout-metrics.json` | Contains numeric metrics, not PASS strings | S1 | Metrics file inspection |
+| Contact sheet | Shows real thumbnails | S2 | Contact sheet inspection |
+| Evidence markdown | Includes required QA notes | S2 | Artifact file listing |
+| Review artifacts | Remain uncommitted unless explicitly requested | S0 | Git status |
 
 ## Ready Gate
 
-The v2 implementation can move toward Ready for review only when:
-
-- S0/S1 blockers are closed.
-- Default-window packaged QA passes.
-- Required screenshots are present and consistent.
-- Build and verification commands pass.
-- Direct packaging passes, or any fallback is documented as a caveat.
-- No-exposure passes.
-- Generated output and review artifacts remain uncommitted.
-
-Design approval gate:
-
-- PR #6 is not merged as-is.
-- The v2 prototype is reviewed before implementation.
-- The implementation starts from a separate branch after design approval.
-- Implementation PRs are split into small reviewable slices.
-- Direct `package:win` PASS is preferred for implementation readiness.
-- EPERM fallback is allowed only as a documented caveat, not as a clean direct-script PASS.
-
-Required screenshots or static frames before implementation:
-
-- default task choice
-- default photo preparation
-- default content step with compact photo status
-- default board size/position/lower-band with preview
-- default generate-ready
-- default result/failure
-- fullscreen visual adjustment
-- fullscreen generate-ready
-- narrow photo preparation
-- narrow visual adjustment
-- narrow generate-ready
+| Criterion | Required result | Blocker level | Required evidence |
+|---|---|---|---|
+| PR #6 state | Remains Draft until v2 prototype is approved | S1 | GitHub PR state |
+| PR #7 state | Remains Draft until design review approval | S2 | GitHub PR state |
+| Design approval | Required before implementation starts | S1 | Review decision |
+| Implementation base | Accepted v2 design, not patching PR #6 | S1 | New branch plan |
+| Scope split | Small PR A/B/C/D/E implementation path | S2 | Implementation plan |
+| Product code change | None in design-spec PR | S0 | Scope check |
+| Package changes | None in design-spec PR | S0 | Scope check |
+| DB/public/CI changes | None in design-spec PR | S0 | Scope check |
+| User manual PNG changes | None in design-spec PR | S0 | Scope check |

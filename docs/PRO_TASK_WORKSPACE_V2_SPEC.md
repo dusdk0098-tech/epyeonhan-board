@@ -2,554 +2,366 @@
 
 ## Objective
 
-PRO Task Workspace v2 is a design-first reset after PR #6 packaged-build UX acceptance
-did not pass.
+Define a design-first reset for the PRO workflow before any new product-code patch is attempted.
 
-PR #6 remains a Draft experimental branch.
+The goal is to make the PRO job understandable in the default packaged window first.
 
-This spec defines the target workflow before any further product-code implementation.
-The goal is not to add another CSS patch on top of PR #6. The goal is to agree on a
-stable screen model that helps public users
-understand:
+The workspace should guide a user from task choice to photo preparation, content decisions,
+layout settings, generation readiness, and result feedback without relying on dense tabs.
 
-- what kind of PRO output they are creating
-- which photo state is active
-- which setting matters now
-- where the preview is
-- when the final generate action is safe
+This spec is a design contract for the next implementation branch.
 
-The default packaged window is the primary design baseline. Fullscreen should make the
-workspace more useful, not only add whitespace. Narrow windows should keep the next
-action visible with short scroll.
+It is not an implementation patch for PR #6.
 
 ## Why PR #6 Is Not Patched Further
 
-PR #6 proved that a guided PRO workflow is useful, but the packaged-build UX review
-found structural problems that small patches could not resolve cleanly.
+PR #6 remains a Draft experimental branch.
 
-Current blockers from PR #6:
+Packaged-build UX acceptance did not approve the current patch direction.
 
-- default-window information density and scrolling remain too high
-- photo-added states can make photo list, settings, and preview compete for space
-- board size and position preview evidence is not trustworthy enough
-- lower-band item management evidence is incomplete
-- generate-ready state can appear inconsistent with photo and preview readiness
-- fullscreen can expand whitespace more than useful task space
-- detail settings can be pushed below the useful first view
+The remaining issues are structural rather than small styling defects.
 
-V2 handles these as design constraints rather than bug-by-bug layout patches.
+- Default-window information density is still too high.
+- Some evidence captures show states that do not match the intended user task.
+- Board size and position preview evidence is not close enough to the controls.
+- Lower-band item management needs a clearer real-row add and delete model.
+- Generate-ready evidence must align photo selection, save folder, preview, and CTA state.
+- Fullscreen should use extra space for useful work areas, not only larger margins.
+- Narrow mode must avoid horizontal overflow without hiding the user goal.
 
-PR #6 should therefore stay Draft as an experimental reference branch. Implementation
-should continue only after this v2 spec and prototype are reviewed.
+Continuing to stack small patches on PR #6 would make the interface harder to reason about.
+
+A v2 spec and prototype review must happen before the next product-code implementation.
 
 ## V2 Core Principles
 
-1. One primary task canvas.
-2. One contextual side panel.
-3. No three competing rails in the default window.
-4. Large photo rail only on the photo preparation step.
-5. Preview near controls whenever the user is making visual adjustments.
-6. Action footer has reserved layout space and never overlays content.
-7. Each step has one dominant decision and one obvious next action.
-8. Fullscreen expands useful preview/control space instead of only adding margins.
-9. Narrow windows stack panels without horizontal overflow.
-10. Review artifacts remain local-only unless explicitly requested.
+- Design the default packaged window as the primary baseline.
+- Present one primary task canvas at a time.
+- Keep one contextual side panel for the current decision.
+- Show only the controls needed for the current step.
+- Keep photo preparation large only while the user is preparing photos.
+- Keep previews near the controls that affect them.
+- Make readiness explicit before generation starts.
+- Prefer clear step labels over decorative animation.
+- Keep motion short, purposeful, and optional under reduced motion.
+- Use fullscreen space for more useful preview, summary, and review capacity.
+- Stack narrow layouts without creating horizontal overflow.
+- Preserve no-exposure rules for all screenshots and artifacts.
 
 ## Jobs
 
-### Job 1: Photo Board Image
+PRO must start by asking which output the user wants to create.
 
-User-facing label:
+The two jobs share photo preparation but diverge in content and generation decisions.
 
-- `사진 보드판 만들기`
+### Photo Board Image
 
-Purpose:
+Korean label: `사진 보드판 만들기`.
 
-- Create an image output where selected photos include a board, lower band, item cells, and visual placement controls.
+This job creates an image-based board from selected photos and board settings.
 
-Included decisions:
+The user needs to prepare photos, confirm board insertion, tune board size and position,
+optionally configure lower-band content, and generate an output image.
 
-- photo add, select, order, and rotation
-- board title and content fields
-- board size and position
-- lower-band on/off
-- lower-band item add, edit, and delete
-- item-cell visibility
-- highlight on/off
-- save location
-- board image generation
+Primary success signal:
 
-Excluded from this job:
+- A board preview matches the selected photos and settings.
+- The generate CTA is visible or reachable with a short scroll.
+- The result state confirms the generated board output.
 
-- PDF page layout
-- PDF page metadata
-- ledger-only document settings
+### Photo Ledger PDF
 
-### Job 2: Photo Ledger PDF
+Korean label: `사진대지 PDF 만들기`.
 
-User-facing label:
+This job creates a PDF ledger from selected photos, order, metadata, and layout options.
 
-- `사진대지 PDF 만들기`
+The user needs to prepare photos, confirm PDF content, choose relevant metadata,
+verify save destination, and generate the PDF.
 
-Purpose:
+Primary success signal:
 
-- Create a PDF document from selected photos with ordering, rotation, captions, metadata, and page layout.
-
-Included decisions:
-
-- photo add, select, order, and rotation
-- PDF document information
-- photo captions or metadata fields
-- page layout
-- preview of selected pages
-- save location
-- PDF generation
-
-Excluded from this job:
-
-- board insertion
-- board position
-- lower-band item management
+- The PDF preview or readiness summary reflects selected photos and ordering.
+- The save folder is ready before generation.
+- The result state confirms the generated PDF output.
 
 ## Global Layout Model
 
-The workspace uses one primary task canvas, one contextual side panel, and one reserved
-action footer.
+The v2 workspace uses three stable regions.
 
-Default-window rule:
+- Header region: task title, stepper, current state, and compact mode switch.
+- Main task canvas: the active step and its primary decision controls.
+- Contextual panel: preview, summary, or help tied to the active step.
 
-- Do not show a large photo rail, settings canvas, and preview rail at the same time.
-- The current step title, primary controls, and next action must be visible without long scroll.
-- A large photo rail is allowed only during photo preparation.
-- Visual adjustment steps must show controls and preview in the same view.
+The main task canvas owns the user action.
 
-Panel roles:
+The contextual panel explains or previews the consequence of that action.
 
-| Panel | Role | Default visibility |
-|---|---|---|
-| Primary task canvas | Current step controls and primary decision | Always visible |
-| Context panel | Preview, readiness, or compact summary for the current step | Visible only when useful |
-| Photo status chip | Compact count/selection/rotation status outside photo steps | Replaces large rail |
-| Action footer | Previous, next, generate, retry, or result actions | Reserved space, never overlaying content |
+The footer contains the primary CTA and secondary navigation when the step needs them.
 
-Step-kind layout contract:
+Default window rule:
 
-| Step kind | Primary canvas | Context panel | Large photo rail | Preview |
-|---|---|---|---|---|
-| `choice` | Two job cards | Short readiness summary | No | No |
-| `photo` | Photo grid/list and photo actions | Compact help/status | Yes | Optional compact preview |
-| `content` | Board or PDF content fields | Compact photo status | No | Optional |
-| `adjust` | Board size, position, lower band, highlight controls | Live preview | No | Required |
-| `generate` | Readiness checklist and generate CTA | Compact preview/status | No | Required |
-| `result` | Completion or failure recovery | Result actions | No | Optional |
-
-Global state model:
-
-| State | Values |
-|---|---|
-| `job` | `none`, `board`, `pdf` |
-| `photos` | `empty`, `loading`, `loaded`, `selected`, `noneSelected`, `rotated`, `ordered`, `error` |
-| `preview` | `unavailable`, `stale`, `ready`, `rendering`, `error` |
-| `saveFolder` | `unset`, `set`, `unavailable` |
-| `boardConfig` | `incomplete`, `valid`, `dirty` |
-| `lowerBand` | `off`, `empty`, `hasItems`, `deleteReady` |
-| `pdfConfig` | `incomplete`, `valid`, `dirty` |
-| `generate` | `disabled`, `ready`, `running`, `success`, `failure` |
-| `viewport` | `default`, `fullscreen`, `narrow` |
+- Do not show a large photo rail, dense settings, and a preview rail at the same time.
+- If three major regions compete, collapse one into a compact status or summary.
+- Prefer short-scroll reachability over always-visible dense controls.
 
 ## Screen Visibility Policy
 
-The visibility policy is the contract that prevents PR #6's panel competition from
-returning.
+The workspace reveals detail only when it is relevant to the current step.
 
-| Screen | Large photo rail | Compact photo status | Preview | Detail settings | Main CTA |
-|---|---|---|---|---|---|
-| Task Choice | Hidden | Hidden | Hidden | Hidden | Continue after job selection |
-| Photo Preparation | Visible | Optional | Optional compact | Hidden | Continue to content |
-| Board/Ledger Content | Hidden | Visible | Optional | Contextual tab or side drawer | Continue to adjustment |
-| Board Size/Position/Lower Band | Hidden | Visible | Required | Above-fold contextual controls | Continue to generate |
-| Generate Ready | Hidden | Visible | Required compact preview | Hidden or compact edit shortcuts | Generate |
-| Result/Failure | Hidden | Optional | Optional result preview | Hidden | Open, retry, or revise |
+- Task choice shows no detailed board controls.
+- Photo preparation shows the large photo rail and photo actions.
+- Non-photo steps show compact photo status instead of the large photo rail.
+- Board size and position shows controls near a live preview.
+- Lower-band management shows real rows and row actions.
+- Generate ready shows selected photo state, save folder state, preview state, and CTA state.
+- Result and failure states show outcome, recovery, and next action.
 
-Failure conditions:
+A hidden control must not become unreachable.
 
-- a default-window screen shows large photo rail, settings canvas, and preview rail together
-- visual adjustment controls appear without preview
-- generate-ready CTA appears enabled while photo selection or preview is not ready
-- action footer covers status text or form fields
-- detail settings are reachable only after long scroll
+A collapsed section must show enough summary text to explain why it is collapsed.
 
-## Screen 1 Task Choice
+## Screen 1: Task Choice
 
 Purpose:
 
-- Let the user choose the PRO job before any dense settings appear.
+- Let the user choose the output job before seeing detailed settings.
+- Explain the difference between board image and photo ledger PDF in plain language.
+- Avoid starting the user in a dense control surface.
 
-Primary canvas:
+Required elements:
 
-- Two task cards:
-  - `사진 보드판 만들기`
-  - `사진대지 PDF 만들기`
-- Each card uses one short result description and one small status line.
+- Two task cards with job labels.
+- One-line explanation for each job.
+- Recent or default task hint if available.
+- Primary continue action after a task is selected.
 
-Context panel:
+Acceptance behavior:
 
-- Optional compact explanation of what happens next:
-  - add photos
-  - check direction
-  - choose output settings
-  - generate
+- Selected task state is visually distinct from hover state.
+- Keyboard focus is visible on each card.
+- No auto-advance happens after selection.
 
-Required behavior:
-
-- No preview rail.
-- No large photo rail.
-- No advanced setting drawer.
-- One primary CTA appears after selecting a job.
-
-Acceptance notes:
-
-- A first-time user should understand the difference between board image and PDF without reading a long paragraph.
-- The screen should not look like a setup form.
-- Default, fullscreen, and narrow frames all show the same two decisions without adding preview clutter.
-
-## Screen 2 Photo Preparation
+## Screen 2: Photo Preparation
 
 Purpose:
 
-- Add photos, select photos, set order, and confirm rotation before job-specific settings.
+- Make photo addition, order, selection, and rotation obvious.
+- Use the largest photo rail only here.
+- Confirm that photos are ready before the user continues.
 
-Primary canvas:
+Required elements:
 
-- Empty state with clear photo add/drop action.
-- Photo grid/list after load.
-- Visible selected/checked state.
-- Rotation controls for the selected photo.
-- Ordering controls when multiple photos exist.
+- Add photo or drop-zone affordance.
+- Photo thumbnail rail with selected state.
+- Rotation controls for selected photos.
+- Compact count, selection, and warning summary.
+- Continue CTA that reflects whether enough photos exist.
 
-Context panel:
+State rules:
 
-- Compact guidance:
-  - photo count
-  - selected count
-  - current rotation
-  - next action
+- Empty state explains the next action.
+- Photo-added state must visibly contain at least one synthetic test photo in evidence.
+- Selected state must be visually different from loaded-only state.
+- Rotation state must show that orientation changed.
 
-Required states:
-
-- empty
-- loaded
-- selected/checked
-- rotation-applied
-- invalid or failed photo
-
-Restrictions:
-
-- Do not show the full job settings and full preview beside a large photo rail in the default window.
-- The preview can be compact, but photo management must be the dominant task.
-- Photo rail is intentionally large here because the task is photo management.
-
-## Screen 3 Board/Ledger Content
+## Screen 3: Board / Ledger Content
 
 Purpose:
 
-- Collect content required for the selected job.
+- Configure content that belongs to the selected job.
+- Avoid exposing board-only controls during the PDF-only path.
+- Avoid exposing PDF-only metadata controls during the board-image path.
 
-Board job primary canvas:
+Photo Board Image content:
 
-- Board title/content fields.
-- Field list for board insertion.
-- Compact access to detailed board settings.
+- Board insertion choice.
+- Board content summary.
+- Optional lower-band entry point.
+- Preview status tied to the board path.
 
-PDF job primary canvas:
+Photo Ledger PDF content:
 
-- Document title or file label.
-- Caption or metadata controls.
-- Page grouping or ordering controls.
+- PDF content summary.
+- Photo order state.
+- Metadata choices relevant to PDF output.
+- Save folder readiness.
 
-Context panel:
-
-- Compact photo status chip:
-  - photo count
-  - selected count
-  - current photo name redacted to basename only when shown
-  - return to photo management action
-
-Required behavior:
-
-- Only settings relevant to the selected job are visible.
-- Board-only lower-band controls are not shown in the PDF branch.
-- PDF-only page settings are not shown in the board branch.
-- Detail settings are available through contextual tabs or a bounded side drawer near the current fields.
-
-## Screen 4 Board Size/Position/Lower Band
+## Screen 4: Board Size / Position / Lower Band
 
 Purpose:
 
-- Adjust visual board settings while seeing the result.
+- Keep visual layout controls close to the preview they affect.
+- Make lower-band item management concrete and less dense.
 
-Primary canvas:
+Board size and position requirements:
 
-- Board size controls.
-- Position controls.
-- Lower-band mode controls.
-- Item-cell visibility controls.
-- Lower-band item add/edit/delete controls.
-- Highlight controls when enabled.
+- Preview must be visible on this step.
+- Preview must be near the size and position controls.
+- Controls must not push the preview out of view in the default window.
+- The user should understand which setting changed the visible board.
 
-Context panel:
+Lower-band requirements:
 
-- Live preview of the selected photo with the board overlay.
+- Empty state must show a clear add action.
+- Added state must show a real row with label, value, and row action.
+- Delete-ready state must show the row that will be removed.
+- Add and delete controls must be at least 40px target size.
+- Dense inline controls should be replaced with row-level controls when possible.
 
-Required behavior:
-
-- Controls and preview must be visible together.
-- The preview must update when size, position, lower-band mode, item cells, or highlight settings change.
-- Lower-band item management must show real empty, added, and delete-ready states.
-- Add/delete controls must have at least 40px target height.
-
-Restrictions:
-
-- Large photo rail is not visible here.
-- Advanced detail controls are not placed below a long scroll-only section.
-- Hover scale must not create overflow or overlap.
-- Lower-band item rows show add, added, and delete-ready states before implementation approval.
-
-## Screen 5 Generate Ready
+## Screen 5: Generate Ready
 
 Purpose:
 
-- Confirm that the output is ready, then run generation.
+- Confirm the user has enough information to safely generate output.
+- Align photo state, save folder state, preview state, and CTA state.
 
-Primary canvas:
+Required readiness summary:
 
-- Readiness checklist:
-  - job selected
-  - photo loaded
-  - photo selected/checked
-  - rotation confirmed
-  - job settings valid
-  - save folder set
-- Main generate CTA.
-- Progress status area.
+- Selected job.
+- Photo count.
+- Selected or checked photo state.
+- Save folder readiness.
+- Preview readiness.
+- Primary output CTA.
 
-Context panel:
+Generate-ready evidence is invalid if the preview shows a different state from the summary.
 
-- Compact preview matching the selected photo and selected job.
+Generate-ready evidence is invalid if photos appear empty while the summary says photos are ready.
 
-Required behavior:
-
-- Photo selected/checked state, preview state, and CTA enabled state must be consistent.
-- Generate CTA is visible in the default window.
-- Generate running disables duplicate clicks.
-- Failure state uses the same status area with a retry path.
-- No fake percentage is shown unless real progress exists.
-- Save folder readiness appears as a state row, not as a hidden requirement.
-
-## Screen 6 Result/Failure
+## Screen 6: Result / Failure
 
 Purpose:
 
-- Show a stable completion or recovery state.
+- Show a clear completion or failure state after generation.
+- Provide a safe next action without exposing local paths or sensitive values.
 
-Success state:
+Result state:
 
-- Clear completion sentence.
-- Open result action.
-- Open folder action.
-- Start another output action.
+- Confirms output type.
+- Shows synthetic-safe file naming or generic output summary.
+- Offers open-folder or copy action only when safe for the product.
 
 Failure state:
 
-- Clear error sentence without sensitive paths.
-- Retry action.
-- Return to settings action.
-- The failed state must not expose local full paths, account names, tokens, signed URLs, storage paths, or full UUIDs.
+- Explains the failure in user language.
+- Provides retry or settings correction.
+- Does not show tokens, absolute local paths, signed URLs, or internal IDs.
 
 ## Component Model
 
-Required components:
+Recommended component boundaries:
 
-| Component | Responsibility |
-|---|---|
-| `ProTaskWorkspaceShell` | Overall layout, step-kind contract, responsive panel policy |
-| `ProJobChoice` | Board/PDF job selection |
-| `ProPhotoPreparation` | Photo add, selection, order, rotation states |
-| `ProPhotoStatusChip` | Compact photo readiness outside photo steps |
-| `ProBoardContentStep` | Board content fields |
-| `ProPdfContentStep` | PDF document/page fields |
-| `ProVisualAdjustmentStep` | Board size, position, lower band, item cells, highlight |
-| `ProPreviewPanel` | Preview states for board/PDF/generate |
-| `ProReadinessChecklist` | Generate readiness state |
-| `ProGenerationStatus` | Idle, running, success, failure |
-| `ProActionFooter` | Previous/next/generate/retry actions with reserved space |
+- `ProTaskWorkspaceShell` owns global layout and responsive regions.
+- `ProTaskChoiceStep` owns job selection.
+- `ProPhotoPreparationStep` owns photo rail, selection, and rotation controls.
+- `ProContentStep` owns job-specific content choices.
+- `ProBoardLayoutStep` owns board size, position, and lower-band controls.
+- `ProGenerateReadyStep` owns readiness summary and primary CTA.
+- `ProResultState` owns success and failure feedback.
+- `ProContextPanel` owns preview, summary, and step help.
 
-State guidance:
+Component rules:
 
-- Job state determines which branch is visible.
-- Step kind determines layout, not ad hoc CSS overrides.
-- Preview state must be derived from selected photo and job settings.
-- Generate state must derive from the same readiness model that enables the CTA.
-- Detail settings should be contextual tabs or bounded drawers inside the current step.
+- Avoid concentrating all v2 UI in `App.tsx`.
+- Do not introduce new output option values without product approval.
+- Reuse existing photo rotation and output settings state where possible.
+- Keep props explicit and tied to visible responsibilities.
 
 ## Responsive Model
 
 ### Default Window
 
-Target:
+Default window is the primary design target.
 
-- Packaged default window, roughly 1280x720 equivalent.
-
-Rules:
-
-- Current title, primary controls, and action footer are visible.
-- No visual horizontal scrollbar.
-- `horizontalOverflowPx <= 1`.
-- `defaultRequiredScrollToCtaPx <= 120`.
-- `defaultMainCtaVisible = true` for generate-ready.
-- Main task canvas should stay at least 560px wide when preview is visible.
-- Preview panel should be at least 360px wide when required.
-- Large photo rail appears only on the photo step.
-- Content, adjustment, and generate steps use compact photo status instead of a full rail.
-- Detail settings are above the fold through contextual tabs or side controls.
+- The main CTA should be visible or reachable within 120px of vertical scroll.
+- Horizontal overflow must not appear.
+- The preview panel must not clip its toolbar or action buttons.
+- The layout must avoid showing large photo rail, dense settings, and preview rail together.
 
 ### Fullscreen
 
-Target:
+Fullscreen must use extra space for useful work areas.
 
-- 1500px+ width and 850px+ height, with 1920x1080 as an additional review point.
-
-Rules:
-
-- Extra space expands preview and active controls.
-- Side summary stays bounded.
-- The layout must not simply create empty margins.
-- Preview stage area should increase by at least 1.5x compared with default for visual adjustment screens.
-- Typography and controls may scale modestly, but repeated summary rows stay bounded.
-- Extra width goes to preview, visual controls, and readable comparison space.
+- Increase preview usefulness, not only outer margins.
+- Allow summary and detail panels to breathe without lowering information clarity.
+- Keep the active task canvas visually dominant.
 
 ### Narrow
 
-Target:
+Narrow mode must stack content without horizontal overflow.
 
-- 900x720 and below.
-
-Rules:
-
-- Single-column layout.
-- Visual adjustment screens place preview adjacent to controls vertically.
-- Generate-ready prioritizes readiness and CTA over large preview.
-- CTA is visible or reachable with no more than 120px short scroll.
-- No horizontal overflow.
-- Core buttons remain text-labeled, not icon-only.
-- Preview can move below controls, but it cannot disappear on visual adjustment steps.
+- Hide or compact the preview rail when it would squeeze the main task.
+- Keep action targets at least 40px.
+- Keep the primary CTA at least 44px.
+- Preserve focus-visible rings without clipping.
 
 ## Prototype Review Frames
 
-The local prototype at `review-artifacts/pro-task-workspace-v2/` must show:
+A design prototype should include the following frames before implementation starts.
 
-- Default Window Flow
-- Fullscreen Flow
-- Narrow Flow
-- Acceptance Mapping
+- Default task choice.
+- Default photo preparation empty.
+- Default photo loaded and selected.
+- Default board insertion content.
+- Default board size and position with nearby preview.
+- Default lower-band empty state.
+- Default lower-band added state.
+- Default lower-band delete-ready state.
+- Default generate ready.
+- Default result state.
+- Default failure state.
+- Fullscreen board size and position.
+- Fullscreen generate ready.
+- Narrow photo preparation.
+- Narrow generate ready.
 
-The prototype is not production code. It is a static review artifact that should make
-the v2 layout decisions visible before implementation starts.
-
-Required visual evidence in the prototype:
-
-- task choice with no preview rail
-- photo preparation with large photo rail and rotation controls
-- board or ledger content with compact photo status
-- board size, position, lower-band controls near live preview
-- lower-band item add and delete-ready controls
-- generate-ready checklist, preview, status area, and visible CTA
-- result and failure actions
-- PR #6 problem-to-v2 solution mapping
+Every evidence frame must use synthetic photos and synthetic text.
 
 ## Motion Model
 
-Principles:
+Motion should guide attention rather than decorate the interface.
 
-- Motion is guidance, not decoration.
-- Avoid infinite bounce, repeated flashing, or full-screen movement.
-- Use 120ms to 180ms transitions for border, background, shadow, and color.
-- Avoid layout-affecting hover scale. If scale is used, it must be no more than 1.01 and must not create overlap.
-
-Reduced motion:
-
-- Disable animated scroll.
-- Remove scale and repeated animation.
-- Keep selected, current, completed, disabled, success, and error states visible through color, border, icon, and text.
+- Use short transitions for hover, focus, and selection.
+- Avoid repeated blinking or infinite bounce.
+- Avoid layout-shifting hover scale.
+- Use progress motion only while work is actually pending.
+- Honor `prefers-reduced-motion` by reducing transform and animation intensity.
 
 ## Accessibility Model
 
-Minimum targets:
+The v2 implementation must be usable by keyboard and by users who need reduced motion.
 
-- General action target: 40px minimum height.
-- Primary CTA: 44px minimum height.
-- Focus-visible ring is never clipped.
-- Keyboard tab order follows the visual task order.
-- Disabled actions do not show hover lift.
-- Busy state prevents duplicate submit.
-- Error messages appear near the affected panel, not only as transient notifications.
-
-Text model:
-
-- Use action-oriented labels.
-- Prefer `사진 추가`, `보드판 위치 확인`, `PDF 만들기`, and `저장 위치 선택`.
-- Avoid long descriptive blocks in the primary canvas.
-- Keep helper text short and specific to the current step.
+- Interactive targets should be at least 40px.
+- Primary CTA should be at least 44px.
+- Focus-visible rings must not be clipped.
+- Selected, current, disabled, complete, and error states must not rely on color only.
+- Step labels should be readable without relying on icons alone.
+- Reduced motion must not hide state changes.
 
 ## No-Exposure Rules
 
-Design artifacts and QA evidence must use synthetic data only.
+All design, prototype, QA, and review evidence must avoid sensitive content.
 
-Never expose:
-
-- account names
-- personal names
-- email addresses
-- phone numbers
-- local full paths
-- API keys
-- tokens
-- passwords
-- signed URLs
-- storage paths
-- full UUIDs
-- real customer file names
-- real customer document content
-- image, PDF, or workbook binary/base64 content
-
-Review artifacts must remain local-only unless a later task explicitly asks to commit
-them.
+- Use synthetic photos only.
+- Do not show real customer data.
+- Do not show personal names, account names, emails, phone numbers, or addresses.
+- Do not show local absolute paths.
+- Do not show tokens, passwords, keys, licenses, signed URLs, or storage paths.
+- Do not show full UUIDs or internal IDs.
+- Do not include binary or base64 content in Markdown reports.
 
 ## Implementation Split
 
-Recommended sequence:
+Implementation should happen in small PRs after this design direction is accepted.
 
-1. Keep PR #6 as a Draft experimental reference branch.
-2. Review this v2 spec and static prototype before product-code work.
-3. Implement a fresh shell and layout contract in a new implementation branch.
-4. Build the common job choice and photo preparation screens first.
-5. Implement the board branch separately.
-6. Implement the PDF branch separately.
-7. Implement shared generate/result/failure states.
-8. Regenerate review artifacts only after the screen model is stable.
-9. Run build, UI verification, board verification, output-settings verification, direct package check, no-exposure, and packaged default-window QA before Ready for review.
+Recommended split:
 
-Implementation should replace layered override patches with a coherent step-kind layout
-model.
+- PR A: shell layout and task choice.
+- PR B: photo preparation and compact photo status.
+- PR C: board content and board size or position step.
+- PR D: lower-band item management.
+- PR E: generate-ready, result, failure, and final metrics.
 
-Implementation PR split:
+Each implementation PR should include packaged-build evidence for its own surface.
 
-1. Workspace shell and step-kind layout contract.
-2. Job choice and photo preparation.
-3. Board branch content and visual adjustment screens.
-4. PDF branch content and page preview screens.
-5. Shared generate, result, and failure states.
-6. Packaged QA evidence and user-facing polish.
-
-Each implementation PR should keep its scope small enough to review without mixing
-layout, output internals, and packaging changes.
+Each implementation PR should keep PR #6 as reference only, not as the patch base.
