@@ -4,7 +4,9 @@
 
 PRO Task Workspace v2 is a design-first reset after PR #6 packaged-build UX acceptance did not pass.
 
-PR #6 remains a Draft experimental branch. This spec defines the target workflow before any further product-code implementation. The goal is not to add another CSS patch on top of PR #6. The goal is to agree on a stable screen model that helps public users understand:
+PR #6 remains a Draft experimental branch.
+
+This spec defines the target workflow before any further product-code implementation. The goal is not to add another CSS patch on top of PR #6. The goal is to agree on a stable screen model that helps public users understand:
 
 - what kind of PRO output they are creating
 - which photo state is active
