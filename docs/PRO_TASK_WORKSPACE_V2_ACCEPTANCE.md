@@ -231,3 +231,26 @@ The v2 implementation can move toward Ready for review only when:
 - Direct packaging passes, or any fallback is documented as a caveat.
 - No-exposure passes.
 - Generated output and review artifacts remain uncommitted.
+
+Design approval gate:
+
+- PR #6 is not merged as-is.
+- The v2 prototype is reviewed before implementation.
+- The implementation starts from a separate branch after design approval.
+- Implementation PRs are split into small reviewable slices.
+- Direct `package:win` PASS is preferred for implementation readiness.
+- EPERM fallback is allowed only as a documented caveat, not as a clean direct-script PASS.
+
+Required screenshots or static frames before implementation:
+
+- default task choice
+- default photo preparation
+- default content step with compact photo status
+- default board size/position/lower-band with preview
+- default generate-ready
+- default result/failure
+- fullscreen visual adjustment
+- fullscreen generate-ready
+- narrow photo preparation
+- narrow visual adjustment
+- narrow generate-ready

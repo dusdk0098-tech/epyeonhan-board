@@ -16,6 +16,37 @@ This spec defines the target workflow before any further product-code implementa
 
 The default packaged window is the primary design baseline. Fullscreen should make the workspace more useful, not only add whitespace. Narrow windows should keep the next action visible with short scroll.
 
+## Why PR #6 Is Not Patched Further
+
+PR #6 proved that a guided PRO workflow is useful, but the packaged-build UX review found structural problems that small patches could not resolve cleanly.
+
+Current blockers from PR #6:
+
+- default-window information density and scrolling remain too high
+- photo-added states can make photo list, settings, and preview compete for space
+- board size and position preview evidence is not trustworthy enough
+- lower-band item management evidence is incomplete
+- generate-ready state can appear inconsistent with photo and preview readiness
+- fullscreen can expand whitespace more than useful task space
+- detail settings can be pushed below the useful first view
+
+V2 handles these as design constraints rather than bug-by-bug layout patches.
+
+PR #6 should therefore stay Draft as an experimental reference branch. Implementation should continue only after this v2 spec and prototype are reviewed.
+
+## V2 Core Principles
+
+1. One primary task canvas.
+2. One contextual side panel.
+3. No three competing rails in the default window.
+4. Large photo rail only on the photo preparation step.
+5. Preview near controls whenever the user is making visual adjustments.
+6. Action footer has reserved layout space and never overlays content.
+7. Each step has one dominant decision and one obvious next action.
+8. Fullscreen expands useful preview/control space instead of only adding margins.
+9. Narrow windows stack panels without horizontal overflow.
+10. Review artifacts remain local-only unless explicitly requested.
+
 ## Jobs
 
 ### Job 1: Photo Board Image
@@ -117,6 +148,27 @@ Global state model:
 | `generate` | `disabled`, `ready`, `running`, `success`, `failure` |
 | `viewport` | `default`, `fullscreen`, `narrow` |
 
+## Screen Visibility Policy
+
+The visibility policy is the contract that prevents PR #6's panel competition from returning.
+
+| Screen | Large photo rail | Compact photo status | Preview | Detail settings | Main CTA |
+|---|---|---|---|---|---|
+| Task Choice | Hidden | Hidden | Hidden | Hidden | Continue after job selection |
+| Photo Preparation | Visible | Optional | Optional compact | Hidden | Continue to content |
+| Board/Ledger Content | Hidden | Visible | Optional | Contextual tab or side drawer | Continue to adjustment |
+| Board Size/Position/Lower Band | Hidden | Visible | Required | Above-fold contextual controls | Continue to generate |
+| Generate Ready | Hidden | Visible | Required compact preview | Hidden or compact edit shortcuts | Generate |
+| Result/Failure | Hidden | Optional | Optional result preview | Hidden | Open, retry, or revise |
+
+Failure conditions:
+
+- a default-window screen shows large photo rail, settings canvas, and preview rail together
+- visual adjustment controls appear without preview
+- generate-ready CTA appears enabled while photo selection or preview is not ready
+- action footer covers status text or form fields
+- detail settings are reachable only after long scroll
+
 ## Screen 1 Task Choice
 
 Purpose:
@@ -149,6 +201,7 @@ Acceptance notes:
 
 - A first-time user should understand the difference between board image and PDF without reading a long paragraph.
 - The screen should not look like a setup form.
+- Default, fullscreen, and narrow frames all show the same two decisions without adding preview clutter.
 
 ## Screen 2 Photo Preparation
 
@@ -184,6 +237,7 @@ Restrictions:
 
 - Do not show the full job settings and full preview beside a large photo rail in the default window.
 - The preview can be compact, but photo management must be the dominant task.
+- Photo rail is intentionally large here because the task is photo management.
 
 ## Screen 3 Board/Ledger Content
 
@@ -216,6 +270,7 @@ Required behavior:
 - Only settings relevant to the selected job are visible.
 - Board-only lower-band controls are not shown in the PDF branch.
 - PDF-only page settings are not shown in the board branch.
+- Detail settings are available through contextual tabs or a bounded side drawer near the current fields.
 
 ## Screen 4 Board Size/Position/Lower Band
 
@@ -248,6 +303,7 @@ Restrictions:
 - Large photo rail is not visible here.
 - Advanced detail controls are not placed below a long scroll-only section.
 - Hover scale must not create overflow or overlap.
+- Lower-band item rows show add, added, and delete-ready states before implementation approval.
 
 ## Screen 5 Generate Ready
 
@@ -278,6 +334,7 @@ Required behavior:
 - Generate running disables duplicate clicks.
 - Failure state uses the same status area with a retry path.
 - No fake percentage is shown unless real progress exists.
+- Save folder readiness appears as a state row, not as a hidden requirement.
 
 ## Screen 6 Result/Failure
 
@@ -342,6 +399,9 @@ Rules:
 - `defaultMainCtaVisible = true` for generate-ready.
 - Main task canvas should stay at least 560px wide when preview is visible.
 - Preview panel should be at least 360px wide when required.
+- Large photo rail appears only on the photo step.
+- Content, adjustment, and generate steps use compact photo status instead of a full rail.
+- Detail settings are above the fold through contextual tabs or side controls.
 
 ### Fullscreen
 
@@ -355,6 +415,8 @@ Rules:
 - Side summary stays bounded.
 - The layout must not simply create empty margins.
 - Preview stage area should increase by at least 1.5x compared with default for visual adjustment screens.
+- Typography and controls may scale modestly, but repeated summary rows stay bounded.
+- Extra width goes to preview, visual controls, and readable comparison space.
 
 ### Narrow
 
@@ -369,6 +431,30 @@ Rules:
 - Generate-ready prioritizes readiness and CTA over large preview.
 - CTA is visible or reachable with no more than 120px short scroll.
 - No horizontal overflow.
+- Core buttons remain text-labeled, not icon-only.
+- Preview can move below controls, but it cannot disappear on visual adjustment steps.
+
+## Prototype Review Frames
+
+The local prototype at `review-artifacts/pro-task-workspace-v2/` must show:
+
+- Default Window Flow
+- Fullscreen Flow
+- Narrow Flow
+- Acceptance Mapping
+
+The prototype is not production code. It is a static review artifact that should make the v2 layout decisions visible before implementation starts.
+
+Required visual evidence in the prototype:
+
+- task choice with no preview rail
+- photo preparation with large photo rail and rotation controls
+- board or ledger content with compact photo status
+- board size, position, lower-band controls near live preview
+- lower-band item add and delete-ready controls
+- generate-ready checklist, preview, status area, and visible CTA
+- result and failure actions
+- PR #6 problem-to-v2 solution mapping
 
 ## Motion Model
 
@@ -442,3 +528,14 @@ Recommended sequence:
 9. Run build, UI verification, board verification, output-settings verification, direct package check, no-exposure, and packaged default-window QA before Ready for review.
 
 Implementation should replace layered override patches with a coherent step-kind layout model.
+
+Implementation PR split:
+
+1. Workspace shell and step-kind layout contract.
+2. Job choice and photo preparation.
+3. Board branch content and visual adjustment screens.
+4. PDF branch content and page preview screens.
+5. Shared generate, result, and failure states.
+6. Packaged QA evidence and user-facing polish.
+
+Each implementation PR should keep its scope small enough to review without mixing layout, output internals, and packaging changes.
