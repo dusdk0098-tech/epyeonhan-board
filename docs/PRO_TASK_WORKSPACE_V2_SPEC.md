@@ -6,7 +6,9 @@ PRO Task Workspace v2 is a design-first reset after PR #6 packaged-build UX acce
 
 PR #6 remains a Draft experimental branch.
 
-This spec defines the target workflow before any further product-code implementation. The goal is not to add another CSS patch on top of PR #6. The goal is to agree on a stable screen model that helps public users understand:
+This spec defines the target workflow before any further product-code implementation. The goal is not to add
+another CSS patch on top of PR #6. The goal is to agree on a stable screen model that helps public users
+understand:
 
 - what kind of PRO output they are creating
 - which photo state is active
@@ -14,11 +16,13 @@ This spec defines the target workflow before any further product-code implementa
 - where the preview is
 - when the final generate action is safe
 
-The default packaged window is the primary design baseline. Fullscreen should make the workspace more useful, not only add whitespace. Narrow windows should keep the next action visible with short scroll.
+The default packaged window is the primary design baseline. Fullscreen should make the workspace more useful,
+not only add whitespace. Narrow windows should keep the next action visible with short scroll.
 
 ## Why PR #6 Is Not Patched Further
 
-PR #6 proved that a guided PRO workflow is useful, but the packaged-build UX review found structural problems that small patches could not resolve cleanly.
+PR #6 proved that a guided PRO workflow is useful, but the packaged-build UX review found structural problems
+that small patches could not resolve cleanly.
 
 Current blockers from PR #6:
 
@@ -32,7 +36,8 @@ Current blockers from PR #6:
 
 V2 handles these as design constraints rather than bug-by-bug layout patches.
 
-PR #6 should therefore stay Draft as an experimental reference branch. Implementation should continue only after this v2 spec and prototype are reviewed.
+PR #6 should therefore stay Draft as an experimental reference branch. Implementation should continue only after
+this v2 spec and prototype are reviewed.
 
 ## V2 Core Principles
 
@@ -443,7 +448,8 @@ The local prototype at `review-artifacts/pro-task-workspace-v2/` must show:
 - Narrow Flow
 - Acceptance Mapping
 
-The prototype is not production code. It is a static review artifact that should make the v2 layout decisions visible before implementation starts.
+The prototype is not production code. It is a static review artifact that should make the v2 layout decisions
+visible before implementation starts.
 
 Required visual evidence in the prototype:
 
@@ -538,4 +544,5 @@ Implementation PR split:
 5. Shared generate, result, and failure states.
 6. Packaged QA evidence and user-facing polish.
 
-Each implementation PR should keep its scope small enough to review without mixing layout, output internals, and packaging changes.
+Each implementation PR should keep its scope small enough to review without mixing layout, output internals, and
+packaging changes.

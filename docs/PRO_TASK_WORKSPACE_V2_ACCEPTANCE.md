@@ -147,7 +147,8 @@ Required screenshots:
 Preferred packaging wording for caveats:
 
 ```text
-package:win: PASS with caveat - direct npm.cmd run package:win hit a local Windows EPERM rename lock.
+package:win: PASS with caveat.
+Direct npm.cmd run package:win hit a local Windows EPERM rename lock.
 Manual recovery plus prepackaged builder completed and installer was generated.
 Treat as not a clean direct-script PASS until a fresh direct package:win run passes.
 ```
