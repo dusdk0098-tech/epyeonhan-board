@@ -259,6 +259,51 @@
 - Follow-up:
   - Review the prototype zip before implementation starts.
   - Keep PR #6 Draft until a separate v2 implementation path is approved.
+
+## Task 2026-06-18 - PRO Task Workspace v2 design artifact alignment
+
+- Phase: pro-task-workspace-v2-design-artifact-alignment
+- Branch: design/pro-task-workspace-v2-spec
+- PR: #7
+- Task type:
+  - docs-only design spec / prototype alignment
+- Scope:
+  - Allowed:
+    - Align prototype frame coverage with spec.
+    - Separate photo board and PDF ledger paths.
+    - Label layout metrics as target-only.
+    - Split design-spec artifact and implementation evidence criteria.
+    - Add interaction-state evidence.
+    - Improve user-facing Korean copy.
+    - Add workflow state ownership contract.
+  - Forbidden:
+    - Product code changes.
+    - `src/**`, `electron/**`, and `scripts/**` changes.
+    - package/package-lock changes.
+    - DB/public/CI changes.
+    - user manual PNG changes.
+    - generated/release output commits.
+    - committed review artifacts or prototype artifacts.
+- Changed docs:
+  - docs/PRO_TASK_WORKSPACE_V2_SPEC.md
+  - docs/PRO_TASK_WORKSPACE_V2_ACCEPTANCE.md
+  - docs/CODEX_TASKS.md
+- Local-only artifacts:
+  - review-artifacts/pro-task-workspace-v2/
+  - review-artifacts/pro-task-workspace-v2.zip
+- Verification:
+  - git diff --check: PASS
+  - build: PASS - `npm.cmd run build`
+  - docs-only scope: PASS
+  - hidden/bidi/newline check: PASS
+  - markdown raw line structure check: PASS
+  - no-exposure check: PASS
+  - prototype zip validation: PASS
+  - review-artifacts excluded check: PASS
+  - generated/release output check: PASS
+- Follow-up:
+  - Keep PR #7 Draft until the alignment pass is reviewed.
+  - Keep PR #6 as a Draft experimental reference branch.
 ## Task 2026-06-16 - PRO Task Workspace v2 Markdown hard rewrite
 
 - Phase: pro-task-workspace-v2-markdown-hard-rewrite

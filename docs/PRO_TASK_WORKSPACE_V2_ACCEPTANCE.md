@@ -117,18 +117,61 @@
 | Full UUID or internal ID | Not present | S0 | No-exposure scan |
 | Binary or base64 in reports | Not present | S0 | Artifact inspection |
 
+## Layout Metrics Role
+
+| Criterion | Required result | Blocker level | Required evidence |
+|---|---|---|---|
+| Design-spec metrics | Labeled as target-only | S1 | `layout-metrics.json` |
+| Runtime metrics claim | Not made in PR #7 | S1 | README and PR body |
+| Implementation measurement | Required in follow-up product-code PRs | S1 | Implementation evidence artifact |
+| Metrics confusion risk | Design targets and measured evidence are separate | S1 | Artifact consistency levels |
+
 ## Artifact Consistency
 
 | Criterion | Required result | Blocker level | Required evidence |
 |---|---|---|---|
-| `COMMIT.txt` | Matches implementation HEAD | S1 | Zip inspection |
-| Screenshot count | Matches metrics, index, and zip listing | S1 | Artifact validation output |
-| `index.md` refs | Match screenshot count | S1 | Artifact validation output |
-| `index.html` refs | Match screenshot count | S1 | Artifact validation output |
-| `layout-metrics.json` | Contains numeric metrics, not PASS strings | S1 | Metrics file inspection |
-| Contact sheet | Shows real thumbnails | S2 | Contact sheet inspection |
-| Evidence markdown | Includes required QA notes | S2 | Artifact file listing |
+| Design-spec artifact | Meets Design-Spec Artifact level | S1 | Local artifact file listing |
+| Implementation evidence artifact | Required only for implementation PRs | S1 | Follow-up PR evidence |
+| `layout-metrics.json` | Target-only in PR #7 and labeled as such | S1 | Metrics file inspection |
+| Runtime screenshots | Not claimed by PR #7 | S1 | README and PR body |
 | Review artifacts | Remain uncommitted unless explicitly requested | S0 | Git status |
+
+## Artifact Consistency Levels
+
+### Design-Spec Artifact
+
+| Criterion | Required result | Blocker level | Required evidence |
+|---|---|---|---|
+| `index.html` | Exists | S1 | Local artifact file listing |
+| `prototype.css` | Exists | S1 | Local artifact file listing |
+| `README.md` | Exists | S1 | Local artifact file listing |
+| `layout-metrics.json` | Exists and is valid JSON | S1 | JSON validation |
+| External CDN | Not used | S0 | HTML/CSS scan |
+| Sensitive data | Not present | S0 | No-exposure scan |
+| Screen/frame coverage table | Exists | S1 | Prototype or README |
+| Board/PDF path separation table | Exists | S1 | Prototype or README |
+| Metrics role | Target-only and labeled as such | S1 | Metrics JSON and README |
+| Review artifacts | Local-only and uncommitted | S0 | Git status |
+
+### Implementation Evidence Artifact
+
+| Criterion | Required result | Blocker level | Required evidence |
+|---|---|---|---|
+| `COMMIT.txt` | Matches implementation PR head | S1 | Zip inspection |
+| Screenshot count | Matches index, metrics, and zip listing | S1 | Artifact validation output |
+| Runtime screenshots | Actual app captures, not static mockups | S1 | Screenshot review |
+| DOM/screenshot metrics | Measured, not target-only | S1 | Metrics JSON |
+| No-exposure scan | PASS | S0 | Scan output |
+| Default/fullscreen/narrow evidence | Included | S1 | Screenshot set |
+| Key flow screenshots | Included | S1 | Screenshot set |
+| Target-size and overflow metrics | Measured | S1 | Metrics JSON |
+| Generated output | Not committed | S0 | Git status and scope check |
+
+PR #7 only needs to satisfy the Design-Spec Artifact level.
+
+Product implementation PRs must satisfy the Implementation Evidence Artifact level.
+
+If the two levels are mixed, readiness is PARTIAL.
 
 ## Ready Gate
 

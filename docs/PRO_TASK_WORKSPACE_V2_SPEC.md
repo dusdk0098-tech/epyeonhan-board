@@ -108,6 +108,28 @@ Primary success signals:
 - The save folder is ready before generation.
 - The result state confirms the generated PDF output.
 
+### Shared and Job-Specific Controls
+
+| Control | Photo board image | Photo ledger PDF | Notes |
+|---|---|---|---|
+| 사진 추가 | Common | Common | Large photo list appears only during photo preparation. |
+| 사진 선택 | Common | Common | Later steps use compact photo status. |
+| 회전 | Common | Common | Rotation is handled before job-specific settings. |
+| 미리보기 | Common | Common | Preview must match the selected output type. |
+| 저장폴더 | Common | Common | Confirmed before generation. |
+| 보드 제목 / 보드 항목 | Visible | Hidden | Board-image only. |
+| 보드 크기 / 위치 | Visible | Hidden | Board-image only. |
+| 하부띠 / 항목칸 | Visible | Hidden | Board-image only. |
+| 원형강조 | Visible | Hidden | Board-image only. |
+| PDF 대지 / 여백 / 순서 | Hidden | Visible | Photo-ledger PDF only. |
+| PDF 생성 | Hidden | Visible | Photo-ledger PDF only. |
+
+Board-only controls must not appear in the photo-ledger PDF flow.
+
+PDF-only controls must not appear in the photo board image flow.
+
+Common controls must be labeled as common when they appear in both flows.
+
 ## Global Layout Model
 
 The workspace uses three stable regions.
@@ -525,6 +547,25 @@ Do not show:
 - Duplicate-click path is blocked during processing.
 - Failure has a clear recovery path.
 
+## Workflow State Ownership
+
+The implementation should keep workflow state ownership explicit so App.tsx does not become the only state container.
+
+| State | Owner component | Used by | Notes |
+|---|---|---|---|
+| selectedJob | ProTaskWorkspaceShell | Header, task canvas, action bar | Determines board-image or PDF flow. |
+| selectedPhotos | ProPhotoPreparationStep | Compact photo status, preview, generate readiness | Source list for active output. |
+| checkedPhotos | ProPhotoPreparationStep | Photo rail, PDF ordering, board preview | Supports multi-select and ordering. |
+| photoRotation | ProPhotoPreparationStep | Photo rail, preview, output adapter | Reuse existing rotation behavior. |
+| previewState | ProPreviewPanel | Context panel, generate readiness | Must match selected job and photo state. |
+| saveFolderReady | ProGenerateReadyStep | Generate button, readiness summary | Avoid showing sensitive absolute paths. |
+| lowerBandItems | ProLowerBandItemManager | Board layout step, board preview | Board-image flow only. |
+| boardSize | ProBoardLayoutStep | Board preview, generate readiness | Board-image flow only. |
+| boardPosition | ProBoardLayoutStep | Board preview, generate readiness | Board-image flow only. |
+| circleHighlight | ProBoardLayoutStep | Board preview, output adapter | Board-image flow only. |
+| generateReadiness | ProGenerateReadyStep | Action bar, progress area | Derived from photos, preview, save folder, and job settings. |
+| outputStatus | ProResultState | Result panel, action bar | Covers idle, processing, success, failure, and retry. |
+
 ## Component Model
 
 Recommended components:
@@ -616,6 +657,29 @@ A design prototype should include frames for:
 
 Every evidence frame must use synthetic photos and synthetic text.
 
+### Current Static Prototype Coverage
+
+The PR #7 local static prototype is a design-spec artifact, not runtime proof.
+
+It should honestly label which required screens are represented and which evidence is still deferred to implementation PRs.
+
+| Required screen/frame | Prototype evidence | Status |
+|---|---|---|
+| Task Choice | Default Window Flow / 작업 유형 선택 | PASS |
+| Photo Preparation | Default Window Flow / 사진 준비 | PASS |
+| Board / Ledger Content | Board content and PDF content sections | PASS |
+| Board Size / Position / Lower Band | Photo board image flow / board adjustment | PASS |
+| Generate Ready | Board image generate-ready and PDF generate-ready sections | PASS |
+| Result / Failure | 완료 / 문제 해결 section | PASS |
+| Default Window Flow | Default, board, and PDF flow sections | PASS |
+| Fullscreen Flow | Fullscreen Flow section | PASS |
+| Narrow Flow | Narrow Flow section | PASS |
+| Runtime screenshots | Deferred to implementation PR evidence | PARTIAL |
+
+`layout-metrics.json` in the static prototype records design target values only.
+
+Implementation PRs must regenerate measured DOM and screenshot metrics.
+
 ## Motion Model
 
 Motion should guide attention.
@@ -691,6 +755,7 @@ Scope:
 - PRO shell layout.
 - Task choice.
 - Responsive region model.
+- Workflow state ownership contract.
 - No output logic changes.
 
 ### PR B: Photo Preparation
