@@ -1,5 +1,16 @@
 # PRO Task Workspace v2 Acceptance
 
+## Progress Model
+
+| Criterion | Required result | Blocker level | Required evidence |
+|---|---|---|---|
+| Task choice numbering | No numeric step before job selection | S2 | Task-choice screenshot |
+| First-screen previous action | Hidden or replaced with a valid home/cancel action | S2 | Task-choice screenshot |
+| Board path progress | Sequential 1/5 through 5/5 | S1 | Board-flow screenshots |
+| PDF path progress | Sequential 1/4 through 4/4 | S1 | PDF-flow screenshots |
+| Skipped progress number | Not present | S1 | Prototype review |
+| Progress source | Derived from selected job | S1 | Spec and implementation contract |
+
 ## Default Window
 
 | Criterion | Required result | Blocker level | Required evidence |

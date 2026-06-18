@@ -260,6 +260,51 @@
   - Review the prototype zip before implementation starts.
   - Keep PR #6 Draft until a separate v2 implementation path is approved.
 
+## Task 2026-06-18 - PRO Task Workspace v2 progress model alignment
+
+- Phase: pro-task-workspace-v2-progress-model-alignment
+- Branch: design/pro-task-workspace-v2-spec
+- PR: #7
+- Task type:
+  - docs-only design spec progress model alignment plus local-only prototype evidence refresh
+- Scope:
+  - Allowed:
+    - Add the selected-job progress model to the v2 spec.
+    - Add progress model acceptance criteria.
+    - Align local prototype step labels with board and PDF paths.
+    - Regenerate local-only actual Edge prototype screenshots and zip.
+  - Forbidden:
+    - Product code changes.
+    - PR #6 changes.
+    - package/package-lock changes.
+    - DB/public/CI changes.
+    - user manual PNG changes.
+    - committed review artifacts or prototype artifacts.
+- Progress model:
+  - Task Choice is a pre-flow screen with no numeric step.
+  - Photo Board Image path uses 1/5 through 5/5.
+  - Photo Ledger PDF path uses 1/4 through 4/4.
+  - Previous is hidden or replaced with a valid home/cancel action when no previous step exists.
+  - Progress labels are derived from the selected job path.
+- Changed docs:
+  - docs/PRO_TASK_WORKSPACE_V2_SPEC.md
+  - docs/PRO_TASK_WORKSPACE_V2_ACCEPTANCE.md
+  - docs/CODEX_TASKS.md
+- Local-only artifacts:
+  - review-artifacts/pro-task-workspace-v2/
+  - review-artifacts/pro-task-workspace-v2.zip
+- Verification:
+  - git diff --check: PASS
+  - build: PASS - `npm.cmd run build`
+  - docs-only scope check: PASS
+  - hidden/bidi/newline check: PASS
+  - markdown raw line structure check: PASS
+  - no-exposure check: PASS
+  - prototype zip validation: PASS
+  - actual Edge element-level screenshot count: PASS - 15 screenshots
+  - progress model validation: PASS
+  - PR #6 and PR #7 Draft state check: PASS
+
 ## Task 2026-06-18 - PRO Task Workspace v2 design artifact alignment
 
 - Phase: pro-task-workspace-v2-design-artifact-alignment

@@ -55,6 +55,30 @@ The v2 workspace follows these principles:
 - Avoid horizontal overflow in every layout.
 - Use synthetic data only in design, QA, screenshots, and review artifacts.
 
+## Progress Model
+
+- Task Choice is a pre-flow screen and has no numeric step.
+- Photo Board Image uses 5 steps.
+- Photo Ledger PDF uses 4 steps.
+- A user must never see skipped or duplicated step numbers.
+- Previous is hidden when no previous step exists.
+- Progress labels are derived from the selected job path.
+
+### Photo Board Image Steps
+
+1. Photo preparation.
+2. Board content.
+3. Board size, position, and lower band.
+4. Generate ready.
+5. Result success or failure.
+
+### Photo Ledger PDF Steps
+
+1. Photo preparation.
+2. PDF information and layout.
+3. PDF generate ready.
+4. Result success or failure.
+
 ## Jobs
 
 PRO has two top-level jobs.
