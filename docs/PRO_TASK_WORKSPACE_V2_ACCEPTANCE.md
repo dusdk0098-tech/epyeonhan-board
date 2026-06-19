@@ -1,0 +1,199 @@
+# PRO Task Workspace v2 Acceptance
+
+## Progress Model
+
+| Criterion | Required result | Blocker level | Required evidence |
+|---|---|---|---|
+| Task choice numbering | No numeric step before job selection | S2 | Task-choice screenshot |
+| First-screen previous action | Hidden or replaced with a valid home/cancel action | S2 | Task-choice screenshot |
+| Board path progress | Sequential 1/5 through 5/5 | S1 | Board-flow screenshots |
+| PDF path progress | Sequential 1/4 through 4/4 | S1 | PDF-flow screenshots |
+| Skipped progress number | Not present | S1 | Prototype review |
+| Progress source | Derived from selected job | S1 | Spec and implementation contract |
+
+## Default Window
+
+| Criterion | Required result | Blocker level | Required evidence |
+|---|---|---|---|
+| Current task title | Visible in the default window | S1 | Default task screenshot |
+| Primary controls | Visible or short-scroll reachable | S1 | Default active-step screenshot |
+| Previous and next controls | Visible or short-scroll reachable | S1 | Default active-step screenshot |
+| `defaultRequiredScrollToCtaPx` | `<= 120` | S1 | Layout metrics JSON |
+| `defaultMainCtaVisible` | `true` or short-scroll reachable | S1 | Default generate-ready screenshot |
+| `defaultBottomOverflowDetected` | `false` | S1 | Layout metrics JSON |
+| `horizontalOverflowPx` | `<= 1` | S1 | DOM metrics |
+| Visual horizontal scrollbar | Not visible | S1 | Default packaged-window screenshot |
+| Control overlap | No overlap | S1 | Screenshot set |
+| Information density | One primary task canvas is dominant | S2 | Default flow screenshots |
+| Preview clipping | Preview toolbar stays inside viewport | S1 | Default preview screenshot |
+
+## Photo Rail
+
+| Criterion | Required result | Blocker level | Required evidence |
+|---|---|---|---|
+| Large photo rail | Visible only on photo preparation steps | S2 | Photo step and non-photo step screenshots |
+| Compact photo status | Used on non-photo steps | S2 | Content and generate-ready screenshots |
+| Return action | User can return to photo management | S2 | Content step screenshot |
+| Photo loaded state | At least one synthetic photo is visible | S1 | Photo loaded screenshot |
+| Photo selected state | Selected or checked state is visible | S1 | Photo selected screenshot |
+| Rotation state | Rotation-applied state is visible | S2 | Rotation evidence screenshot |
+| Empty state | Explains add or drop action | S2 | Empty photo step screenshot |
+| Photo evidence safety | Synthetic data only | S0 | No-exposure review notes |
+
+## Preview
+
+| Criterion | Required result | Blocker level | Required evidence |
+|---|---|---|---|
+| `boardSizeStepPreviewVisible` | `true` | S1 | Board size step screenshot |
+| `boardSizePreviewNearControls` | `true` | S1 | Board size and position screenshot |
+| Preview consistency | Preview matches selected job and photo state | S1 | Generate-ready screenshot |
+| Preview toolbar | Buttons are not clipped | S1 | Preview screenshot |
+| Preview panel width | Does not force body overflow | S1 | Layout metrics JSON |
+| Preview in narrow mode | Hidden, compact, or stacked without overflow | S2 | Narrow screenshot |
+| Preview absence | Hidden when not useful | S3 | Task choice and content screenshots |
+
+## Lower Band
+
+| Criterion | Required result | Blocker level | Required evidence |
+|---|---|---|---|
+| Empty state | Clear add action is visible | S2 | Lower-band empty screenshot |
+| Added state | Real row with label and value is visible | S1 | Lower-band added screenshot |
+| Delete-ready state | Row removal target is clear | S2 | Lower-band delete-ready screenshot |
+| Add control target | At least 40px | S2 | Layout metrics or screenshot annotation |
+| Delete control target | At least 40px | S2 | Layout metrics or screenshot annotation |
+| Density | Controls are not cramped | S2 | Lower-band screenshots |
+| Row actions | Row-level edit or delete is understandable | S2 | Added and delete-ready screenshots |
+| Hidden when unused | Item manager hidden when lower band is off | S2 | Lower-band off screenshot |
+
+## Fullscreen
+
+| Criterion | Required result | Blocker level | Required evidence |
+|---|---|---|---|
+| Useful scaling | Extra space improves preview or work area | S2 | Fullscreen screenshot and metrics |
+| Empty margin inflation | Not the primary scaling effect | S2 | Fullscreen comparison screenshot |
+| Active task canvas | Remains visually dominant | S2 | Fullscreen active-step screenshot |
+| Preview capacity | Preview gains useful space when appropriate | S2 | Fullscreen preview screenshot |
+| Typography scale | Text scales within approved bounds | S3 | Metrics and screenshot |
+| Control scale | Primary controls remain comfortable | S3 | Metrics and screenshot |
+| Horizontal overflow | `horizontalOverflowPx <= 1` | S1 | Fullscreen DOM metrics |
+| Visual scrollbar | No horizontal scrollbar | S1 | Fullscreen screenshot |
+
+## Narrow
+
+| Criterion | Required result | Blocker level | Required evidence |
+|---|---|---|---|
+| Horizontal overflow | `horizontalOverflowPx <= 1` | S1 | Narrow DOM metrics |
+| Visual scrollbar | No horizontal scrollbar | S1 | Narrow screenshot |
+| Main panel | Stacked and usable | S1 | Narrow active-step screenshot |
+| Preview | Hidden, compact, or below main panel | S2 | Narrow generate-ready screenshot |
+| Core CTA | Visible or short-scroll reachable | S1 | Narrow generate-ready screenshot |
+| Action target | `>= 40px` | S2 | Metrics or screenshot annotation |
+| Primary CTA | `>= 44px` | S1 | Metrics or screenshot annotation |
+| Focus ring | Not clipped | S1 | Keyboard focus screenshot or QA notes |
+
+## Accessibility
+
+| Criterion | Required result | Blocker level | Required evidence |
+|---|---|---|---|
+| Keyboard focus | `focus-visible` is clear | S1 | Keyboard QA notes or screenshot |
+| Focus clipping | Focus ring is not clipped | S1 | Default and narrow screenshots |
+| Reduced motion | State remains visible with reduced motion | S2 | Reduced-motion QA notes |
+| Color independence | State does not rely on color only | S2 | Visual QA notes |
+| Button wording | Purpose-centered labels | S3 | Copy review notes |
+| Icon-only core action | Not used for critical actions | S2 | Screen review notes |
+| Action targets | Minimum 40px | S2 | Target-size metrics |
+| Primary CTA | Minimum 44px | S1 | Target-size metrics |
+
+## Packaging
+
+| Criterion | Required result | Blocker level | Required evidence |
+|---|---|---|---|
+| `npm.cmd run build` | PASS | S1 | Command output summary |
+| `npm.cmd run verify:ui` | PASS when product code changes | S1 | Command output summary |
+| `npm.cmd run verify:board` | PASS when product code changes | S1 | Command output summary |
+| `node scripts/verify-output-settings.cjs` | PASS when product code changes | S1 | Command output summary |
+| `npm.cmd run package:win` | Direct PASS preferred | S1 | Command output summary |
+| EPERM fallback | Document as caveat if used | S2 | Packaging notes |
+| Generated output | Not committed | S0 | Git status and scope check |
+
+## No-Exposure
+
+| Criterion | Required result | Blocker level | Required evidence |
+|---|---|---|---|
+| Synthetic data | Only synthetic photos and text | S0 | Evidence review notes |
+| Real customer data | Not present | S0 | Evidence review notes |
+| Sensitive path | Not present | S0 | No-exposure scan |
+| Token or key | Not present | S0 | No-exposure scan |
+| Signed URL or storage path | Not present | S0 | No-exposure scan |
+| Full UUID or internal ID | Not present | S0 | No-exposure scan |
+| Binary or base64 in reports | Not present | S0 | Artifact inspection |
+
+## Layout Metrics Role
+
+| Criterion | Required result | Blocker level | Required evidence |
+|---|---|---|---|
+| Design-spec metrics | Labeled as target-only | S1 | `layout-metrics.json` |
+| Runtime metrics claim | Not made in PR #7 | S1 | README and PR body |
+| Implementation measurement | Required in follow-up product-code PRs | S1 | Implementation evidence artifact |
+| Metrics confusion risk | Design targets and measured evidence are separate | S1 | Artifact consistency levels |
+
+## Artifact Consistency
+
+| Criterion | Required result | Blocker level | Required evidence |
+|---|---|---|---|
+| Design-spec artifact | Meets Design-Spec Artifact level | S1 | Local artifact file listing |
+| Implementation evidence artifact | Required only for implementation PRs | S1 | Follow-up PR evidence |
+| `layout-metrics.json` | Target-only in PR #7 and labeled as such | S1 | Metrics file inspection |
+| Runtime screenshots | Not claimed by PR #7 | S1 | README and PR body |
+| Review artifacts | Remain uncommitted unless explicitly requested | S0 | Git status |
+
+## Artifact Consistency Levels
+
+### Design-Spec Artifact
+
+| Criterion | Required result | Blocker level | Required evidence |
+|---|---|---|---|
+| `index.html` | Exists | S1 | Local artifact file listing |
+| `prototype.css` | Exists | S1 | Local artifact file listing |
+| `README.md` | Exists | S1 | Local artifact file listing |
+| `layout-metrics.json` | Exists and is valid JSON | S1 | JSON validation |
+| External CDN | Not used | S0 | HTML/CSS scan |
+| Sensitive data | Not present | S0 | No-exposure scan |
+| Screen/frame coverage table | Exists | S1 | Prototype or README |
+| Board/PDF path separation table | Exists | S1 | Prototype or README |
+| Metrics role | Target-only and labeled as such | S1 | Metrics JSON and README |
+| Review artifacts | Local-only and uncommitted | S0 | Git status |
+
+### Implementation Evidence Artifact
+
+| Criterion | Required result | Blocker level | Required evidence |
+|---|---|---|---|
+| `COMMIT.txt` | Matches implementation PR head | S1 | Zip inspection |
+| Screenshot count | Matches index, metrics, and zip listing | S1 | Artifact validation output |
+| Runtime screenshots | Actual app captures, not static mockups | S1 | Screenshot review |
+| DOM/screenshot metrics | Measured, not target-only | S1 | Metrics JSON |
+| No-exposure scan | PASS | S0 | Scan output |
+| Default/fullscreen/narrow evidence | Included | S1 | Screenshot set |
+| Key flow screenshots | Included | S1 | Screenshot set |
+| Target-size and overflow metrics | Measured | S1 | Metrics JSON |
+| Generated output | Not committed | S0 | Git status and scope check |
+
+PR #7 only needs to satisfy the Design-Spec Artifact level.
+
+Product implementation PRs must satisfy the Implementation Evidence Artifact level.
+
+If the two levels are mixed, readiness is PARTIAL.
+
+## Ready Gate
+
+| Criterion | Required result | Blocker level | Required evidence |
+|---|---|---|---|
+| PR #6 state | Remains Draft until v2 prototype is approved | S1 | GitHub PR state |
+| PR #7 state | Remains Draft until design review approval | S2 | GitHub PR state |
+| Design approval | Required before implementation starts | S1 | Review decision |
+| Implementation base | Accepted v2 design, not patching PR #6 | S1 | New branch plan |
+| Scope split | Small PR A/B/C/D/E implementation path | S2 | Implementation plan |
+| Product code change | None in design-spec PR | S0 | Scope check |
+| Package changes | None in design-spec PR | S0 | Scope check |
+| DB/public/CI changes | None in design-spec PR | S0 | Scope check |
+| User manual PNG changes | None in design-spec PR | S0 | Scope check |

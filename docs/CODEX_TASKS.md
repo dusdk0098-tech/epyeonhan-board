@@ -155,3 +155,230 @@
   - 04_PRO image was sanitized/replaced with a demo-safe version before commit.
 - Follow-up:
   - Link images from user manual document if needed.
+
+## Task 2026-06-16 - PRO Task Workspace v2 design spec
+
+- Phase: pro-task-workspace-v2-design-spec
+- Branch: design/pro-task-workspace-v2-spec
+- PR: Draft PR to be created after docs commit.
+- Task type:
+  - docs-only QA / design spec
+- Scope:
+  - Allowed:
+    - Define a design-first reset spec for PRO Task Workspace v2.
+    - Add acceptance criteria for default, fullscreen, narrow, accessibility, packaging, and no-exposure gates.
+    - Create local-only static prototype artifacts under `review-artifacts/pro-task-workspace-v2/`.
+  - Forbidden:
+    - Product code changes.
+    - PR #6 merge or further PR #6 implementation patches.
+    - package/package-lock changes.
+    - DB/public/CI changes.
+    - user manual PNG changes.
+    - generated/release output commits.
+    - committed review artifacts.
+- Changed files:
+  - docs/PRO_TASK_WORKSPACE_V2_SPEC.md
+  - docs/PRO_TASK_WORKSPACE_V2_ACCEPTANCE.md
+  - docs/CODEX_TASKS.md
+- Local-only artifacts:
+  - review-artifacts/pro-task-workspace-v2/index.html
+  - review-artifacts/pro-task-workspace-v2/prototype.css
+  - review-artifacts/pro-task-workspace-v2/README.md
+  - review-artifacts/pro-task-workspace-v2/layout-metrics.json
+- Evidence Bundle:
+  - Location or summary: five read-only design/QA subagent reviews were synthesized into the v2 spec, acceptance matrix, and static prototype.
+- Verification:
+  - git diff --check: PASS
+  - lint: NOT_RUN - no lint script expected for docs-only spec work.
+  - typecheck: NOT_RUN - docs-only spec work; build will cover TypeScript compilation.
+  - tests: NOT_RUN - no standalone test script expected.
+  - build: PASS - `npm.cmd run build`.
+  - package:win: PASS with caveat - direct `npm.cmd run package:win` hit a local Windows EPERM rename lock; prepackaged installer generation and update bridge completed after safe local recovery.
+  - browser QA: NOT_RUN - local static prototype only; no production UI implementation.
+  - migration check: PASS - no DB migration changes intended.
+  - no-exposure check: PASS
+  - docs-only scope: PASS
+- Subagent reviews:
+  - Senior UX Designer: PASS - recommended default-window-first design, one primary task per step, and no merge for PR #6.
+  - Senior Product Designer: PASS - split PRO into board image and photo ledger PDF jobs with explicit decision order.
+  - Senior Frontend Layout Architect: PASS - defined primary canvas, contextual panel, footer, and responsive metrics.
+  - Senior Visual Designer: PASS - defined restrained surface, typography, state, motion, and accessibility guidance.
+  - Senior QA Engineer: PASS - defined acceptance matrix, required screenshots, metrics fields, and packaging caveat wording.
+- Main aggregation result:
+  - Overall: PASS for design-spec readiness.
+  - Safe to merge: PARTIAL - this docs PR can proceed through review; product implementation must wait for design acceptance.
+  - Safe to start next feature: PARTIAL - implementation should start only after this v2 design spec is accepted.
+- Verdict:
+  - PARTIAL
+- Follow-up:
+  - Review and approve the v2 design spec and static prototype.
+  - Start a fresh implementation branch after design acceptance.
+  - Keep PR #6 as a Draft experimental reference branch.
+
+## Task 2026-06-16 - PRO Task Workspace v2 prototype refinement
+
+- Phase: pro-task-workspace-v2-prototype-refinement
+- Branch: design/pro-task-workspace-v2-spec
+- PR: #7
+- Task type:
+  - docs-only design spec / prototype refinement
+- Scope:
+  - Allowed:
+    - Normalize Markdown raw line structure.
+    - Upgrade the local prototype fidelity for user review.
+    - Add default, fullscreen, and narrow frame support.
+    - Add PR #6 problem-to-v2 solution mapping.
+    - Update layout metric targets for prototype review.
+  - Forbidden:
+    - Product code changes.
+    - `src/**`, `electron/**`, and `scripts/**` changes.
+    - package/package-lock changes.
+    - DB/public/CI changes.
+    - user manual PNG changes.
+    - generated/release output commits.
+    - committed review artifacts or zip files.
+- Changed files:
+  - docs/PRO_TASK_WORKSPACE_V2_SPEC.md
+  - docs/PRO_TASK_WORKSPACE_V2_ACCEPTANCE.md
+  - docs/CODEX_TASKS.md
+- Local-only artifacts:
+  - review-artifacts/pro-task-workspace-v2/
+  - review-artifacts/pro-task-workspace-v2.zip
+- Evidence Bundle:
+  - Location or summary: local static prototype now includes default, fullscreen, narrow, and acceptance mapping sections with synthetic-only UI states.
+- Verification:
+  - git diff --check: PASS
+  - build: PASS - `npm.cmd run build`.
+  - docs-only scope: PASS
+  - hidden/bidi/newline check: PASS
+  - markdown raw line structure: PASS
+  - prototype zip validation: PASS
+  - review-artifacts excluded check: PASS
+  - generated/release output check: PASS
+  - no-exposure check: PASS
+- Follow-up:
+  - Review the prototype zip before implementation starts.
+  - Keep PR #6 Draft until a separate v2 implementation path is approved.
+
+## Task 2026-06-18 - PRO Task Workspace v2 progress model alignment
+
+- Phase: pro-task-workspace-v2-progress-model-alignment
+- Branch: design/pro-task-workspace-v2-spec
+- PR: #7
+- Task type:
+  - docs-only design spec progress model alignment plus local-only prototype evidence refresh
+- Scope:
+  - Allowed:
+    - Add the selected-job progress model to the v2 spec.
+    - Add progress model acceptance criteria.
+    - Align local prototype step labels with board and PDF paths.
+    - Regenerate local-only actual Edge prototype screenshots and zip.
+  - Forbidden:
+    - Product code changes.
+    - PR #6 changes.
+    - package/package-lock changes.
+    - DB/public/CI changes.
+    - user manual PNG changes.
+    - committed review artifacts or prototype artifacts.
+- Progress model:
+  - Task Choice is a pre-flow screen with no numeric step.
+  - Photo Board Image path uses 1/5 through 5/5.
+  - Photo Ledger PDF path uses 1/4 through 4/4.
+  - Previous is hidden or replaced with a valid home/cancel action when no previous step exists.
+  - Progress labels are derived from the selected job path.
+- Changed docs:
+  - docs/PRO_TASK_WORKSPACE_V2_SPEC.md
+  - docs/PRO_TASK_WORKSPACE_V2_ACCEPTANCE.md
+  - docs/CODEX_TASKS.md
+- Local-only artifacts:
+  - review-artifacts/pro-task-workspace-v2/
+  - review-artifacts/pro-task-workspace-v2.zip
+- Verification:
+  - git diff --check: PASS
+  - build: PASS - `npm.cmd run build`
+  - docs-only scope check: PASS
+  - hidden/bidi/newline check: PASS
+  - markdown raw line structure check: PASS
+  - no-exposure check: PASS
+  - prototype zip validation: PASS
+  - actual Edge element-level screenshot count: PASS - 15 screenshots
+  - progress model validation: PASS
+  - PR #6 and PR #7 Draft state check: PASS
+
+## Task 2026-06-18 - PRO Task Workspace v2 design artifact alignment
+
+- Phase: pro-task-workspace-v2-design-artifact-alignment
+- Branch: design/pro-task-workspace-v2-spec
+- PR: #7
+- Task type:
+  - docs-only design spec / prototype alignment
+- Scope:
+  - Allowed:
+    - Align prototype frame coverage with spec.
+    - Separate photo board and PDF ledger paths.
+    - Label layout metrics as target-only.
+    - Split design-spec artifact and implementation evidence criteria.
+    - Add interaction-state evidence.
+    - Improve user-facing Korean copy.
+    - Add workflow state ownership contract.
+  - Forbidden:
+    - Product code changes.
+    - `src/**`, `electron/**`, and `scripts/**` changes.
+    - package/package-lock changes.
+    - DB/public/CI changes.
+    - user manual PNG changes.
+    - generated/release output commits.
+    - committed review artifacts or prototype artifacts.
+- Changed docs:
+  - docs/PRO_TASK_WORKSPACE_V2_SPEC.md
+  - docs/PRO_TASK_WORKSPACE_V2_ACCEPTANCE.md
+  - docs/CODEX_TASKS.md
+- Local-only artifacts:
+  - review-artifacts/pro-task-workspace-v2/
+  - review-artifacts/pro-task-workspace-v2.zip
+- Verification:
+  - git diff --check: PASS
+  - build: PASS - `npm.cmd run build`
+  - docs-only scope: PASS
+  - hidden/bidi/newline check: PASS
+  - markdown raw line structure check: PASS
+  - no-exposure check: PASS
+  - prototype zip validation: PASS
+  - review-artifacts excluded check: PASS
+  - generated/release output check: PASS
+- Follow-up:
+  - Keep PR #7 Draft until the alignment pass is reviewed.
+  - Keep PR #6 as a Draft experimental reference branch.
+## Task 2026-06-16 - PRO Task Workspace v2 Markdown hard rewrite
+
+- Phase: pro-task-workspace-v2-markdown-hard-rewrite
+- Branch: design/pro-task-workspace-v2-spec
+- PR: #7
+- Task type:
+  - docs-only markdown hard rewrite
+- Scope:
+  - Allowed:
+    - Rewrite SPEC as LF Markdown.
+    - Rewrite ACCEPTANCE as LF Markdown.
+    - Preserve design meaning.
+    - Append this task record.
+  - Forbidden:
+    - Product code changes.
+    - `src/**` changes.
+    - `scripts/**` changes.
+    - package/package-lock changes.
+    - DB/public/CI changes.
+    - user manual PNG changes.
+    - generated/release output commits.
+    - committed review artifacts or prototype artifacts.
+- Changed files:
+  - docs/PRO_TASK_WORKSPACE_V2_SPEC.md
+  - docs/PRO_TASK_WORKSPACE_V2_ACCEPTANCE.md
+  - docs/CODEX_TASKS.md
+- Verification planned:
+  - local byte LF/CR check
+  - staged blob LF/CR check
+  - origin object LF/CR check
+  - raw first 40 lines visual check
+  - docs-only scope check
+  - no-exposure check
