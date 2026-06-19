@@ -108,6 +108,12 @@ import {
 } from './shared/photoLedgerRenderer';
 import { calculateContainedSize } from './shared/previewFit';
 import type { UpdateStatusPayload } from './electron-api';
+import { ProWorkspaceV2 } from './components/pro-workspace-v2/ProWorkspaceV2';
+import type {
+  ProLegacyAdapterContent,
+  ProWorkspaceJob,
+  ProWorkspaceSummary
+} from './components/pro-workspace-v2/types';
 
 type Screen = 'start' | 'help' | 'basic' | 'advanced' | 'output' | 'commonSettings' | 'contact' | 'admin';
 type WorkspaceScreen = 'basic' | 'advanced' | 'output';
@@ -117,6 +123,7 @@ type OAuthFlow = 'signin' | 'link';
 type AdminView = 'all' | 'new' | 'social' | 'devices';
 type AdminNewUserWindow = 7 | 30 | 0;
 type StateAction<T> = T | ((current: T) => T);
+type OutputSettingsTab = 'fields' | 'datetime' | 'layout' | 'typography' | 'highlight' | 'ledger';
 type CommonOutputSettings = Pick<
   BoardSettings,
   | 'jpgQuality'
@@ -404,7 +411,7 @@ export default function App() {
   const [commonOutputSettings, setCommonOutputSettings] = useState<CommonOutputSettings>(() => createCommonOutputSettings());
   const [activeAdvancedSettingsTab, setActiveAdvancedSettingsTab] = useState<'datetime' | 'board'>('datetime');
   const [activeAdvancedBoardTab, setActiveAdvancedBoardTab] = useState<'layout' | 'typography'>('layout');
-  const [activeOutputSettingsTab, setActiveOutputSettingsTab] = useState<'fields' | 'datetime' | 'layout' | 'typography' | 'highlight' | 'ledger'>('fields');
+  const [activeOutputSettingsTab, setActiveOutputSettingsTab] = useState<OutputSettingsTab>('fields');
   const [status, setStatus] = useState<StatusMessage | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isDragTargetActive, setIsDragTargetActive] = useState(false);
@@ -3496,7 +3503,7 @@ export default function App() {
     );
   }
 
-  function renderOutputScreen() {
+  function renderOutputScreenLegacy() {
     return (
       <main className="page-shell output-shell">
         <div className="output-grid">
@@ -3638,6 +3645,263 @@ export default function App() {
           {renderPremiumSettingsCard()}
         </div>
       </main>
+    );
+  }
+
+  function getOutputSettingsTabLabel(tab: OutputSettingsTab) {
+    switch (tab) {
+      case 'fields':
+        return '보드 내용';
+      case 'datetime':
+        return '날짜/시간';
+      case 'layout':
+        return '크기/배치';
+      case 'typography':
+        return '글자/테두리';
+      case 'highlight':
+        return '강조/실행';
+      case 'ledger':
+        return '사진대지';
+    }
+  }
+
+  function renderOutputSettingsTabPanel(tab: OutputSettingsTab) {
+    switch (tab) {
+      case 'fields':
+        return (
+          <div className="premium-field-editor">
+            <div className="premium-field-header">
+              <span>항목명 / 내용</span>
+              <button className="small-btn outline" type="button" onClick={addField}>
+                <Plus size={15} /> 항목 추가
+              </button>
+            </div>
+            {renderBoardFieldEditor('advanced-field-list premium-field-list')}
+            {renderPremiumFieldActions()}
+          </div>
+        );
+      case 'datetime':
+        return renderPremiumDateTimeSettings();
+      case 'layout':
+        return renderPremiumBoardLayoutSettings();
+      case 'typography':
+        return renderPremiumTypographySettings();
+      case 'highlight':
+        return renderPremiumHighlightAndActions();
+      case 'ledger':
+        return renderPremiumPhotoLedgerSettings();
+    }
+  }
+
+  function renderProWorkspaceSettingsPanel(job: ProWorkspaceJob) {
+    const tabs: Array<{ key: OutputSettingsTab; label: string }> = job === 'photo-ledger-pdf'
+      ? [{ key: 'ledger', label: getOutputSettingsTabLabel('ledger') }]
+      : [
+          { key: 'fields', label: getOutputSettingsTabLabel('fields') },
+          { key: 'datetime', label: getOutputSettingsTabLabel('datetime') },
+          { key: 'layout', label: getOutputSettingsTabLabel('layout') },
+          { key: 'typography', label: getOutputSettingsTabLabel('typography') },
+          { key: 'highlight', label: getOutputSettingsTabLabel('highlight') }
+        ];
+    const currentSettingsTab = tabs.some((tab) => tab.key === activeOutputSettingsTab)
+      ? activeOutputSettingsTab
+      : tabs[0].key;
+
+    return (
+      <Card title="설정" icon={<Settings size={17} />} className="output-settings-card premium-settings-card">
+        <div className="settings-tabs premium-settings-tabs" role="tablist" aria-label="PRO 설정">
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              role="tab"
+              aria-selected={currentSettingsTab === tab.key}
+              className={currentSettingsTab === tab.key ? 'settings-tab active' : 'settings-tab'}
+              onClick={() => setActiveOutputSettingsTab(tab.key)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        <div className="settings-tab-panel output-tab-panel">
+          {renderOutputSettingsTabPanel(currentSettingsTab)}
+        </div>
+      </Card>
+    );
+  }
+
+  function renderOutputPhotoPanel() {
+    return (
+      <Card
+        title="사진 목록"
+        icon={<ListChecks size={17} />}
+        className="output-photo-card"
+        action={
+          <div className="output-title-actions">
+            <span>체크 {photos.filter((photo) => photo.selectedForProcessing).length}장</span>
+            <button className="small-btn outline" type="button" onClick={() => setShowPhotoList(true)}>
+              자세히
+            </button>
+          </div>
+        }
+      >
+        <div className="photo-card-actions output-photo-select-actions">
+          <button type="button" onClick={() => setAllPhotoChecks(true)}>
+            전체 선택
+          </button>
+          <button type="button" onClick={() => setAllPhotoChecks(false)}>
+            전체 해제
+          </button>
+          <button type="button" onClick={invertPhotoChecks}>
+            선택 반전
+          </button>
+        </div>
+        <div className="photo-list output-photo-list">
+          <div className="photo-list-head">
+            <span>선택</span>
+            <span>순서 / 파일명</span>
+          </div>
+          <div className="photo-list-body">
+            {photos.length === 0 ? (
+              <div className="empty-list">사진이 없습니다.</div>
+            ) : (
+              photos.map((photo, index) => (
+                <div
+                  key={photo.path}
+                  className={selectedPhotoPath === photo.path ? 'photo-list-row active' : 'photo-list-row'}
+                  onClick={() => setSelectedPhotoPath(photo.path)}
+                >
+                  <input
+                    type="checkbox"
+                    checked={photo.selectedForProcessing}
+                    onChange={() => togglePhotoChecked(photo.path)}
+                    onClick={(event) => event.stopPropagation()}
+                  />
+                  <span title={photo.name}>
+                    <em className="photo-order-badge">{index + 1}</em>
+                    {photo.name}
+                  </span>
+                  <button
+                    type="button"
+                    aria-label="사진 삭제"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      removePhoto(photo.path);
+                    }}
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+        <div className="output-photo-actions">
+          <button className="btn ghost wide" type="button" onClick={handleSelectPhotos}>
+            <Camera size={17} /> 사진 불러오기
+          </button>
+          <button className="btn ghost wide" type="button" onClick={handleSelectPhotoFolder}>
+            <FolderOpen size={17} /> 폴더 불러오기
+          </button>
+          <button className="btn ghost wide" type="button" onClick={() => void handlePasteClipboardImage()}>
+            <ClipboardPaste size={17} /> 클립보드 첨부
+          </button>
+          <button className="btn ghost wide" type="button" onClick={handleSelectSaveFolder}>
+            <Save size={17} /> 저장 경로
+          </button>
+          <button className="btn ghost wide" type="button" onClick={handleOpenSaveFolder}>
+            <FolderOpen size={17} /> 결과 폴더
+          </button>
+          <button className="text-action danger-text" type="button" onClick={handleClearPhotos}>
+            <RotateCcw size={15} /> 목록 초기화
+          </button>
+        </div>
+      </Card>
+    );
+  }
+
+  function renderOutputPreviewPanel() {
+    return (
+      <Card
+        title="미리보기"
+        icon={<Eye size={17} />}
+        action={
+          <div className="preview-card-actions">
+            <button className="small-btn outline" type="button" onClick={openLargePreview}>
+              <Eye size={15} /> 크게 보기
+            </button>
+            <button
+              className="small-btn outline"
+              type="button"
+              title="결과 이미지 복사"
+              disabled={!selectedPhoto}
+              onClick={() => void handleCopyPreviewImage()}
+            >
+              <Copy size={15} /> 이미지 복사
+            </button>
+            <button
+              className="small-btn outline"
+              type="button"
+              title="미리보기 인쇄"
+              disabled={!selectedPhoto}
+              onClick={() => void handlePrintPreviewImage()}
+            >
+              <Printer size={15} /> 인쇄
+            </button>
+          </div>
+        }
+        className="output-preview-card"
+      >
+        <PreviewStage
+          imageDataUrl={previewDataUrl}
+          fields={previewFields}
+          settings={settings}
+          previewRevision={previewRevision}
+          livePreviewSignature={livePreviewSignature}
+          selectedPhotoName={selectedPhoto?.name}
+          emptyText="왼쪽 목록에서 사진을 선택하세요."
+          highlight={selectedHighlight}
+          outputGrayscale={settings.outputGrayscale}
+          editableHighlight={Boolean(selectedHighlight?.enabled)}
+          onHighlightChange={updateSelectedPhotoHighlight}
+          onContextMenu={handlePreviewContextMenu}
+          large
+        />
+        {renderPhotoRotationControls('output-rotation-controls')}
+        <div className="preview-context-hint">우클릭: 복사 / 클립보드 첨부</div>
+      </Card>
+    );
+  }
+
+  function prepareProWorkspaceJob(job: ProWorkspaceJob) {
+    setActiveOutputSettingsTab(job === 'photo-ledger-pdf' ? 'ledger' : 'fields');
+  }
+
+  function renderLegacyAdapter(job: ProWorkspaceJob): ProLegacyAdapterContent {
+    return {
+      photoPanel: renderOutputPhotoPanel(),
+      settingsPanel: renderProWorkspaceSettingsPanel(job),
+      previewPanel: renderOutputPreviewPanel()
+    };
+  }
+
+  function renderOutputScreen() {
+    const summary: ProWorkspaceSummary = {
+      photoCount: photos.length,
+      checkedCount: photos.filter((photo) => photo.selectedForProcessing).length,
+      hasSelectedPhoto: Boolean(selectedPhoto),
+      saveFolderReady: Boolean(saveDir),
+      isProcessing,
+      statusText: status?.text,
+      activeSettingsLabel: getOutputSettingsTabLabel(activeOutputSettingsTab)
+    };
+
+    return (
+      <ProWorkspaceV2
+        summary={summary}
+        renderAdapterContent={renderLegacyAdapter}
+        onPrepareJob={prepareProWorkspaceJob}
+      />
     );
   }
 

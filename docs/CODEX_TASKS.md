@@ -382,3 +382,48 @@
   - raw first 40 lines visual check
   - docs-only scope check
   - no-exposure check
+
+## Task 2026-06-19 - PRO Workspace v2 Layout Foundation
+
+- Phase: pro-workspace-v2-layout-foundation
+- Branch: codex/pro-workspace-v2-layout-foundation
+- Task type:
+  - product UX implementation / layout foundation
+- Base:
+  - main after PR #7
+- Scope:
+  - V2 shell
+  - Task Choice
+  - responsive primary canvas/context panel/action bar
+  - legacy workflow adapter
+  - focus/reduced-motion/target-size foundation
+  - actual-browser/Electron artifact
+- Excluded:
+  - business flow rewrite
+  - output payload changes
+  - IPC changes
+  - package changes
+  - PR #6 code reuse
+  - user manual PNG changes
+  - generated/release output commits
+  - committed review artifacts
+- Verification planned:
+  - git diff --check
+  - npm.cmd run build
+  - npm.cmd run verify:ui
+  - npm.cmd run verify:board
+  - node scripts/verify-output-settings.cjs
+  - node scripts/verify-pro-workspace-v2-layout.cjs
+  - npm.cmd run package:win
+  - hidden/bidi/newline check
+  - no-exposure check
+  - scope check
+- Known limitations:
+  - This PR establishes the layout foundation only.
+  - Complete board and PDF v2 step flows remain follow-up work.
+  - Existing PRO controls are preserved through a temporary adapter.
+- Follow-up:
+  - PR B board insertion flow
+  - PR C PDF/detail/preview integration
+  - PR D motion/accessibility polish
+  - PR E user manual update
