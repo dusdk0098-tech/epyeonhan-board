@@ -26,7 +26,13 @@ export function ProTaskChoiceScreen({ selectedJob, options, onSelectJob }: ProTa
             type="button"
             className={selected ? 'pro-v2-job-card selected' : 'pro-v2-job-card'}
             aria-pressed={selected}
+            aria-label={`${option.title}: ${option.description}`}
             onClick={() => onSelectJob(option.job)}
+            onKeyDown={(event) => {
+              if (event.key !== 'Enter' && event.key !== ' ') return;
+              event.preventDefault();
+              onSelectJob(option.job);
+            }}
           >
             <span className="pro-v2-job-icon" aria-hidden>
               <Icon size={24} />
@@ -36,6 +42,7 @@ export function ProTaskChoiceScreen({ selectedJob, options, onSelectJob }: ProTa
               <span>{option.description}</span>
             </span>
             <span className="pro-v2-job-result">{option.resultLabel}</span>
+            {selected ? <span className="pro-v2-state-badge">선택됨</span> : null}
             <span className="pro-v2-job-bullets">
               {option.bullets.map((bullet) => (
                 <span key={bullet}>

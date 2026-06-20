@@ -32,14 +32,14 @@ export function ProBoardGenerateStep({ model, actions }: ProBoardGenerateStepPro
         </div>
       </section>
       {blocked.length > 0 ? (
-        <section className="pro-v2-generate-blockers" aria-live="polite">
+        <section id="pro-v2-board-generate-blockers" className="pro-v2-generate-blockers" role="alert" aria-live="assertive">
           <h3>생성 전에 필요한 작업</h3>
           <ul>
             {blocked.map((item) => <li key={item}>{item}</li>)}
           </ul>
         </section>
       ) : (
-        <section className="pro-v2-generate-ready-note" aria-live="polite">
+        <section id="pro-v2-board-generate-ready" className="pro-v2-generate-ready-note" aria-live="polite" role="status">
           <h3>생성 준비 완료</h3>
           <p>사진 방향, 보드판 내용, 저장 폴더를 확인했습니다. 아래 버튼으로 보드판 이미지를 생성하세요.</p>
         </section>

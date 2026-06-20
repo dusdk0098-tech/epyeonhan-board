@@ -160,6 +160,7 @@ export function ProBoardFlow({ model, actions, slots, onChangeJob }: ProBoardFlo
   function renderPrimaryAction() {
     if (step === 'generate') {
       const mode: ProBoardGenerateMode = model.hasSelectedPhoto ? 'selected' : 'checked';
+      const describedBy = generateReady ? 'pro-v2-board-generate-ready' : 'pro-v2-board-generate-blockers';
       return (
         <>
           {model.checkedCount > 0 ? (
@@ -168,6 +169,7 @@ export function ProBoardFlow({ model, actions, slots, onChangeJob }: ProBoardFlo
               className="pro-v2-action secondary"
               data-evidence="board-generate-checked"
               disabled={!generateReady || model.isProcessing}
+              aria-describedby={describedBy}
               onClick={() => void runGenerate('checked')}
             >
               체크한 사진 생성
@@ -178,6 +180,7 @@ export function ProBoardFlow({ model, actions, slots, onChangeJob }: ProBoardFlo
             className="pro-v2-action primary pro-v2-board-primary"
             disabled={!generateReady || model.isProcessing}
             data-evidence="board-generate-cta"
+            aria-describedby={describedBy}
             onClick={() => void runGenerate(mode)}
           >
             {generatingMode ? '생성 중...' : '보드판 이미지 생성'}
@@ -229,6 +232,8 @@ export function ProBoardFlow({ model, actions, slots, onChangeJob }: ProBoardFlo
       eyebrow={meta.eyebrow}
       description={meta.description}
       progressLabel={`${meta.stepNumber} / ${meta.totalSteps}`}
+      focusKey={`board-${step}`}
+      isBusy={model.isProcessing || generatingMode !== null}
       canvasTitle={meta.canvasTitle}
       canvas={<div className="pro-v2-board-flow">{renderCanvas()}</div>}
       contextTitle={step === 'adjust' || step === 'generate' || step === 'result' ? '미리보기와 상태' : '사진 상태와 미리보기'}

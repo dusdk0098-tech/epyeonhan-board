@@ -16,7 +16,11 @@ export function ProBoardResultStep({ model, actions, onEditSettings, onStartNew 
 
   return (
     <div className="pro-v2-board-step pro-v2-board-result-step" data-evidence={success ? 'board-result-success' : 'board-result-failure'}>
-      <section className={success ? 'pro-v2-result-card success' : error ? 'pro-v2-result-card error' : 'pro-v2-result-card'}>
+      <section
+        className={success ? 'pro-v2-result-card success' : error ? 'pro-v2-result-card error' : 'pro-v2-result-card'}
+        role={error ? 'alert' : 'status'}
+        aria-live={error ? 'assertive' : 'polite'}
+      >
         <Icon size={28} aria-hidden />
         <div>
           <h3>{success ? '보드판 이미지 생성 완료' : error ? '보드판 이미지 생성 문제' : '생성 결과 확인'}</h3>

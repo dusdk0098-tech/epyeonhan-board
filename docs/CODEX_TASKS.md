@@ -519,6 +519,47 @@
 - Draft PR:
   - Keep as Draft until runtime QA and final review confirm no Must Fix blockers.
 
+## Task 2026-06-21 - PR D PRO Workspace v2 Motion and Accessibility
+
+- Phase: pr-d-pro-workspace-v2-motion-accessibility
+- Branch: codex/pro-workspace-v2-motion-accessibility
+- Base: origin/main @ 4dd706b3837ff2b3dbbbce24f457b6c29b06e65e
+- Task type:
+  - PRO Workspace v2 accessibility, keyboard, focus, target-size, and motion polish.
+- Scope:
+  - Add step-heading focus management for board and PDF flows without changing business logic.
+  - Add live-region and busy-state semantics for status, blocker, ready, result, and output states.
+  - Strengthen visible focus, selected, blocked, ready, and result states without relying on color alone.
+  - Keep new motion tokens short and scoped to the `pro-v2` workspace.
+  - Add reduced-motion and forced-colors handling for the PRO Workspace v2 surface.
+  - Add static motion/accessibility contract verification.
+- Excluded:
+  - Board flow or PDF flow reimplementation.
+  - PR #6 cherry-pick, merge, or code copy.
+  - IPC, preload, output payload, Electron window policy, package, public asset, DB, or CI changes.
+  - user manual PNG changes.
+  - generated/release output commits.
+  - committed review artifacts.
+- Verification planned:
+  - git diff --check
+  - npm.cmd run build
+  - npm.cmd run verify:ui
+  - npm.cmd run verify:board
+  - node scripts/verify-output-settings.cjs
+  - node scripts/verify-pro-workspace-v2-layout.cjs
+  - node scripts/verify-pro-workspace-v2-board-flow.cjs
+  - node scripts/verify-pro-workspace-v2-pdf-flow.cjs
+  - node scripts/verify-pro-workspace-v2-accessibility.cjs
+  - npm.cmd run package:win
+  - authenticated Electron runtime keyboard and focus QA
+  - synthetic board, PDF, and LITE regression smoke QA
+  - reduced-motion and forced-colors review
+  - hidden/bidi/newline check
+  - no-exposure check
+  - scope check
+- Draft PR:
+  - Keep as Draft until exact-HEAD runtime QA and final review confirm no Must Fix blockers.
+
 ## Task 2026-06-20 - PR C PRO Workspace v2 PDF Flow
 
 - Phase: pr-c-pro-workspace-v2-pdf-flow

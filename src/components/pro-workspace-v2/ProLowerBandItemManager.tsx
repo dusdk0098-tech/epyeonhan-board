@@ -58,6 +58,7 @@ export function ProLowerBandItemManager({
                   type="button"
                   className="pro-v2-row-select"
                   aria-pressed={selected}
+                  aria-label={`${index + 1}번 하부띠 항목 선택`}
                   onClick={() => onSelectField(field.id)}
                 >
                   {index + 1}
