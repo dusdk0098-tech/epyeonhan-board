@@ -1,12 +1,15 @@
 import { useMemo, useRef, useState } from 'react';
 
+import { ProBoardFlow } from './ProBoardFlow';
 import { ProLegacyWorkflowAdapter } from './ProLegacyWorkflowAdapter';
 import { ProTaskChoiceScreen } from './ProTaskChoiceScreen';
 import { ProWorkspaceShell } from './ProWorkspaceShell';
+import type { ProBoardFlowController } from './boardFlowTypes';
 import type { ProLegacyAdapterContent, ProTaskChoiceOption, ProWorkspaceJob, ProWorkspaceSummary } from './types';
 
 interface ProWorkspaceV2Props {
   summary: ProWorkspaceSummary;
+  boardFlow: ProBoardFlowController;
   renderAdapterContent: (job: ProWorkspaceJob) => ProLegacyAdapterContent;
   onPrepareJob: (job: ProWorkspaceJob) => void;
 }
@@ -43,7 +46,7 @@ const jobCopy: Record<ProWorkspaceJob, { title: string; description: string; pri
   }
 };
 
-export function ProWorkspaceV2({ summary, renderAdapterContent, onPrepareJob }: ProWorkspaceV2Props) {
+export function ProWorkspaceV2({ summary, boardFlow, renderAdapterContent, onPrepareJob }: ProWorkspaceV2Props) {
   const [pendingJob, setPendingJob] = useState<ProWorkspaceJob | null>(null);
   const [activeJob, setActiveJob] = useState<ProWorkspaceJob | null>(null);
   const adapterRef = useRef<HTMLDivElement>(null);
@@ -95,8 +98,21 @@ export function ProWorkspaceV2({ summary, renderAdapterContent, onPrepareJob }: 
             </button>
           }
           secondaryAction={
-            <p className="pro-v2-action-note">이 화면은 숫자 단계가 없는 작업 선택 화면입니다.</p>
+            <p className="pro-v2-action-note">작업을 선택하면 필요한 설정 순서가 이어집니다.</p>
           }
+        />
+      </main>
+    );
+  }
+
+  if (activeJob === 'board-image') {
+    return (
+      <main className="page-shell output-shell pro-v2-page">
+        <ProBoardFlow
+          model={boardFlow.model}
+          actions={boardFlow.actions}
+          slots={boardFlow.slots}
+          onChangeJob={() => setActiveJob(null)}
         />
       </main>
     );

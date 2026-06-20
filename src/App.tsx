@@ -109,6 +109,7 @@ import {
 import { calculateContainedSize } from './shared/previewFit';
 import type { UpdateStatusPayload } from './electron-api';
 import { ProWorkspaceV2 } from './components/pro-workspace-v2/ProWorkspaceV2';
+import type { ProBoardFlowController } from './components/pro-workspace-v2/boardFlowTypes';
 import type {
   ProLegacyAdapterContent,
   ProWorkspaceJob,
@@ -3119,6 +3120,43 @@ export default function App() {
     );
   }
 
+  function renderPremiumHighlightSettingsOnly() {
+    return (
+      <div className="premium-settings-stack">
+        <div className="output-setting-section">
+          <h4>원형 강조</h4>
+          <label className="check-label">
+            <input
+              type="checkbox"
+              checked={Boolean(selectedHighlight?.enabled)}
+              disabled={!selectedPhoto}
+              onChange={(event) => setSelectedHighlightEnabled(event.target.checked)}
+            />
+            선택 사진 원형 강조
+          </label>
+          <label className="check-label">
+            <input
+              type="checkbox"
+              checked={Boolean(selectedHighlight?.outsideGrayscale)}
+              disabled={!selectedHighlight?.enabled || settings.outputGrayscale}
+              onChange={(event) => updateSelectedHighlightPatch({ outsideGrayscale: event.target.checked })}
+            />
+            원 바깥 흑백
+          </label>
+          <HighlightColorSelectRow
+            label="원형 색상"
+            value={selectedHighlight?.color ?? defaultHighlight.color}
+            disabled={!selectedHighlight?.enabled}
+            onChange={(value) => updateSelectedHighlightPatch({ color: value })}
+          />
+          <button className="small-btn danger" type="button" disabled={!selectedHighlight?.enabled} onClick={() => updateSelectedPhotoHighlight(undefined)}>
+            <Trash2 size={15} /> 강조 삭제
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   function renderPremiumFieldActions() {
     return (
       <div className="premium-field-action-panel">
@@ -3896,9 +3934,71 @@ export default function App() {
       activeSettingsLabel: getOutputSettingsTabLabel(activeOutputSettingsTab)
     };
 
+    const boardFlow: ProBoardFlowController = {
+      model: {
+        photos: photos.map((photo) => ({
+          path: photo.path,
+          name: photo.name,
+          selectedForProcessing: photo.selectedForProcessing,
+          rotation: photo.rotation
+        })),
+        fields,
+        selectedPhotoPath,
+        selectedPhotoName: selectedPhoto?.name,
+        selectedFieldId,
+        selectedPhotoRotation,
+        photoCount: photos.length,
+        checkedCount: photos.filter((photo) => photo.selectedForProcessing).length,
+        hasSelectedPhoto: Boolean(selectedPhoto),
+        saveFolderReady: Boolean(saveDir),
+        previewReady: Boolean(previewDataUrl && selectedPhoto),
+        bottomStripEnabled: settings.boardLayoutMode === 'bottom-strip',
+        highlightEnabled: Boolean(selectedHighlight?.enabled),
+        isProcessing,
+        statusKind: status?.kind,
+        statusText: status?.text
+      },
+      actions: {
+        onAddPhotos: () => void handleSelectPhotos(),
+        onAddPhotoFolder: () => void handleSelectPhotoFolder(),
+        onPastePhoto: () => void handlePasteClipboardImage(),
+        onClearPhotos: handleClearPhotos,
+        onShowPhotoList: () => setShowPhotoList(true),
+        onSelectAllPhotos: () => setAllPhotoChecks(true),
+        onClearPhotoChecks: () => setAllPhotoChecks(false),
+        onInvertPhotoChecks: invertPhotoChecks,
+        onSelectPhoto: setSelectedPhotoPath,
+        onTogglePhotoChecked: togglePhotoChecked,
+        onRemovePhoto: removePhoto,
+        onRotateSelected: rotateSelectedPhoto,
+        onSelectSaveFolder: () => void handleSelectSaveFolder(),
+        onOpenSaveFolder: () => void handleOpenSaveFolder(),
+        onAddField: addField,
+        onUpdateField: updateField,
+        onDeleteField: deleteField,
+        onSelectField: setSelectedFieldId,
+        onInsertSelectedFileName: insertSelectedFileName,
+        onToggleBottomStrip: (enabled) => {
+          updateSettings({ boardLayoutMode: enabled ? 'bottom-strip' : 'table' });
+        },
+        onOpenLargePreview: openLargePreview,
+        onCopyPreview: () => void handleCopyPreviewImage(),
+        onPrintPreview: () => void handlePrintPreviewImage(),
+        onGenerate: (mode) => runProcess(mode)
+      },
+      slots: {
+        previewPanel: renderOutputPreviewPanel(),
+        layoutControls: renderPremiumBoardLayoutSettings(),
+        dateTimeControls: renderPremiumDateTimeSettings(),
+        typographyControls: renderPremiumTypographySettings(),
+        highlightControls: renderPremiumHighlightSettingsOnly()
+      }
+    };
+
     return (
       <ProWorkspaceV2
         summary={summary}
+        boardFlow={boardFlow}
         renderAdapterContent={renderLegacyAdapter}
         onPrepareJob={prepareProWorkspaceJob}
       />

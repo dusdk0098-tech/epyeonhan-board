@@ -479,3 +479,42 @@
   - PR #8 remains Draft after this closure pass.
   - PR #6 remains a Draft experimental reference branch.
   - Runtime artifacts are local-only and not committed.
+
+## Task 2026-06-20 - PR B PRO Workspace v2 Board Flow
+
+- Phase: pr-b-pro-workspace-v2-board-flow
+- Branch: codex/pro-workspace-v2-board-flow
+- Base: origin/main @ 368de3bdc34a4bf2ada30969015b83b28ff42abd
+- Task type:
+  - PRO Workspace v2 implementation / photo board flow
+- Scope:
+  - Implement Photo Board Image flow as 1 / 5 through 5 / 5.
+  - Keep Task Choice as a pre-flow screen without numeric progress.
+  - Reuse existing App-owned board state, photo rotation, preview, save folder, and output handlers.
+  - Add board-flow components under `src/components/pro-workspace-v2/`.
+  - Add static board-flow contract verification script.
+- Excluded:
+  - PR #6 cherry-pick, merge, or code copy.
+  - PDF v2 flow implementation.
+  - IPC, preload, output payload, package, public asset, DB, or CI changes.
+  - user manual PNG changes.
+  - generated/release output commits.
+  - committed review artifacts.
+- Verification planned:
+  - git diff --check
+  - npm.cmd run build
+  - npm.cmd run verify:ui
+  - npm.cmd run verify:board
+  - node scripts/verify-output-settings.cjs
+  - node scripts/verify-pro-workspace-v2-layout.cjs
+  - node scripts/verify-pro-workspace-v2-board-flow.cjs
+  - npm.cmd run package:win
+  - authenticated Electron runtime QA
+  - synthetic board output smoke
+  - PDF adapter regression QA
+  - LITE regression QA
+  - hidden/bidi/newline check
+  - no-exposure check
+  - scope check
+- Draft PR:
+  - Keep as Draft until runtime QA and final review confirm no Must Fix blockers.
