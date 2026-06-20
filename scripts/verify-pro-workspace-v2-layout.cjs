@@ -5,6 +5,7 @@ const root = process.cwd();
 const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 
 const files = {
+  main: 'electron/main.ts',
   app: 'src/App.tsx',
   styles: 'src/styles.css',
   workspace: 'src/components/pro-workspace-v2/ProWorkspaceV2.tsx',
@@ -69,6 +70,37 @@ const checks = [
     name: 'Primary CTA min-height token exists',
     pass: /--pro-v2-primary-height:\s*44px/.test(source.styles)
       && /min-height:\s*var\(--pro-v2-primary-height\)/.test(source.styles)
+  },
+  {
+    name: 'Electron window policy preserves default size and lowers minimum to 900x720',
+    pass: /DEFAULT_WINDOW_WIDTH\s*=\s*1280/.test(source.main)
+      && /DEFAULT_WINDOW_HEIGHT\s*=\s*880/.test(source.main)
+      && /MIN_WINDOW_WIDTH\s*=\s*900/.test(source.main)
+      && /MIN_WINDOW_HEIGHT\s*=\s*720/.test(source.main)
+      && /width:\s*DEFAULT_WINDOW_WIDTH/.test(source.main)
+      && /height:\s*DEFAULT_WINDOW_HEIGHT/.test(source.main)
+      && /minWidth:\s*MIN_WINDOW_WIDTH/.test(source.main)
+      && /minHeight:\s*MIN_WINDOW_HEIGHT/.test(source.main)
+      && /Math\.max\(Math\.round\(size\.width\),\s*MIN_WINDOW_WIDTH\)/.test(source.main)
+      && /Math\.max\(Math\.round\(size\.height\),\s*MIN_WINDOW_HEIGHT\)/.test(source.main)
+  },
+  {
+    name: 'V2 action bar stays in normal flow',
+    pass: /\.pro-v2-actionbar\s*\{[\s\S]*?position:\s*static/.test(v2Styles)
+      && !/\.pro-v2-actionbar\s*\{[\s\S]*?position:\s*sticky/.test(v2Styles)
+      && !/\.pro-v2-actionbar\s*\{[\s\S]*?position:\s*fixed/.test(v2Styles)
+  },
+  {
+    name: 'V2 preview rotation controls can wrap without clipping',
+    pass: /\.pro-v2-shell\s+\.output-rotation-controls\s*\{[\s\S]*?grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/.test(v2Styles)
+      && /\.pro-v2-shell\s+\.output-rotation-controls\s+\.small-btn\s*\{[\s\S]*?min-height:\s*var\(--pro-v2-control-height\)/.test(v2Styles)
+      && /\.pro-v2-shell\s+\.output-rotation-controls\s+\.small-btn\s*\{[\s\S]*?min-width:\s*var\(--pro-v2-control-height\)/.test(v2Styles)
+  },
+  {
+    name: 'V2 legacy checkbox and radio controls expose 40px effective targets',
+    pass: /\.pro-v2-shell\s+\.photo-list-row\s+input\[type="checkbox"\][\s\S]*?width:\s*var\(--pro-v2-control-height\)/.test(v2Styles)
+      && /\.pro-v2-shell\s+\.photo-list-row\s+input\[type="checkbox"\][\s\S]*?height:\s*var\(--pro-v2-control-height\)/.test(v2Styles)
+      && /\.pro-v2-shell\s+\.check-label,[\s\S]*?\.pro-v2-shell\s+\.color-option\s*\{[\s\S]*?min-height:\s*var\(--pro-v2-control-height\)/.test(v2Styles)
   },
   {
     name: 'Context panel collapses when empty',

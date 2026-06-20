@@ -427,3 +427,55 @@
   - PR C PDF/detail/preview integration
   - PR D motion/accessibility polish
   - PR E user manual update
+
+## Task 2026-06-20 - PR #8 Window Policy Runtime Fix Closure
+
+- Phase: pr8-window-policy-runtime-fix
+- Branch: codex/pro-workspace-v2-layout-foundation
+- Task type:
+  - product UX runtime closure / responsive window policy
+- Explicit scope approval:
+  - Include `electron/main.ts` minimum window policy in PR #8.
+  - Preserve default startup size at 1280 x 880.
+  - Lower minimum window size and resize clamp to 900 x 720.
+- Scope:
+  - Electron window minimum constants and resize clamp.
+  - PRO Workspace v2 preview toolbar clipping fix.
+  - PRO Workspace v2 action bar normal-flow overlap fix.
+  - V2 action target inventory and 40px / 44px hit-area fixes.
+  - Authenticated Electron runtime artifact refresh.
+  - Synthetic board/PDF/LITE output smoke.
+- Excluded:
+  - IPC channel or payload changes.
+  - preload/API contract changes.
+  - webPreferences/security changes.
+  - auth/output business logic changes.
+  - package/package-lock changes.
+  - DB/public/CI changes.
+  - user manual PNG changes.
+  - generated/release output commits.
+  - committed review artifacts.
+- Runtime evidence:
+  - configuredMinWidth: 900
+  - configuredMinHeight: 720
+  - requestedNarrowOuterWidth: 900
+  - requestedNarrowOuterHeight: 720
+  - actual narrow outer/client size recorded in local-only runtime artifact.
+  - boardOutputSmoke: PASS
+  - pdfOutputSmoke: PASS
+  - liteSaveSmoke: PASS
+- Verification planned:
+  - git diff --check
+  - npm.cmd run build
+  - npm.cmd run verify:ui
+  - npm.cmd run verify:board
+  - node scripts/verify-output-settings.cjs
+  - node scripts/verify-pro-workspace-v2-layout.cjs
+  - npm.cmd run package:win
+  - hidden/bidi/newline check
+  - no-exposure check
+  - scope check
+- Known limitations:
+  - PR #8 remains Draft after this closure pass.
+  - PR #6 remains a Draft experimental reference branch.
+  - Runtime artifacts are local-only and not committed.

@@ -7725,7 +7725,7 @@ body {
 
 .pro-v2-body {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) clamp(300px, 25vw, 420px);
+  grid-template-columns: minmax(0, 1fr) minmax(280px, clamp(300px, 24vw, 420px));
   gap: var(--pro-v2-gap);
   align-items: start;
   min-width: 0;
@@ -7748,7 +7748,7 @@ body {
 
 .pro-v2-context {
   align-self: start;
-  overflow: hidden;
+  overflow: visible;
   padding: clamp(12px, 0.8vw + 8px, 18px);
 }
 
@@ -7909,6 +7909,7 @@ body {
 
 .pro-v2-legacy-adapter {
   min-width: 0;
+  overflow: visible;
 }
 
 .pro-v2-adapter-intro {
@@ -7972,6 +7973,7 @@ body {
   height: auto;
   min-height: 0;
   max-width: 100%;
+  min-width: 0;
 }
 
 .pro-v2-shell button,
@@ -7984,8 +7986,33 @@ body {
   min-height: var(--pro-v2-control-height);
 }
 
-.pro-v2-shell .photo-list-row button {
+.pro-v2-shell .photo-list-row button,
+.app:not(.start-active) .pro-v2-shell .photo-list-row button {
+  width: auto;
   min-width: var(--pro-v2-control-height);
+}
+
+.pro-v2-shell .advanced-field-row button,
+.app:not(.start-active) .pro-v2-shell .advanced-field-row button {
+  width: auto;
+  min-width: var(--pro-v2-control-height);
+  min-height: var(--pro-v2-control-height);
+}
+
+.pro-v2-shell .photo-list-row input[type="checkbox"],
+.pro-v2-shell .photo-list-row input[type="radio"] {
+  width: var(--pro-v2-control-height);
+  min-width: var(--pro-v2-control-height);
+  height: var(--pro-v2-control-height);
+  margin: 0;
+}
+
+.pro-v2-shell .check-label,
+.pro-v2-shell .compact-check,
+.pro-v2-shell .radio-group label,
+.pro-v2-shell .radio-stack label,
+.pro-v2-shell .color-option {
+  min-height: var(--pro-v2-control-height);
 }
 
 .pro-v2-shell .output-preview-card .card-header {
@@ -7999,6 +8026,59 @@ body {
 
 .pro-v2-shell .output-preview-card .preview-card-actions .small-btn {
   min-height: var(--pro-v2-control-height);
+  min-width: var(--pro-v2-control-height);
+}
+
+.pro-v2-shell .premium-settings-tabs .settings-tab,
+.app:not(.start-active) .pro-v2-shell .premium-settings-tabs .settings-tab {
+  min-height: var(--pro-v2-control-height);
+}
+
+.pro-v2-shell .premium-field-action-grid .small-btn,
+.app:not(.start-active) .pro-v2-shell .premium-field-action-grid .small-btn,
+.pro-v2-shell .premium-field-header .small-btn,
+.app:not(.start-active) .pro-v2-shell .premium-field-header .small-btn {
+  min-height: var(--pro-v2-control-height);
+}
+
+.pro-v2-shell .premium-field-action-grid .small-btn.primary,
+.app:not(.start-active) .pro-v2-shell .premium-field-action-grid .small-btn.primary {
+  min-height: var(--pro-v2-primary-height);
+}
+
+.pro-v2-shell .ledger-order-control .small-btn,
+.pro-v2-shell .ledger-action-row .small-btn,
+.app:not(.start-active) .pro-v2-shell .ledger-order-control .small-btn,
+.app:not(.start-active) .pro-v2-shell .ledger-action-row .small-btn {
+  min-height: var(--pro-v2-control-height);
+}
+
+.pro-v2-shell .ledger-create-btn,
+.app:not(.start-active) .pro-v2-shell .ledger-create-btn {
+  min-height: var(--pro-v2-primary-height);
+}
+
+.pro-v2-shell .output-rotation-controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 8px 0 0;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.pro-v2-shell .output-rotation-controls .small-btn {
+  min-width: var(--pro-v2-control-height);
+  min-height: var(--pro-v2-control-height);
+  padding-right: 8px;
+  padding-left: 8px;
+  white-space: normal;
+}
+
+.pro-v2-shell .output-rotation-controls .rotation-status {
+  grid-column: 1 / -1;
+  width: 100%;
+  text-align: center;
 }
 
 .pro-v2-shell .output-photo-card .photo-list.output-photo-list {
@@ -8010,9 +8090,7 @@ body {
 }
 
 .pro-v2-actionbar {
-  position: sticky;
-  bottom: 0;
-  z-index: 3;
+  position: static;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -8021,8 +8099,7 @@ body {
   min-width: 0;
   padding-top: 10px;
   border-top: 1px solid rgba(216, 225, 239, 0.9);
-  background: rgba(248, 251, 255, 0.96);
-  backdrop-filter: blur(8px);
+  background: #f8fbff;
 }
 
 .pro-v2-actionbar-secondary,
