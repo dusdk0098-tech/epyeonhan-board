@@ -1806,16 +1806,19 @@ export default function App() {
 
   async function runProcess(mode: ProcessImagesPayload['mode'], options: { createPhotoLedgerPdf?: boolean } = {}) {
     if (photos.length === 0) {
-      setStatusMessage('error', '처리할 사진을 먼저 불러오세요.');
-      return;
+      const message = '처리할 사진을 먼저 불러오세요.';
+      setStatusMessage('error', message);
+      return { ok: false, message };
     }
     if (!saveDir) {
-      setStatusMessage('error', '저장 경로를 먼저 지정하세요.');
-      return;
+      const message = '저장 경로를 먼저 지정하세요.';
+      setStatusMessage('error', message);
+      return { ok: false, message };
     }
     if ((mode === 'selected' && !selectedPhotoPath) || (mode === 'checked' && !photos.some((photo) => photo.selectedForProcessing))) {
-      setStatusMessage('error', '처리할 사진을 선택하세요.');
-      return;
+      const message = '처리할 사진을 선택하세요.';
+      setStatusMessage('error', message);
+      return { ok: false, message };
     }
 
     setIsProcessing(true);
@@ -1835,12 +1838,21 @@ export default function App() {
       timeOptions
     };
 
-    const result = await window.constructView.processImages(payload);
+    let result;
+    try {
+      result = await window.constructView.processImages(payload);
+    } catch {
+      const message = '작업을 완료하지 못했습니다.';
+      setIsProcessing(false);
+      setStatusMessage('error', message);
+      return { ok: false, message };
+    }
     setIsProcessing(false);
 
     if (!result.ok) {
-      setStatusMessage('error', result.error ?? '작업을 완료하지 못했습니다.');
-      return;
+      const message = result.error ?? '작업을 완료하지 못했습니다.';
+      setStatusMessage('error', message);
+      return { ok: false, message };
     }
 
     const successMessages: string[] = [];
@@ -1853,7 +1865,9 @@ export default function App() {
     if (processSettings.openFolderAfterProcessing) {
       successMessages.push('결과 폴더를 열었습니다.');
     }
-    setStatusMessage('success', successMessages.join(' ') || '작업을 완료했습니다.');
+    const message = successMessages.join(' ') || '작업을 완료했습니다.';
+    setStatusMessage('success', message);
+    return { ok: true, message };
   }
 
   async function handleCopyPreviewImage() {
@@ -4018,7 +4032,9 @@ export default function App() {
         onOpenLargePreview: openLargePreview,
         onCopyPreview: () => void handleCopyPreviewImage(),
         onPrintPreview: () => void handlePrintPreviewImage(),
-        onGenerate: (mode) => runProcess(mode)
+        onGenerate: (mode) => {
+          void runProcess(mode);
+        }
       },
       slots: {
         previewPanel: renderOutputPreviewPanel(),
@@ -4081,7 +4097,7 @@ export default function App() {
         onOpenPreview: openPhotoLedgerPreview,
         onPreviousPreviewPage: () => setPhotoLedgerPreviewPage((current) => Math.max(0, current - 1)),
         onNextPreviewPage: () => setPhotoLedgerPreviewPage((current) => Math.min(photoLedgerPreviewPageCount - 1, current + 1)),
-        onGeneratePdf: () => runProcess('all', { createPhotoLedgerPdf: true })
+        onGeneratePdf: () => runProcess('checked', { createPhotoLedgerPdf: true })
       },
       slots: {
         previewPanel: renderPhotoLedgerInlinePreview()

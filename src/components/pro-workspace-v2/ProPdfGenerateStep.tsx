@@ -13,7 +13,7 @@ interface ProPdfGenerateStepProps {
 
 export function ProPdfGenerateStep({ model, actions, slots, onGoToPhotoStep }: ProPdfGenerateStepProps) {
   const blocked = [];
-  if (model.photoCount === 0) blocked.push('PDF에 넣을 사진 추가');
+  if (model.checkedCount === 0) blocked.push('PDF에 넣을 사진 체크');
   if (!model.pdfTitle.trim()) blocked.push('문서 제목 입력');
   if (!model.saveFolderReady) blocked.push('저장 폴더 지정');
   if (!model.previewReady) blocked.push('PDF 미리보기 확인');

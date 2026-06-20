@@ -92,9 +92,34 @@ const checks = [
       && /pdfFlow:\s*ProPdfFlowController/.test(source.workspace)
   },
   {
-    name: 'PDF v2 uses existing App-owned output action',
-    pass: /onGeneratePdf:\s*\(\)\s*=>\s*runProcess\('all',\s*\{\s*createPhotoLedgerPdf:\s*true\s*\}\)/.test(source.app)
+    name: 'PDF v2 uses existing App-owned checked output action',
+    pass: /onGeneratePdf:\s*\(\)\s*=>\s*runProcess\('checked',\s*\{\s*createPhotoLedgerPdf:\s*true\s*\}\)/.test(source.app)
       && /createPdf:\s*Boolean\(options\.createPhotoLedgerPdf\)/.test(source.app)
+  },
+  {
+    name: 'PDF v2 checked UI matches generation readiness',
+    pass: /const generateReady = model\.checkedCount > 0/.test(source.pdfFlow)
+      && /if \(model\.checkedCount === 0\) blocked\.push/.test(source.pdfGenerate)
+      && /checkedCount > 0 \? `\$\{model\.checkedCount\}장 체크` : '체크 필요'/.test(source.pdfReadiness)
+      && /data-evidence="pdf-clear-checks"/.test(source.pdfPhoto)
+  },
+  {
+    name: 'PDF v2 persists result status after global status auto-clear',
+    pass: /resultStatus/.test(source.pdfFlow)
+      && /setResultStatus\(\{ kind: result\.ok \? 'success' : 'error'/.test(source.pdfFlow)
+      && /statusKind: resultStatus\.kind/.test(source.pdfFlow)
+      && /return \{ ok: true, message \}/.test(source.app)
+  },
+  {
+    name: 'PDF details inputs have associated labels',
+    pass: /htmlFor=\{pdfTitleInputId\}/.test(source.pdfDetails)
+      && /id=\{pdfTitleInputId\}/.test(source.pdfDetails)
+      && /htmlFor=\{ledgerLocationInputId\}/.test(source.pdfDetails)
+      && /id=\{ledgerLocationInputId\}/.test(source.pdfDetails)
+      && /htmlFor=\{ledgerContentInputId\}/.test(source.pdfDetails)
+      && /id=\{ledgerContentInputId\}/.test(source.pdfDetails)
+      && /htmlFor=\{ledgerDateInputId\}/.test(source.pdfDetails)
+      && /id=\{ledgerDateInputId\}/.test(source.pdfDetails)
   },
   {
     name: 'PDF v2 components do not construct process payloads or call IPC',

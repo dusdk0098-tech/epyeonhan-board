@@ -38,10 +38,10 @@ export function ProPdfPhotoStep({ model, actions }: ProPdfPhotoStepProps) {
             <button type="button" className="pro-v2-action secondary" data-evidence="pdf-check-all" onClick={actions.onSelectAllPhotos}>
               전체 체크
             </button>
-            <button type="button" className="pro-v2-action secondary" onClick={actions.onClearPhotoChecks}>
+            <button type="button" className="pro-v2-action secondary" data-evidence="pdf-clear-checks" onClick={actions.onClearPhotoChecks}>
               체크 해제
             </button>
-            <button type="button" className="pro-v2-action secondary" onClick={actions.onInvertPhotoChecks}>
+            <button type="button" className="pro-v2-action secondary" data-evidence="pdf-invert-checks" onClick={actions.onInvertPhotoChecks}>
               체크 반전
             </button>
           </div>

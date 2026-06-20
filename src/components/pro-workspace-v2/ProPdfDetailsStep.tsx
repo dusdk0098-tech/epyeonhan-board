@@ -13,6 +13,10 @@ interface ProPdfDetailsStepProps {
 export function ProPdfDetailsStep({ model, actions, slots, onGoToPhotoStep }: ProPdfDetailsStepProps) {
   const manualLedgerDisabled = model.useBoardFields || !model.hasSelectedPhoto;
   const dateLedgerDisabled = manualLedgerDisabled || model.usePhotoDate;
+  const pdfTitleInputId = 'pro-v2-pdf-title';
+  const ledgerLocationInputId = 'pro-v2-pdf-ledger-location';
+  const ledgerContentInputId = 'pro-v2-pdf-ledger-content';
+  const ledgerDateInputId = 'pro-v2-pdf-ledger-date';
 
   return (
     <div className="pro-v2-pdf-step pro-v2-pdf-details-step" data-evidence="pdf-details-step">
@@ -27,8 +31,8 @@ export function ProPdfDetailsStep({ model, actions, slots, onGoToPhotoStep }: Pr
             </div>
           </div>
           <div className="settings-form board-pdf-form pro-v2-pdf-form">
-            <label>문서 제목</label>
-            <input value={model.pdfTitle} onChange={(event) => actions.onUpdatePdfTitle(event.target.value)} />
+            <label htmlFor={pdfTitleInputId}>문서 제목</label>
+            <input id={pdfTitleInputId} value={model.pdfTitle} onChange={(event) => actions.onUpdatePdfTitle(event.target.value)} />
             <label>정보 적용 방식</label>
             <label className="check-label compact-check">
               <input
@@ -101,20 +105,23 @@ export function ProPdfDetailsStep({ model, actions, slots, onGoToPhotoStep }: Pr
           ) : model.hasSelectedPhoto ? (
             <>
               <div className="settings-form board-pdf-form pro-v2-pdf-form">
-                <label>위치</label>
+                <label htmlFor={ledgerLocationInputId}>위치</label>
                 <input
+                  id={ledgerLocationInputId}
                   value={model.selectedPhotoLedger.location}
                   disabled={manualLedgerDisabled}
                   onChange={(event) => actions.onUpdateSelectedLedger({ location: event.target.value })}
                 />
-                <label>사진내용</label>
+                <label htmlFor={ledgerContentInputId}>사진내용</label>
                 <input
+                  id={ledgerContentInputId}
                   value={model.selectedPhotoLedger.content}
                   disabled={manualLedgerDisabled}
                   onChange={(event) => actions.onUpdateSelectedLedger({ content: event.target.value })}
                 />
-                <label>촬영일자</label>
+                <label htmlFor={ledgerDateInputId}>촬영일자</label>
                 <input
+                  id={ledgerDateInputId}
                   value={model.usePhotoDate ? model.selectedPhotoDate || '사진정보 없음' : model.selectedPhotoLedger.date}
                   disabled={dateLedgerDisabled}
                   onChange={(event) => actions.onUpdateSelectedLedger({ date: event.target.value })}

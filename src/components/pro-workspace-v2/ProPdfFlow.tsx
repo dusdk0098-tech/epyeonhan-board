@@ -60,10 +60,11 @@ const pdfStepOrder: ProPdfFlowStep[] = ['photo', 'details', 'generate', 'result'
 export function ProPdfFlow({ model, actions, slots, onChangeJob }: ProPdfFlowProps) {
   const [step, setStep] = useState<ProPdfFlowStep>('photo');
   const [generating, setGenerating] = useState(false);
+  const [resultStatus, setResultStatus] = useState<{ kind: 'success' | 'error' | 'info'; text?: string } | null>(null);
   const focusRef = useRef<HTMLDivElement>(null);
   const meta = pdfStepMeta[step];
 
-  const generateReady = model.photoCount > 0
+  const generateReady = model.checkedCount > 0
     && model.saveFolderReady
     && model.previewReady
     && model.pdfTitle.trim().length > 0
@@ -98,9 +99,17 @@ export function ProPdfFlow({ model, actions, slots, onChangeJob }: ProPdfFlowPro
   async function runGenerate() {
     if (!generateReady) return;
     setGenerating(true);
-    await actions.onGeneratePdf();
-    setGenerating(false);
-    setStep('result');
+    try {
+      const result = await actions.onGeneratePdf();
+      if (result && typeof result === 'object' && 'ok' in result) {
+        setResultStatus({ kind: result.ok ? 'success' : 'error', text: result.message });
+      } else {
+        setResultStatus({ kind: model.statusKind ?? 'info', text: model.statusText });
+      }
+      setStep('result');
+    } finally {
+      setGenerating(false);
+    }
   }
 
   function renderCanvas() {
@@ -112,13 +121,19 @@ export function ProPdfFlow({ model, actions, slots, onChangeJob }: ProPdfFlowPro
       case 'generate':
         return <ProPdfGenerateStep model={model} actions={actions} slots={slots} onGoToPhotoStep={goToPhotoStep} />;
       case 'result':
+        const resultModel = resultStatus
+          ? { ...model, statusKind: resultStatus.kind, statusText: resultStatus.text }
+          : model;
         return (
           <ProPdfResultStep
-            model={model}
+            model={resultModel}
             actions={actions}
             onEditSettings={() => setStep('details')}
             onRetry={() => void runGenerate()}
-            onStartNew={() => setStep('photo')}
+            onStartNew={() => {
+              setResultStatus(null);
+              setStep('photo');
+            }}
           />
         );
     }

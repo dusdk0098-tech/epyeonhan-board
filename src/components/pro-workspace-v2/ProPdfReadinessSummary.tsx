@@ -9,9 +9,9 @@ interface ProPdfReadinessSummaryProps {
 export function ProPdfReadinessSummary({ model }: ProPdfReadinessSummaryProps) {
   const rows = [
     {
-      label: '사진',
-      ready: model.photoCount > 0,
-      value: model.photoCount > 0 ? `${model.photoCount}장 준비` : '추가 필요',
+      label: 'PDF 사진',
+      ready: model.checkedCount > 0,
+      value: model.checkedCount > 0 ? `${model.checkedCount}장 체크` : '체크 필요',
       icon: ImageIcon
     },
     {

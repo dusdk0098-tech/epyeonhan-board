@@ -5,6 +5,11 @@ import type { PhotoLedgerInfo, PhotoRotation } from '../../shared/types';
 export type ProPdfFlowStep = 'photo' | 'details' | 'generate' | 'result';
 export type ProPdfStatusKind = 'info' | 'success' | 'error';
 
+export interface ProPdfGenerationResult {
+  ok: boolean;
+  message: string;
+}
+
 export interface ProPdfPhoto {
   path: string;
   name: string;
@@ -59,7 +64,7 @@ export interface ProPdfFlowActions {
   onOpenPreview: () => void;
   onPreviousPreviewPage: () => void;
   onNextPreviewPage: () => void;
-  onGeneratePdf: () => void | Promise<void>;
+  onGeneratePdf: () => void | ProPdfGenerationResult | Promise<void | ProPdfGenerationResult>;
 }
 
 export interface ProPdfFlowSlots {
