@@ -110,6 +110,7 @@ import { calculateContainedSize } from './shared/previewFit';
 import type { UpdateStatusPayload } from './electron-api';
 import { ProWorkspaceV2 } from './components/pro-workspace-v2/ProWorkspaceV2';
 import type { ProBoardFlowController } from './components/pro-workspace-v2/boardFlowTypes';
+import type { ProPdfFlowController } from './components/pro-workspace-v2/pdfFlowTypes';
 import type {
   ProLegacyAdapterContent,
   ProWorkspaceJob,
@@ -488,6 +489,8 @@ export default function App() {
       };
     });
   }, [photos, photoLedgerPreviewPage, fields, timeOptions, exifMap, photoLedgerPreviewImages, photoLedgerRenderSettings]);
+  const shouldRenderPhotoLedgerPreview = showPhotoLedgerPreview
+    || (activeScreen === 'output' && activeOutputSettingsTab === 'ledger');
   const livePreviewSignature = useMemo(
     () =>
       JSON.stringify({
@@ -721,7 +724,7 @@ export default function App() {
   }, [activeWorkspaceKey, timeOptions.mode, settings.photoLedgerUsePhotoDate, photos]);
 
   useEffect(() => {
-    if (!showPhotoLedgerPreview || photos.length === 0) {
+    if (!shouldRenderPhotoLedgerPreview || photos.length === 0) {
       return;
     }
 
@@ -729,10 +732,10 @@ export default function App() {
     if (photoLedgerPreviewPage >= pageCount) {
       setPhotoLedgerPreviewPage(pageCount - 1);
     }
-  }, [showPhotoLedgerPreview, photos.length, photoLedgerPreviewPage]);
+  }, [shouldRenderPhotoLedgerPreview, photos.length, photoLedgerPreviewPage]);
 
   useEffect(() => {
-    if (!showPhotoLedgerPreview || photos.length === 0 || !window.constructView?.renderPreviewImage) {
+    if (!shouldRenderPhotoLedgerPreview || photos.length === 0 || !window.constructView?.renderPreviewImage) {
       return;
     }
 
@@ -755,7 +758,7 @@ export default function App() {
       canceled = true;
     };
   }, [
-    showPhotoLedgerPreview,
+    shouldRenderPhotoLedgerPreview,
     photoLedgerPreviewPage,
     photos,
     fields,
@@ -3911,6 +3914,37 @@ export default function App() {
     );
   }
 
+  function renderPhotoLedgerInlinePreview() {
+    return (
+      <div className="pro-v2-pdf-inline-preview" data-evidence="pdf-preview-panel">
+        <div className="pro-v2-pdf-preview-toolbar">
+          <button
+            type="button"
+            className="pro-v2-action secondary"
+            disabled={photos.length === 0 || photoLedgerPreviewPage <= 0}
+            onClick={() => setPhotoLedgerPreviewPage((current) => Math.max(0, current - 1))}
+          >
+            이전 페이지
+          </button>
+          <span>{photos.length === 0 ? '사진 없음' : `${photoLedgerPreviewPage + 1} / ${photoLedgerPreviewPageCount}`}</span>
+          <button
+            type="button"
+            className="pro-v2-action secondary"
+            disabled={photos.length === 0 || photoLedgerPreviewPage >= photoLedgerPreviewPageCount - 1}
+            onClick={() => setPhotoLedgerPreviewPage((current) => Math.min(photoLedgerPreviewPageCount - 1, current + 1))}
+          >
+            다음 페이지
+          </button>
+        </div>
+        {photos.length === 0 ? (
+          <div className="pro-v2-board-empty">사진을 추가하면 사진대지 PDF 미리보기가 표시됩니다.</div>
+        ) : (
+          <PhotoLedgerPreviewPage slots={photoLedgerPreviewSlots} />
+        )}
+      </div>
+    );
+  }
+
   function prepareProWorkspaceJob(job: ProWorkspaceJob) {
     setActiveOutputSettingsTab(job === 'photo-ledger-pdf' ? 'ledger' : 'fields');
   }
@@ -3995,11 +4029,70 @@ export default function App() {
       }
     };
 
+    const pdfFlow: ProPdfFlowController = {
+      model: {
+        photos: photos.map((photo) => ({
+          path: photo.path,
+          name: photo.name,
+          selectedForProcessing: photo.selectedForProcessing,
+          rotation: photo.rotation
+        })),
+        selectedPhotoPath,
+        selectedPhotoName: selectedPhoto?.name,
+        selectedPhotoIndex: selectedIndex,
+        selectedPhotoRotation,
+        selectedPhotoLedger,
+        selectedPhotoDate: resolvePhotoInfoDateForLedger(selectedPhoto),
+        photoCount: photos.length,
+        checkedCount: photos.filter((photo) => photo.selectedForProcessing).length,
+        hasSelectedPhoto: Boolean(selectedPhoto),
+        saveFolderReady: Boolean(saveDir),
+        previewReady: photos.length > 0,
+        pdfTitle: settings.pdfTitle,
+        useBoardFields: settings.photoLedgerUseBoardFields,
+        usePhotoDate: settings.photoLedgerUsePhotoDate,
+        previewPage: photoLedgerPreviewPage,
+        previewPageCount: photoLedgerPreviewPageCount,
+        isProcessing,
+        statusKind: status?.kind,
+        statusText: status?.text
+      },
+      actions: {
+        onAddPhotos: () => void handleSelectPhotos(),
+        onAddPhotoFolder: () => void handleSelectPhotoFolder(),
+        onPastePhoto: () => void handlePasteClipboardImage(),
+        onClearPhotos: handleClearPhotos,
+        onSelectAllPhotos: () => setAllPhotoChecks(true),
+        onClearPhotoChecks: () => setAllPhotoChecks(false),
+        onInvertPhotoChecks: invertPhotoChecks,
+        onSelectPhoto: setSelectedPhotoPath,
+        onTogglePhotoChecked: togglePhotoChecked,
+        onRemovePhoto: removePhoto,
+        onRotateSelected: rotateSelectedPhoto,
+        onMoveSelectedPhotoOrder: moveSelectedPhotoOrder,
+        onSelectSaveFolder: () => void handleSelectSaveFolder(),
+        onOpenSaveFolder: () => void handleOpenSaveFolder(),
+        onUpdatePdfTitle: (value) => updateSettings({ pdfTitle: value }),
+        onToggleUseBoardFields: (enabled) => updateSettings({ photoLedgerUseBoardFields: enabled }),
+        onToggleUsePhotoDate: (enabled) => updateSettings({ photoLedgerUsePhotoDate: enabled }),
+        onUpdateSelectedLedger: updateSelectedPhotoLedgerPatch,
+        onApplyBoardFieldsToSelectedLedger: applyCurrentBoardFieldsToSelectedLedger,
+        onApplySelectedLedgerToCheckedPhotos: applySelectedLedgerToCheckedPhotos,
+        onOpenPreview: openPhotoLedgerPreview,
+        onPreviousPreviewPage: () => setPhotoLedgerPreviewPage((current) => Math.max(0, current - 1)),
+        onNextPreviewPage: () => setPhotoLedgerPreviewPage((current) => Math.min(photoLedgerPreviewPageCount - 1, current + 1)),
+        onGeneratePdf: () => runProcess('all', { createPhotoLedgerPdf: true })
+      },
+      slots: {
+        previewPanel: renderPhotoLedgerInlinePreview()
+      }
+    };
+
     return (
       <ProWorkspaceV2
         summary={summary}
         boardFlow={boardFlow}
-        renderAdapterContent={renderLegacyAdapter}
+        pdfFlow={pdfFlow}
         onPrepareJob={prepareProWorkspaceJob}
       />
     );

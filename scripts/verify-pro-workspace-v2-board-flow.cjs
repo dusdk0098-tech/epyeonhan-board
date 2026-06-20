@@ -77,15 +77,15 @@ const checks = [
       && !/(1\s*\/\s*5|5\s*\/\s*5)/.test(read('src/components/pro-workspace-v2/ProTaskChoiceScreen.tsx'))
   },
   {
-    name: 'Board job renders ProBoardFlow while PDF job keeps legacy adapter',
+    name: 'Board job renders ProBoardFlow while PDF job renders separate ProPdfFlow',
     pass: /activeJob\s*===\s*['"]board-image['"][\s\S]*?<ProBoardFlow/.test(source.workspace)
-      && /<ProLegacyWorkflowAdapter\s+job=\{activeJob\}/.test(source.workspace)
-      && /renderAdapterContent\(activeJob\)/.test(source.workspace)
+      && /<ProPdfFlow[\s\S]*model=\{pdfFlow\.model\}/.test(source.workspace)
+      && !/<ProLegacyWorkflowAdapter\s+job=\{activeJob\}/.test(source.workspace)
   },
   {
     name: 'App passes board flow model/actions without changing output payload',
     pass: /boardFlow=\{/.test(source.app)
-      && /renderAdapterContent=\{renderLegacyAdapter\}/.test(source.app)
+      && /pdfFlow=\{pdfFlow\}/.test(source.app)
       && /function runProcess\(mode: ProcessImagesPayload\['mode'\]/.test(source.app)
   },
   {
@@ -98,9 +98,10 @@ const checks = [
       && !/highlightControls:\s*renderPremiumHighlightAndActions\(\)/.test(source.app)
   },
   {
-    name: 'PDF v2 flow is not reimplemented',
-    pass: !/ProPdfFlow|PdfFlow|pdf-result|pdf-generate-ready/.test(boardSource)
-      && /renderProWorkspaceSettingsPanel\(job: ProWorkspaceJob\)/.test(source.app)
+    name: 'PDF v2 flow stays separate from board flow',
+    pass: !/ProPdfFlow|ProPdf|pdf-result|pdf-generate-ready/.test(boardSource)
+      && /<ProPdfFlow[\s\S]*model=\{pdfFlow\.model\}/.test(source.workspace)
+      && /ProPdfFlowController/.test(source.app)
   },
   {
     name: 'PR #6 guided workflow code is absent',

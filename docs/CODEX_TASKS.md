@@ -518,3 +518,46 @@
   - scope check
 - Draft PR:
   - Keep as Draft until runtime QA and final review confirm no Must Fix blockers.
+
+## Task 2026-06-20 - PR C PRO Workspace v2 PDF Flow
+
+- Phase: pr-c-pro-workspace-v2-pdf-flow
+- Branch: codex/pro-workspace-v2-pdf-flow
+- Base: origin/main @ ccd62a4f607c021df29c32d442448b4355bbafe9
+- Task type:
+  - PRO Workspace v2 implementation / photo ledger PDF flow
+- Scope:
+  - Implement Photo Ledger PDF flow as 1 / 4 through 4 / 4.
+  - Preserve completed Photo Board Image flow as 1 / 5 through 5 / 5.
+  - Keep Task Choice as a pre-flow screen without numeric progress.
+  - Reuse existing App-owned photo, order, ledger metadata, preview, save folder, and PDF output handlers.
+  - Add PDF-flow components under `src/components/pro-workspace-v2/`.
+  - Add static PDF-flow contract verification script.
+- Excluded:
+  - PR #6 cherry-pick, merge, or code copy.
+  - IPC channel or preload/API contract changes.
+  - output payload or PDF renderer contract changes.
+  - package/package-lock changes.
+  - DB/public/CI changes.
+  - user manual PNG changes.
+  - generated/release output commits.
+  - committed review artifacts.
+- Verification planned:
+  - git diff --check
+  - npm.cmd run build
+  - npm.cmd run verify:ui
+  - npm.cmd run verify:board
+  - node scripts/verify-output-settings.cjs
+  - node scripts/verify-pro-workspace-v2-layout.cjs
+  - node scripts/verify-pro-workspace-v2-board-flow.cjs
+  - node scripts/verify-pro-workspace-v2-pdf-flow.cjs
+  - npm.cmd run package:win
+  - authenticated Electron runtime QA
+  - synthetic PDF output smoke
+  - board flow regression QA
+  - LITE regression QA
+  - hidden/bidi/newline check
+  - no-exposure check
+  - scope check
+- Draft PR:
+  - Keep as Draft until runtime QA and final review confirm no Must Fix blockers.
