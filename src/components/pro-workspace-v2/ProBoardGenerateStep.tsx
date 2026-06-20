@@ -10,7 +10,7 @@ interface ProBoardGenerateStepProps {
 
 export function ProBoardGenerateStep({ model, actions }: ProBoardGenerateStepProps) {
   const blocked = [];
-  if (model.photoCount === 0 || !model.hasSelectedPhoto) blocked.push('사용할 사진 선택');
+  if (model.photoCount === 0 || (!model.hasSelectedPhoto && model.checkedCount === 0)) blocked.push('사용할 사진 선택');
   if (!model.saveFolderReady) blocked.push('저장 폴더 지정');
   if (!model.previewReady) blocked.push('미리보기 확인');
 

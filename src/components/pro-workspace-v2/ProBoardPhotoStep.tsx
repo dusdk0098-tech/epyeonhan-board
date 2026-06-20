@@ -67,10 +67,16 @@ export function ProBoardPhotoStep({ model, actions }: ProBoardPhotoStepProps) {
                     checked={photo.selectedForProcessing}
                     onChange={() => actions.onTogglePhotoChecked(photo.path)}
                   />
-                  <button type="button" className="pro-v2-photo-name-button" onClick={() => actions.onSelectPhoto(photo.path)}>
+                  <button
+                    type="button"
+                    className="pro-v2-photo-name-button"
+                    aria-current={selected ? 'true' : undefined}
+                    onClick={() => actions.onSelectPhoto(photo.path)}
+                  >
                     <span className="pro-v2-photo-order">{index + 1}</span>
                     <span>{photo.name}</span>
                     <em>{photo.rotation ?? 0}도</em>
+                    {selected ? <span className="pro-v2-selected-label">선택됨</span> : null}
                   </button>
                   <button
                     type="button"

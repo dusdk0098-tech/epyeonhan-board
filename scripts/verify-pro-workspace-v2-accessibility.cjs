@@ -16,6 +16,7 @@ const files = {
   workspace: 'src/components/pro-workspace-v2/ProWorkspaceV2.tsx',
   boardFlow: 'src/components/pro-workspace-v2/ProBoardFlow.tsx',
   boardGenerate: 'src/components/pro-workspace-v2/ProBoardGenerateStep.tsx',
+  boardPhoto: 'src/components/pro-workspace-v2/ProBoardPhotoStep.tsx',
   boardResult: 'src/components/pro-workspace-v2/ProBoardResultStep.tsx',
   lowerBand: 'src/components/pro-workspace-v2/ProLowerBandItemManager.tsx',
   pdfFlow: 'src/components/pro-workspace-v2/ProPdfFlow.tsx',
@@ -36,6 +37,7 @@ const allV2Source = [
   source.workspace,
   source.boardFlow,
   source.boardGenerate,
+  source.boardPhoto,
   source.boardResult,
   source.lowerBand,
   source.pdfFlow,
@@ -116,7 +118,19 @@ const checks = [
   },
   {
     name: 'Lower-band row select has an accessible name',
-    pass: /aria-label=\{`\$\{index \+ 1\}번 하부띠 항목 선택`\}/.test(source.lowerBand)
+    pass: /aria-pressed=\{selected\}/.test(source.lowerBand)
+      && /aria-label=\{`\$\{index \+ 1\}.*`\}/.test(source.lowerBand)
+      && /pro-v2-selected-label/.test(source.lowerBand)
+  },
+  {
+    name: 'Board photo selected state is exposed beyond color',
+    pass: /aria-current=\{selected \? 'true' : undefined\}/.test(source.boardPhoto)
+      && /pro-v2-selected-label/.test(source.boardPhoto)
+      && /\.pro-v2-selected-label/.test(source.styles)
+  },
+  {
+    name: 'Board generate readiness accepts checked-only photo sets',
+    pass: /!\s*model\.hasSelectedPhoto\s*&&\s*model\.checkedCount\s*===\s*0/.test(source.boardGenerate)
   },
   {
     name: 'PDF text inputs retain label associations',
@@ -149,6 +163,7 @@ const checks = [
       && /outline:\s*3px solid Highlight/.test(source.styles)
       && /\.pro-v2-job-card\.selected/.test(source.styles)
       && /\.pro-v2-result-card\.error/.test(source.styles)
+      && /\.pro-v2-selected-label/.test(source.styles)
   },
   {
     name: 'New V2 action targets keep 40px and primary 44px minimums',
@@ -166,8 +181,15 @@ const checks = [
     name: 'State feedback is not color-only',
     pass: /border-left/.test(source.styles)
       && /pro-v2-state-badge/.test(source.styles)
+      && /pro-v2-selected-label/.test(source.styles)
       && /\.pro-v2-readiness-card\.blocked/.test(source.styles)
       && /\.pro-v2-result-card\.success/.test(source.styles)
+  },
+  {
+    name: 'PDF readiness summary avoids syllable-level wrapping',
+    pass: /\.pro-v2-pdf-readiness-grid/.test(source.styles)
+      && /grid-template-columns:\s*repeat\(2,\s*minmax\(152px,\s*1fr\)\)/.test(source.styles)
+      && /word-break:\s*keep-all/.test(source.styles)
   },
   {
     name: 'No broad global selector was added for PR D',

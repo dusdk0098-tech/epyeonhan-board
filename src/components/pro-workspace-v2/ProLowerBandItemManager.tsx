@@ -63,6 +63,7 @@ export function ProLowerBandItemManager({
                 >
                   {index + 1}
                 </button>
+                {selected ? <span className="pro-v2-selected-label">선택됨</span> : null}
                 <label>
                   항목명
                   <input
