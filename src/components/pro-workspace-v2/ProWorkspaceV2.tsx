@@ -1,16 +1,17 @@
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import { ProBoardFlow } from './ProBoardFlow';
-import { ProLegacyWorkflowAdapter } from './ProLegacyWorkflowAdapter';
+import { ProPdfFlow } from './ProPdfFlow';
 import { ProTaskChoiceScreen } from './ProTaskChoiceScreen';
 import { ProWorkspaceShell } from './ProWorkspaceShell';
 import type { ProBoardFlowController } from './boardFlowTypes';
-import type { ProLegacyAdapterContent, ProTaskChoiceOption, ProWorkspaceJob, ProWorkspaceSummary } from './types';
+import type { ProPdfFlowController } from './pdfFlowTypes';
+import type { ProTaskChoiceOption, ProWorkspaceJob, ProWorkspaceSummary } from './types';
 
 interface ProWorkspaceV2Props {
   summary: ProWorkspaceSummary;
   boardFlow: ProBoardFlowController;
-  renderAdapterContent: (job: ProWorkspaceJob) => ProLegacyAdapterContent;
+  pdfFlow: ProPdfFlowController;
   onPrepareJob: (job: ProWorkspaceJob) => void;
 }
 
@@ -19,9 +20,9 @@ const taskOptions: ProTaskChoiceOption[] = [
     job: 'board-image',
     title: '사진 보드판 만들기',
     resultLabel: '선택한 사진으로 보드판 이미지 생성',
-    description: '사진 한 장씩 내용, 위치, 하부띠, 강조 표시를 확인해 이미지로 저장합니다.',
+    description: '사진에 보드 내용, 위치, 하부띠, 강조 표시를 확인하고 이미지로 저장합니다.',
     primaryActionLabel: '보드판 작업 시작',
-    bullets: ['보드 내용 입력', '크기·위치 확인', '이미지 저장']
+    bullets: ['보드 내용 입력', '크기와 위치 확인', '이미지 저장']
   },
   {
     job: 'photo-ledger-pdf',
@@ -33,23 +34,9 @@ const taskOptions: ProTaskChoiceOption[] = [
   }
 ];
 
-const jobCopy: Record<ProWorkspaceJob, { title: string; description: string; primary: string }> = {
-  'board-image': {
-    title: '사진 보드판 만들기',
-    description: '사진, 보드 내용, 배치 설정을 한 작업 공간에서 확인합니다.',
-    primary: '보드판 설정 확인'
-  },
-  'photo-ledger-pdf': {
-    title: '사진대지 PDF 만들기',
-    description: 'PDF 정보, 사진 순서, 저장 상태를 한 작업 공간에서 확인합니다.',
-    primary: 'PDF 설정 확인'
-  }
-};
-
-export function ProWorkspaceV2({ summary, boardFlow, renderAdapterContent, onPrepareJob }: ProWorkspaceV2Props) {
+export function ProWorkspaceV2({ summary, boardFlow, pdfFlow, onPrepareJob }: ProWorkspaceV2Props) {
   const [pendingJob, setPendingJob] = useState<ProWorkspaceJob | null>(null);
   const [activeJob, setActiveJob] = useState<ProWorkspaceJob | null>(null);
-  const adapterRef = useRef<HTMLDivElement>(null);
 
   const selectedOption = useMemo(
     () => taskOptions.find((option) => option.job === pendingJob) ?? null,
@@ -62,23 +49,14 @@ export function ProWorkspaceV2({ summary, boardFlow, renderAdapterContent, onPre
     setActiveJob(pendingJob);
   }
 
-  function focusExistingControls() {
-    const reduceMotion = typeof window !== 'undefined'
-      && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-    adapterRef.current?.scrollIntoView({
-      block: 'start',
-      behavior: reduceMotion ? 'auto' : 'smooth'
-    });
-  }
-
   if (!activeJob) {
     return (
       <main className="page-shell output-shell pro-v2-page">
         <ProWorkspaceShell
           title="PRO 작업 유형 선택"
           eyebrow="시작"
-          description="먼저 만들 결과를 선택하세요. 선택 후에는 기존 PRO 기능을 새 작업 공간에서 이어서 사용할 수 있습니다."
+          description="먼저 만들 결과를 선택하세요. 선택한 작업에 맞는 설정 순서가 이어집니다."
+          statusSlot={<StatusSummary summary={summary} />}
           canvasTitle="무엇을 만들까요?"
           canvas={
             <ProTaskChoiceScreen
@@ -98,7 +76,7 @@ export function ProWorkspaceV2({ summary, boardFlow, renderAdapterContent, onPre
             </button>
           }
           secondaryAction={
-            <p className="pro-v2-action-note">작업을 선택하면 필요한 설정 순서가 이어집니다.</p>
+            <p className="pro-v2-action-note">작업을 선택하면 필요한 설정 순서가 열립니다.</p>
           }
         />
       </main>
@@ -118,39 +96,13 @@ export function ProWorkspaceV2({ summary, boardFlow, renderAdapterContent, onPre
     );
   }
 
-  const copy = jobCopy[activeJob];
-  const adapterContent = renderAdapterContent(activeJob);
-
   return (
     <main className="page-shell output-shell pro-v2-page">
-      <ProWorkspaceShell
-        title={copy.title}
-        eyebrow="작업 공간"
-        description={copy.description}
-        statusSlot={<StatusSummary summary={summary} />}
-        canvasTitle="작업 설정"
-        canvas={
-          <div ref={adapterRef}>
-            <ProLegacyWorkflowAdapter job={activeJob} summary={summary} content={adapterContent} />
-          </div>
-        }
-        contextTitle="미리보기와 상태"
-        context={
-          <div className="pro-v2-context-stack">
-            <StatusSummary summary={summary} compact />
-            {adapterContent.previewPanel}
-          </div>
-        }
-        primaryAction={
-          <button type="button" className="pro-v2-action primary" onClick={focusExistingControls}>
-            {copy.primary}
-          </button>
-        }
-        secondaryAction={
-          <button type="button" className="pro-v2-action secondary" onClick={() => setActiveJob(null)}>
-            작업 유형 변경
-          </button>
-        }
+      <ProPdfFlow
+        model={pdfFlow.model}
+        actions={pdfFlow.actions}
+        slots={pdfFlow.slots}
+        onChangeJob={() => setActiveJob(null)}
       />
     </main>
   );

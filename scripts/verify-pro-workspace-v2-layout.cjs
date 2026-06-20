@@ -13,6 +13,8 @@ const files = {
   shell: 'src/components/pro-workspace-v2/ProWorkspaceShell.tsx',
   context: 'src/components/pro-workspace-v2/ProContextPanel.tsx',
   adapter: 'src/components/pro-workspace-v2/ProLegacyWorkflowAdapter.tsx',
+  pdfFlow: 'src/components/pro-workspace-v2/ProPdfFlow.tsx',
+  pdfTypes: 'src/components/pro-workspace-v2/pdfFlowTypes.ts',
   types: 'src/components/pro-workspace-v2/types.ts'
 };
 
@@ -24,6 +26,8 @@ const v2ComponentSource = [
   source.shell,
   source.context,
   source.adapter,
+  source.pdfFlow,
+  source.pdfTypes,
   source.types
 ].join('\n');
 const v2Styles = source.styles.split('/* PRO Task Workspace v2 layout foundation */')[1] ?? '';
@@ -111,10 +115,10 @@ const checks = [
     pass: !/pro-guided-workflow|ProGuidedWorkflow|OutputProgressStatus|ProWorkflowStepper/.test(allChangedSource)
   },
   {
-    name: 'Legacy adapter contract is explicit',
-    pass: /Temporary migration layer/.test(source.adapter)
-      && /existing App-owned PRO state/.test(source.adapter)
-      && /renderAdapterContent/.test(source.workspace)
+    name: 'PDF flow migration contract is explicit',
+    pass: /<ProPdfFlow[\s\S]*model=\{pdfFlow\.model\}/.test(source.workspace)
+      && /ProPdfFlowController/.test(source.pdfTypes)
+      && /onGeneratePdf/.test(source.pdfTypes)
   },
   {
     name: 'Output payload contract is not changed by V2 files',
