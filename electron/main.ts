@@ -58,6 +58,10 @@ const maxClipboardCacheFiles = 100;
 const maxSheetInputBytes = 10 * 1024 * 1024;
 const updateCheckDelayMs = 2500;
 const updateRequestTimeoutMs = 15000;
+const DEFAULT_WINDOW_WIDTH = 1280;
+const DEFAULT_WINDOW_HEIGHT = 880;
+const MIN_WINDOW_WIDTH = 900;
+const MIN_WINDOW_HEIGHT = 720;
 const oauthProtocol = 'pedit';
 const legacyOAuthProtocol = 'epyeonhan-board';
 const allowedOAuthProtocols = new Set([oauthProtocol, legacyOAuthProtocol]);
@@ -101,10 +105,10 @@ type UpdateAttemptRecord = {
 
 function createWindow() {
   const win = new BrowserWindow({
-    width: 1280,
-    height: 880,
-    minWidth: 1280,
-    minHeight: 880,
+    width: DEFAULT_WINDOW_WIDTH,
+    height: DEFAULT_WINDOW_HEIGHT,
+    minWidth: MIN_WINDOW_WIDTH,
+    minHeight: MIN_WINDOW_HEIGHT,
     resizable: true,
     maximizable: true,
     title: 'PEDIT (페딧)',
@@ -830,8 +834,8 @@ function resizeWindow(webContents: WebContents, size: { width: number; height: n
       return { ok: false, error: '창 정보를 찾을 수 없습니다.' };
     }
 
-    const width = Math.max(Math.round(size.width), 1280);
-    const height = Math.max(Math.round(size.height), 880);
+    const width = Math.max(Math.round(size.width), MIN_WINDOW_WIDTH);
+    const height = Math.max(Math.round(size.height), MIN_WINDOW_HEIGHT);
     const platformAdjustedHeight = process.platform === 'win32' && height === 1033 ? height + 1 : height;
     const [currentWidth, currentHeight] = win.getSize();
 
