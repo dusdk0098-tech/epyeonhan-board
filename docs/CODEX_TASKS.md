@@ -531,6 +531,9 @@
   - Hide duplicated preview-card rotation controls inside PRO v2 context previews where the same photo rotation controls are already available in the active photo step.
   - Scale task-choice cards and status counters on large windows so fullscreen-like layouts use the workspace area instead of leaving the main choice surface visually undersized.
   - Let the task-choice canvas span the full workspace width because that screen has no right-side context panel.
+  - Let PDF readiness cards shrink inside the default-width context rail instead of forcing a 152px minimum per column.
+  - Reduce the default-width board-adjust preview stage height and compact its rotation controls into one row while preserving a larger stage on fullscreen-like windows so preview actions do not sit on the first-viewport edge.
+  - Compress the mid-flow photo status summary into one row at Electron-supported widths so board/PDF content controls keep more first-viewport space.
   - Preserve the larger fullscreen preview scale with a dedicated large-viewport override.
 - Excluded:
   - Product logic, IPC, preload, output payload, package config, DB/public/CI, and user manual PNG changes.
