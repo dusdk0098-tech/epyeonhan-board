@@ -734,6 +734,39 @@
 - PR status:
   - Keep PR #12 open for normal review after the closure commit.
 
+## Task 2026-06-21 - PR 12 Complete-Row Scroll Refinement
+
+- Phase: pr12-complete-row-scroll-refinement
+- Branch: fix/layout-overflow-scroll
+- Task type:
+  - PRO Workspace v2 runtime layout polish for row-list clipping.
+- Scope:
+  - Replace the photo list scroll height with complete-row units so fullscreen-like views show full photo rows instead of partial trailing rows.
+  - Limit the lower-band item list to one complete row at minimum-width tablet/desktop layouts where the next row would otherwise be clipped by the first viewport.
+  - Preserve horizontal overflow 0 and existing board/PDF/LITE workflow behavior.
+- Excluded:
+  - PR #6 changes.
+  - IPC, preload, output payload, Electron window policy, or package metadata changes.
+  - package/package-lock changes.
+  - DB/public/CI changes.
+  - user manual PNG changes.
+  - committed review artifacts or generated output.
+- Verification planned:
+  - git diff --check
+  - npm.cmd run build
+  - npm.cmd run verify:ui
+  - npm.cmd run verify:board
+  - node scripts/verify-output-settings.cjs
+  - node scripts/verify-pro-workspace-v2-layout.cjs
+  - node scripts/verify-pro-workspace-v2-board-flow.cjs
+  - node scripts/verify-pro-workspace-v2-pdf-flow.cjs
+  - node scripts/verify-pro-workspace-v2-accessibility.cjs
+  - npm.cmd run package:win
+  - Electron runtime full layout audit at default, fullscreen-like, and minimum windows
+  - hidden/bidi/newline check
+  - no-exposure check
+  - scope check
+
 ## Task 2026-06-21 - PR D PRO Workspace v2 Motion and Accessibility
 
 - Phase: pr-d-pro-workspace-v2-motion-accessibility

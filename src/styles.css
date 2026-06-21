@@ -9268,7 +9268,7 @@ body {
 }
 
 .pro-v2-photo-list-scroll {
-  max-block-size: clamp(150px, 24vh, 320px);
+  max-block-size: 172px;
   overflow: auto;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
@@ -9426,12 +9426,20 @@ body {
 }
 
 @media (min-width: 1500px) {
+  .pro-v2-photo-list-scroll {
+    max-block-size: 232px;
+  }
+
   .pro-v2-lower-band-rows {
     max-block-size: 246px;
   }
 }
 
 @media (min-width: 1900px) {
+  .pro-v2-photo-list-scroll {
+    max-block-size: 292px;
+  }
+
   .pro-v2-lower-band-rows {
     max-block-size: 330px;
   }
@@ -9585,8 +9593,8 @@ body {
   }
 
   .pro-v2-board-adjust-preview-card .preview-stage {
-    min-height: clamp(120px, 20vh, 155px);
-    max-height: clamp(130px, 22vh, 170px);
+    min-height: clamp(104px, 18vh, 136px);
+    max-height: clamp(112px, 20vh, 148px);
   }
 
   .pro-v2-board-adjust-preview-card .preview-card-actions,
@@ -9595,7 +9603,7 @@ body {
   }
 
   .pro-v2-board-adjust-preview-card .preview-card-actions {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .pro-v2-board-adjust-preview-card .output-rotation-controls {
@@ -9649,6 +9657,10 @@ body {
   .pro-v2-lower-band-row label,
   .pro-v2-lower-band-row .pro-v2-row-delete {
     grid-column: auto;
+  }
+
+  .pro-v2-lower-band-rows {
+    max-block-size: 78px;
   }
 }
 
