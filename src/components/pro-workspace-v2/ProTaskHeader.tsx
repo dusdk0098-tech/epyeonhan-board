@@ -15,11 +15,15 @@ export function ProTaskHeader({ title, eyebrow, description, progressLabel, stat
         <span className="pro-v2-eyebrow">{eyebrow}</span>
         <div className="pro-v2-title-row">
           <h1>{title}</h1>
-          {progressLabel ? <span className="pro-v2-progress">{progressLabel}</span> : null}
+          {progressLabel ? <span className="pro-v2-progress" aria-label={`진행 단계 ${progressLabel}`}>{progressLabel}</span> : null}
         </div>
         <p>{description}</p>
       </div>
-      {statusSlot ? <div className="pro-v2-header-status">{statusSlot}</div> : null}
+      {statusSlot ? (
+        <div className="pro-v2-header-status" role="status" aria-live="polite" aria-atomic="true">
+          {statusSlot}
+        </div>
+      ) : null}
     </header>
   );
 }

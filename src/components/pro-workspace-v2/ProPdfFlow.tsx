@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import type { ProPdfFlowController, ProPdfFlowStep } from './pdfFlowTypes';
 import { ProPdfCompactPhotoStatus } from './ProPdfCompactPhotoStatus';
@@ -61,7 +61,6 @@ export function ProPdfFlow({ model, actions, slots, onChangeJob }: ProPdfFlowPro
   const [step, setStep] = useState<ProPdfFlowStep>('photo');
   const [generating, setGenerating] = useState(false);
   const [resultStatus, setResultStatus] = useState<{ kind: 'success' | 'error' | 'info'; text?: string } | null>(null);
-  const focusRef = useRef<HTMLDivElement>(null);
   const meta = pdfStepMeta[step];
 
   const generateReady = model.checkedCount > 0
@@ -78,10 +77,6 @@ export function ProPdfFlow({ model, actions, slots, onChangeJob }: ProPdfFlowPro
   const previousStep = useMemo(() => {
     const index = pdfStepOrder.indexOf(step);
     return index > 0 ? pdfStepOrder[index - 1] : null;
-  }, [step]);
-
-  useEffect(() => {
-    focusRef.current?.focus({ preventScroll: true });
   }, [step]);
 
   function goToPhotoStep() {
@@ -167,12 +162,14 @@ export function ProPdfFlow({ model, actions, slots, onChangeJob }: ProPdfFlowPro
 
   function renderPrimaryAction() {
     if (step === 'generate') {
+      const describedBy = generateReady ? 'pro-v2-pdf-generate-ready' : 'pro-v2-pdf-generate-blockers';
       return (
         <button
           type="button"
           className="pro-v2-action primary pro-v2-pdf-primary"
           data-evidence="pdf-generate-cta"
           disabled={!generateReady || model.isProcessing}
+          aria-describedby={describedBy}
           onClick={() => void runGenerate()}
         >
           {generating || model.isProcessing ? 'PDF 생성 중...' : '사진대지 PDF 생성'}
@@ -223,9 +220,11 @@ export function ProPdfFlow({ model, actions, slots, onChangeJob }: ProPdfFlowPro
       eyebrow={meta.eyebrow}
       description={meta.description}
       progressLabel={`${meta.stepNumber} / ${meta.totalSteps}`}
+      focusKey={`pdf-${step}`}
+      isBusy={model.isProcessing || generating}
       canvasTitle={meta.canvasTitle}
       canvas={(
-        <div ref={focusRef} tabIndex={-1} className="pro-v2-pdf-flow" data-evidence="pdf-flow">
+        <div className="pro-v2-pdf-flow" data-evidence="pdf-flow">
           {renderCanvas()}
         </div>
       )}

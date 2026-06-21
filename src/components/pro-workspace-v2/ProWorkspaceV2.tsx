@@ -110,7 +110,7 @@ export function ProWorkspaceV2({ summary, boardFlow, pdfFlow, onPrepareJob }: Pr
 
 function StatusSummary({ summary, compact = false }: { summary: ProWorkspaceSummary; compact?: boolean }) {
   return (
-    <dl className={compact ? 'pro-v2-status compact' : 'pro-v2-status'}>
+    <dl className={compact ? 'pro-v2-status compact' : 'pro-v2-status'} aria-label="PRO 작업 준비 상태">
       <div>
         <dt>사진</dt>
         <dd>{summary.photoCount}장</dd>

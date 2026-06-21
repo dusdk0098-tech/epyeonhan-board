@@ -11,6 +11,8 @@ interface ProWorkspaceShellProps {
   description: string;
   progressLabel?: string;
   statusSlot?: ReactNode;
+  focusKey?: string;
+  isBusy?: boolean;
   canvasTitle?: string;
   canvas: ReactNode;
   contextTitle?: string;
@@ -25,6 +27,8 @@ export function ProWorkspaceShell({
   description,
   progressLabel,
   statusSlot,
+  focusKey,
+  isBusy = false,
   canvasTitle,
   canvas,
   contextTitle,
@@ -33,7 +37,7 @@ export function ProWorkspaceShell({
   secondaryAction
 }: ProWorkspaceShellProps) {
   return (
-    <section className="pro-v2-shell" data-pro-workspace-v2>
+    <section className="pro-v2-shell" data-pro-workspace-v2 aria-busy={isBusy || undefined}>
       <ProTaskHeader
         title={title}
         eyebrow={eyebrow}
@@ -42,7 +46,7 @@ export function ProWorkspaceShell({
         statusSlot={statusSlot}
       />
       <div className="pro-v2-body">
-        <ProTaskCanvas title={canvasTitle}>{canvas}</ProTaskCanvas>
+        <ProTaskCanvas title={canvasTitle} focusKey={focusKey}>{canvas}</ProTaskCanvas>
         <ProContextPanel title={contextTitle}>{context}</ProContextPanel>
       </div>
       <ProActionBar primary={primaryAction} secondary={secondaryAction} />

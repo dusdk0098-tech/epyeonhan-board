@@ -46,14 +46,14 @@ export function ProPdfGenerateStep({ model, actions, slots, onGoToPhotoStep }: P
       </section>
 
       {blocked.length > 0 ? (
-        <section className="pro-v2-generate-blockers" aria-live="polite">
+        <section id="pro-v2-pdf-generate-blockers" className="pro-v2-generate-blockers" role="alert" aria-live="assertive">
           <h3>PDF 생성 전에 필요한 작업</h3>
           <ul>
             {blocked.map((item) => <li key={item}>{item}</li>)}
           </ul>
         </section>
       ) : (
-        <section className="pro-v2-generate-ready-note" aria-live="polite" role="status">
+        <section id="pro-v2-pdf-generate-ready" className="pro-v2-generate-ready-note" aria-live="polite" role="status">
           <h3>PDF 생성 준비 완료</h3>
           <p>사진 순서, 하단정보, 저장 폴더를 확인했습니다. 아래 버튼으로 사진대지 PDF를 생성하세요.</p>
         </section>
