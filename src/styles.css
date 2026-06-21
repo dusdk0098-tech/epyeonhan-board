@@ -9371,7 +9371,7 @@ body {
 
 .pro-v2-lower-band-rows {
   gap: 6px;
-  max-block-size: clamp(200px, 32vh, 380px);
+  max-block-size: 162px;
   overflow: auto;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
@@ -9417,6 +9417,24 @@ body {
   min-height: var(--pro-v2-control-height);
   padding-inline: 10px;
   white-space: nowrap;
+}
+
+@media (min-width: 1181px) and (max-width: 1400px) {
+  .pro-v2-photo-order-card p {
+    display: none;
+  }
+}
+
+@media (min-width: 1500px) {
+  .pro-v2-lower-band-rows {
+    max-block-size: 246px;
+  }
+}
+
+@media (min-width: 1900px) {
+  .pro-v2-lower-band-rows {
+    max-block-size: 330px;
+  }
 }
 
 .pro-v2-board-adjust-workbench,

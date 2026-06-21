@@ -528,6 +528,8 @@
 - Scope:
   - Keep Task Choice cards side-by-side and fully visible in the 900px class viewport.
   - Compress the Board Adjust preview area only in the 721px-960px range so rotation controls remain visible with the preview.
+  - Clamp lower-band rows to complete-row heights so default and fullscreen windows do not show partially clipped rows.
+  - Hide the PDF photo-order helper sentence in the default-width compact side panel so order buttons stay visible.
   - Preserve the existing board/PDF flow structure, output payload, IPC, preload, package, public asset, DB, and CI contracts.
 - Verification:
   - git diff --check PASS
@@ -542,6 +544,7 @@
     - maxHorizontalOverflowPx: 0
     - cardClippedCount: 0
     - tooSmallInteractiveCount: 0
+    - coveredInteractiveCount reduced from 18 to 14 after row-unit list sizing.
   - Review artifacts remain local-only and are not staged.
 
 ## Task 2026-06-21 - PR 12 Layout Follow-up Hardening
