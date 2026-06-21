@@ -529,6 +529,8 @@
   - Move transient status feedback away from narrow-width header navigation by anchoring it to the right side on compact windows.
   - Reduce the PRO photo-side preview canvas height in photo preparation flows so the preview card fits the default first viewport more reliably.
   - Hide duplicated preview-card rotation controls inside PRO v2 context previews where the same photo rotation controls are already available in the active photo step.
+  - Scale task-choice cards and status counters on large windows so fullscreen-like layouts use the workspace area instead of leaving the main choice surface visually undersized.
+  - Let the task-choice canvas span the full workspace width because that screen has no right-side context panel.
   - Preserve the larger fullscreen preview scale with a dedicated large-viewport override.
 - Excluded:
   - Product logic, IPC, preload, output payload, package config, DB/public/CI, and user manual PNG changes.

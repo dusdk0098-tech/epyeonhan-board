@@ -7757,7 +7757,15 @@ body {
   grid-template-columns: minmax(0, 1fr);
 }
 
+.pro-v2-body:has(.pro-v2-choice) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .pro-v2-body:has(.pro-v2-board-adjust-step) .pro-v2-canvas {
+  grid-column: 1 / -1;
+}
+
+.pro-v2-body:has(.pro-v2-choice) .pro-v2-canvas {
   grid-column: 1 / -1;
 }
 
@@ -8868,6 +8876,56 @@ body {
 }
 
 @media (min-width: 1500px) {
+  .pro-v2-header-status {
+    min-width: min(420px, 100%);
+  }
+
+  .pro-v2-status {
+    gap: 10px;
+  }
+
+  .pro-v2-status div {
+    min-height: 54px;
+    padding: 10px 12px;
+  }
+
+  .pro-v2-status dt {
+    font-size: 0.78rem;
+  }
+
+  .pro-v2-status dd {
+    font-size: 1rem;
+  }
+
+  .pro-v2-choice {
+    gap: clamp(22px, 1.4vw, 32px);
+  }
+
+  .pro-v2-job-card {
+    min-height: clamp(300px, 40vh, 420px);
+    padding: clamp(24px, 1.6vw, 34px);
+    gap: 16px;
+  }
+
+  .pro-v2-job-icon {
+    width: 58px;
+    height: 58px;
+    border-radius: 16px;
+  }
+
+  .pro-v2-job-copy strong {
+    font-size: clamp(1.26rem, 1rem + 0.55vw, 1.62rem);
+  }
+
+  .pro-v2-job-copy span,
+  .pro-v2-job-result {
+    font-size: clamp(1rem, 0.9rem + 0.28vw, 1.18rem);
+  }
+
+  .pro-v2-job-bullets span {
+    font-size: clamp(0.98rem, 0.9rem + 0.18vw, 1.08rem);
+  }
+
   .pro-v2-preview-context .preview-stage {
     min-height: clamp(260px, 38vh, 560px);
   }
