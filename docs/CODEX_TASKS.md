@@ -519,6 +519,32 @@
 - Draft PR:
   - Keep as Draft until runtime QA and final review confirm no Must Fix blockers.
 
+## Task 2026-06-21 - PR 12 Layout Follow-up Hardening
+
+- Phase: pr-e-layout-overflow-scroll follow-up
+- Branch: fix/layout-overflow-scroll
+- Task type:
+  - Layout overflow, clipping, responsive scale, and target-size hardening.
+- Scope:
+  - Keep PR #12 focused on layout/CSS acceptance delta work.
+  - Move the PRO v2 action bar back into normal document flow so it does not cover photo rows, lower-band controls, PDF helper controls, or preview actions.
+  - Strengthen top navigation and LITE workbench button target sizes to 40px, with primary LITE actions at 44px.
+  - Tighten board-adjust preview stage height so preview toolbar and rotation controls remain visible in fullscreen-like windows.
+  - Use a compact 900px-class grid for PRO v2 photo import, batch, rotation, folder, and result actions to reduce unnecessary vertical stacking.
+  - Update the static layout verifier to assert the non-overlay action bar contract.
+- Verification:
+  - git diff --check PASS
+  - npm.cmd run build PASS
+  - node scripts/verify-pro-workspace-v2-layout.cjs PASS
+  - Electron full-layout audit regenerated with 27 screenshots:
+    - maxHorizontalOverflowPx: 0
+    - tooSmallInteractiveCount: 0
+    - cardClippedCount: 0
+  - Targeted runtime overflow evidence regenerated with failedTargetCount: 0.
+- Notes:
+  - Remaining clipped counts in the broad audit correspond to scrollable content continuing below the viewport, not horizontal overflow or covered action controls.
+  - review-artifacts remain local-only and must not be committed.
+
 ## Task 2026-06-21 - PR 12 Responsive Acceptance Delta 2
 
 - Phase: pr12-responsive-acceptance-delta-2

@@ -106,10 +106,10 @@ const checks = [
       && /Math\.max\(Math\.round\(size\.height\),\s*MIN_WINDOW_HEIGHT\)/.test(source.main)
   },
   {
-    name: 'V2 action bar remains reachable without fixed overlay',
-    pass: /position:\s*sticky/.test(actionBarBlock)
-      && /bottom:\s*0/.test(actionBarBlock)
+    name: 'V2 action bar remains reachable without overlaying content',
+    pass: /position:\s*static/.test(actionBarBlock)
       && /env\(safe-area-inset-bottom\)/.test(actionBarBlock)
+      && !/position:\s*sticky/.test(actionBarBlock)
       && !/position:\s*fixed/.test(actionBarBlock)
   },
   {

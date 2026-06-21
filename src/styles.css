@@ -239,7 +239,11 @@ input[type="radio"] {
 }
 
 .nav-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   height: 100%;
+  min-height: 40px;
   padding: 0 12px;
   border: 0;
   border-bottom: 2px solid transparent;
@@ -273,11 +277,11 @@ input[type="radio"] {
 }
 
 .nav-logout {
-  height: 30px;
+  min-height: 40px;
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 0 9px;
+  padding: 0 12px;
   border: 1px solid rgba(255, 255, 255, 0.26);
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.08);
@@ -5167,12 +5171,12 @@ body {
   }
 
   .nav-brand {
-    height: 34px;
+    height: 40px;
     min-width: 116px;
   }
 
   .nav-brand-logo {
-    height: 30px;
+    height: 34px;
     max-width: 116px;
   }
 
@@ -8149,8 +8153,7 @@ body {
 }
 
 .pro-v2-actionbar {
-  position: sticky;
-  bottom: 0;
+  position: static;
   z-index: 8;
   display: flex;
   flex-wrap: wrap;
@@ -8161,7 +8164,6 @@ body {
   padding: 10px 0 max(10px, env(safe-area-inset-bottom));
   border-top: 1px solid rgba(216, 225, 239, 0.9);
   background: #f8fbff;
-  box-shadow: 0 -12px 24px rgba(248, 251, 255, 0.92);
 }
 
 .pro-v2-actionbar-secondary,
@@ -8304,6 +8306,12 @@ body {
   .pro-v2-actionbar-primary,
   .pro-v2-actionbar-secondary {
     align-items: stretch;
+  }
+
+  .pro-v2-actionbar {
+    position: static;
+    margin-bottom: 0;
+    box-shadow: none;
   }
 
   .pro-v2-actionbar-primary,
@@ -9137,6 +9145,27 @@ body {
   overflow: visible;
 }
 
+.app:not(.start-active) .basic-shell :is(.btn, .small-btn, select, input[type="text"], input[type="number"]) {
+  height: auto;
+  min-height: 40px;
+}
+
+.app:not(.start-active) .basic-shell .btn.primary {
+  min-height: 44px;
+}
+
+.app:not(.start-active) .basic-load-panel .button-row.three .btn,
+.app:not(.start-active) .basic-save-panel .btn,
+.app:not(.start-active) .basic-grid .small-btn {
+  height: auto;
+  min-height: 40px;
+}
+
+.app:not(.start-active) .basic-load-panel .button-row.three .btn.primary,
+.app:not(.start-active) .basic-save-panel .btn.primary {
+  min-height: 44px;
+}
+
 .pro-v2-body,
 .pro-v2-canvas,
 .pro-v2-context,
@@ -9149,7 +9178,7 @@ body {
 .pro-v2-actionbar {
   align-self: end;
   min-height: fit-content;
-  margin-bottom: calc(-1 * max(10px, env(safe-area-inset-bottom)));
+  margin-bottom: 0;
 }
 
 .pro-v2-shell :is(button, input, select, textarea, [tabindex]),
@@ -9379,7 +9408,7 @@ body {
 }
 
 .pro-v2-lower-band-row input {
-  min-height: 38px;
+  min-height: var(--pro-v2-control-height);
   padding: 7px 9px;
   overflow-wrap: anywhere;
 }
@@ -9429,8 +9458,8 @@ body {
 }
 
 .pro-v2-board-adjust-preview-card .preview-stage {
-  min-height: clamp(190px, 30vh, 380px);
-  max-height: clamp(220px, 42vh, 520px);
+  min-height: clamp(170px, 26vh, 320px);
+  max-height: clamp(190px, 34vh, 420px);
   overflow: hidden;
 }
 
@@ -9503,7 +9532,30 @@ body {
   }
 
   .pro-v2-board-adjust-preview-card .preview-stage {
-    min-height: clamp(180px, 30vh, 320px);
+    min-height: clamp(170px, 28vh, 300px);
+  }
+}
+
+@media (min-width: 721px) and (max-width: 960px) {
+  .pro-v2-photo-import-actions,
+  .pro-v2-photo-batch-actions,
+  .pro-v2-rotation-actions,
+  .pro-v2-photo-order-actions,
+  .pro-v2-generate-folder-actions,
+  .pro-v2-result-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .pro-v2-photo-import-actions .pro-v2-action,
+  .pro-v2-photo-batch-actions .pro-v2-action,
+  .pro-v2-rotation-actions .pro-v2-action,
+  .pro-v2-photo-order-actions .pro-v2-action,
+  .pro-v2-generate-folder-actions .pro-v2-action,
+  .pro-v2-result-actions .pro-v2-action {
+    width: 100%;
+    min-width: 0;
   }
 }
 
