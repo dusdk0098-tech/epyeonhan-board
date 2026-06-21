@@ -743,6 +743,7 @@
 - Scope:
   - Replace the photo list scroll height with complete-row units so fullscreen-like views show full photo rows instead of partial trailing rows.
   - Limit the lower-band item list to one complete row at minimum-width tablet/desktop layouts where the next row would otherwise be clipped by the first viewport.
+  - Compact the LITE default-window preview canvas and combine preview/run action rows so the visible preview actions fit inside the first viewport.
   - Preserve horizontal overflow 0 and existing board/PDF/LITE workflow behavior.
 - Excluded:
   - PR #6 changes.
