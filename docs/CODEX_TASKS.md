@@ -534,6 +534,11 @@
   - Let PDF readiness cards shrink inside the default-width context rail instead of forcing a 152px minimum per column.
   - Reduce the default-width board-adjust preview stage height and compact its rotation controls into one row while preserving a larger stage on fullscreen-like windows so preview actions do not sit on the first-viewport edge.
   - Compress the mid-flow photo status summary into one row at Electron-supported widths so board/PDF content controls keep more first-viewport space.
+  - Increase the visible photo-list window, compact photo-row padding, place photo import actions beside the guide copy on default-width board/PDF photo preparation screens, and give 900px-class windows a full-width photo list before the side controls while keeping row delete actions visible on the right without shrinking the 40px controls.
+  - Hide inactive date/time detail controls inside PRO v2 context panels until their matching radio mode is selected so default-window side panels do not cut off file-picker controls.
+  - Rebalance the LITE default workbench rows and compact the preview panel spacing so the preview copy/print and run buttons remain inside the first viewport.
+  - Collapse the PRO task-choice status summary into one row at Electron-supported 900px widths and trim choice-card padding so the first action remains discoverable without extra vertical hunting.
+  - Keep the 900px action bar on one row so minimum-window task controls do not lose space to stacked navigation buttons.
   - Preserve the larger fullscreen preview scale with a dedicated large-viewport override.
 - Excluded:
   - Product logic, IPC, preload, output payload, package config, DB/public/CI, and user manual PNG changes.

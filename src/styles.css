@@ -7244,7 +7244,7 @@ body {
   min-height: 0;
   display: grid;
   grid-template-columns: minmax(430px, 500px) minmax(0, 1fr);
-  grid-template-rows: minmax(214px, 0.44fr) minmax(410px, 1fr);
+  grid-template-rows: minmax(190px, 0.36fr) minmax(0, 1fr);
   grid-template-areas:
     "setup board"
     "setup preview";
@@ -7316,14 +7316,14 @@ body {
 .app:not(.start-active) .basic-preview-panel .panel-body {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 10px 12px 12px;
+  gap: 6px;
+  padding: 8px 10px 10px;
 }
 
 .app:not(.start-active) .basic-preview-panel .preview-stage {
-  flex: 1 1 138px;
+  flex: 1 1 118px;
   height: auto;
-  min-height: clamp(124px, 18vh, 190px);
+  min-height: clamp(104px, 15vh, 170px);
   max-height: none;
   aspect-ratio: 16 / 10;
 }
@@ -7367,8 +7367,8 @@ body {
   display: grid;
   grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
   align-items: stretch;
-  gap: 7px;
-  padding-top: 8px;
+  gap: 6px;
+  padding-top: 5px;
 }
 
 .app:not(.start-active) .basic-save-panel .path-field {
@@ -9389,7 +9389,7 @@ body {
 }
 
 .pro-v2-photo-list-scroll {
-  max-block-size: 172px;
+  max-block-size: clamp(202px, 28vh, 236px);
   overflow: auto;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
@@ -9444,6 +9444,49 @@ body {
 
 .pro-v2-photo-order-actions .pro-v2-action {
   width: 100%;
+}
+
+.pro-v2-board-photo-step .pro-v2-photo-import-panel,
+.pro-v2-pdf-photo-step .pro-v2-photo-import-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  padding: 10px 12px;
+  gap: 8px;
+}
+
+.pro-v2-board-photo-step .pro-v2-photo-import-actions,
+.pro-v2-pdf-photo-step .pro-v2-photo-import-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(132px, 1fr));
+}
+
+.pro-v2-board-photo-step .pro-v2-photo-import-panel p,
+.pro-v2-pdf-photo-step .pro-v2-photo-import-panel p {
+  margin-top: 3px;
+}
+
+@media (min-width: 1181px) {
+  .pro-v2-board-photo-step .pro-v2-photo-import-panel p,
+  .pro-v2-pdf-photo-step .pro-v2-photo-import-panel p {
+    display: none;
+  }
+}
+
+.pro-v2-board-photo-step .pro-v2-board-photo-row,
+.pro-v2-pdf-photo-step .pro-v2-board-photo-row {
+  gap: 6px;
+  min-height: 46px;
+  padding: 5px 6px;
+}
+
+.pro-v2-context .radio-stack {
+  gap: 8px;
+}
+
+.pro-v2-context .nested-options:not(.enabled),
+.pro-v2-context .radio-stack:not(:has(> label:nth-of-type(4) > input:checked)) > .sheet-picker {
+  display: none;
 }
 
 .pro-v2-photo-workbench .pro-v2-photo-selection-panel,
@@ -9792,6 +9835,11 @@ body {
     grid-template-columns: minmax(0, 1fr) minmax(250px, 320px);
   }
 
+  .pro-v2-board-photo-step .pro-v2-photo-import-panel,
+  .pro-v2-pdf-photo-step .pro-v2-photo-import-panel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .pro-v2-photo-side-panel {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -9803,6 +9851,68 @@ body {
 
   .pro-v2-lower-band-rows {
     max-block-size: 78px;
+  }
+}
+
+@media (min-width: 861px) and (max-width: 1100px) {
+  .pro-v2-shell:has(.pro-v2-choice) .pro-v2-status {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .pro-v2-shell:has(.pro-v2-choice) .pro-v2-status div {
+    padding-block: 6px;
+  }
+
+  .pro-v2-shell:has(.pro-v2-choice) .pro-v2-job-card {
+    min-height: 188px;
+    padding: 14px;
+  }
+
+  .pro-v2-shell:has(.pro-v2-choice) .pro-v2-job-bullets {
+    gap: 6px;
+  }
+
+  .pro-v2-photo-workbench {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pro-v2-actionbar {
+    align-items: center;
+  }
+
+  .pro-v2-actionbar-primary,
+  .pro-v2-actionbar-secondary {
+    width: auto;
+  }
+
+  .pro-v2-actionbar .pro-v2-action {
+    width: auto;
+  }
+
+  .pro-v2-actionbar-primary {
+    margin-left: auto;
+  }
+
+  .pro-v2-board-photo-row {
+    grid-template-columns: var(--pro-v2-control-height) minmax(0, 1fr) auto;
+  }
+
+  .pro-v2-board-photo-row .pro-v2-row-delete {
+    grid-column: auto;
+    justify-self: end;
+    width: auto;
+  }
+
+  .pro-v2-photo-name-button {
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+  }
+
+  .pro-v2-photo-side-panel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pro-v2-photo-summary-card {
+    grid-column: 1 / -1;
   }
 }
 
