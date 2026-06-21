@@ -9088,3 +9088,114 @@ body {
     animation-duration: 0.01ms;
   }
 }
+
+/* PR E: viewport overflow / scroll containment */
+.app:not(.start-active) .page-shell {
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: clip;
+  overscroll-behavior: contain;
+  scroll-padding-block: 16px 96px;
+  scrollbar-gutter: stable;
+}
+
+.app:not(.start-active) .basic-shell,
+.app:not(.start-active) .output-shell,
+.app:not(.start-active) .common-settings-shell,
+.app:not(.start-active) .contact-shell,
+.app:not(.start-active) .admin-shell {
+  overflow-y: auto;
+  overflow-x: clip;
+}
+
+.pro-v2-page.output-shell {
+  height: auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: clip;
+  scroll-padding-block: 16px 112px;
+}
+
+.pro-v2-shell {
+  grid-template-rows: auto auto auto;
+  min-height: min(760px, calc(100vh - 104px));
+  overflow: visible;
+}
+
+.pro-v2-body,
+.pro-v2-canvas,
+.pro-v2-context,
+.pro-v2-board-flow,
+.pro-v2-pdf-flow {
+  min-height: 0;
+  overflow: visible;
+}
+
+.pro-v2-actionbar {
+  align-self: end;
+  min-height: fit-content;
+}
+
+.pro-v2-shell :is(button, input, select, textarea, [tabindex]),
+.pro-v2-board-photo-row,
+.pro-v2-lower-band-row,
+.pro-v2-pdf-order-panel,
+.modal :is(button, input, select, textarea, [tabindex]) {
+  scroll-margin-block: 14px 112px;
+}
+
+.pro-v2-board-photo-list,
+.pro-v2-lower-band-rows {
+  padding-bottom: 2px;
+}
+
+@supports (height: 100dvh) {
+  .app {
+    height: 100dvh;
+  }
+
+  .pro-v2-shell {
+    min-height: min(760px, calc(100dvh - 104px));
+  }
+}
+
+@media (max-width: 920px) {
+  .app:not(.start-active) .basic-workbench-grid {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    min-height: 0;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto;
+    grid-template-areas:
+      "setup"
+      "board"
+      "preview";
+    align-items: stretch;
+  }
+
+  .app:not(.start-active) .basic-workbench-grid > .panel-column,
+  .app:not(.start-active) .basic-field-panel,
+  .app:not(.start-active) .basic-preview-panel {
+    width: 100%;
+    height: auto;
+    min-height: 0;
+  }
+
+  .app:not(.start-active) .basic-load-panel,
+  .app:not(.start-active) .basic-settings-panel,
+  .app:not(.start-active) .basic-save-panel,
+  .app:not(.start-active) .basic-field-panel,
+  .app:not(.start-active) .basic-preview-panel {
+    flex: 0 0 auto;
+  }
+
+  .app:not(.start-active) .basic-settings-panel .panel-body,
+  .app:not(.start-active) .basic-save-panel .panel-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .app:not(.start-active) .basic-preview-panel .preview-stage {
+    min-height: 220px;
+  }
+}

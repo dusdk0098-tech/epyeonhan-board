@@ -519,6 +519,46 @@
 - Draft PR:
   - Keep as Draft until runtime QA and final review confirm no Must Fix blockers.
 
+## Task 2026-06-21 - PR E Viewport Overflow / Scroll Containment
+
+- Phase: pr-e-layout-overflow-scroll
+- Branch: fix/layout-overflow-scroll
+- Base: origin/main @ e6b46067a8c0559da1c6a2ca2759a4ad9be67e78
+- Task type:
+  - Layout overflow and scroll containment stabilization.
+- Scope:
+  - Restore page-level vertical scrolling for non-start app screens when content exceeds the viewport.
+  - Keep unintended horizontal overflow clipped at the page container.
+  - Let PRO Workspace v2 shell content grow in normal document flow instead of clipping long lists or action bars.
+  - Preserve access to final photo/list rows, lower-band rows, action bars, and focused controls at short viewport heights.
+  - Add dynamic viewport fallback handling for supported browsers.
+- Excluded:
+  - Feature additions or large UI redesign.
+  - PR #6 changes.
+  - package/package-lock changes.
+  - DB/public/CI changes.
+  - user manual PNG changes.
+  - generated/release output commits.
+  - committed review artifacts.
+- Verification planned:
+  - git diff --check
+  - npm.cmd run build
+  - npm.cmd run verify:ui
+  - npm.cmd run verify:board
+  - node scripts/verify-output-settings.cjs
+  - node scripts/verify-pro-workspace-v2-layout.cjs
+  - node scripts/verify-pro-workspace-v2-board-flow.cjs
+  - node scripts/verify-pro-workspace-v2-pdf-flow.cjs
+  - node scripts/verify-pro-workspace-v2-accessibility.cjs
+  - npm.cmd run package:win
+  - viewport overflow runtime QA at 390x844, 768x1024, 1024x600, 1280x720, and 1440x900
+  - screenshot evidence for 1024x600 and 390x844
+  - hidden/bidi/newline check
+  - no-exposure check
+  - scope check
+- Draft PR:
+  - Keep as Draft until runtime overflow evidence and review confirm no Must Fix blockers.
+
 ## Task 2026-06-21 - PR D PRO Workspace v2 Motion and Accessibility
 
 - Phase: pr-d-pro-workspace-v2-motion-accessibility
