@@ -2121,6 +2121,16 @@ input[type="radio"] {
   pointer-events: none;
 }
 
+@media (max-width: 960px) {
+  .status-bar {
+    right: 16px;
+    left: auto;
+    max-width: min(300px, calc(100vw - 32px));
+    transform: none;
+    font-size: 0.88rem;
+  }
+}
+
 .status-bar.info {
   color: var(--primary);
 }
@@ -8844,13 +8854,27 @@ body {
   flex-wrap: wrap;
 }
 
+.pro-v2-preview-context .output-rotation-controls {
+  display: none;
+}
+
 .pro-v2-preview-context .preview-stage {
-  min-height: clamp(280px, 42vh, 520px);
+  min-height: clamp(170px, 28vh, 380px);
+}
+
+.pro-v2-photo-side-panel .pro-v2-preview-context .preview-stage {
+  min-height: clamp(150px, 22vh, 260px);
+  max-height: clamp(160px, 28vh, 320px);
 }
 
 @media (min-width: 1500px) {
   .pro-v2-preview-context .preview-stage {
-    min-height: clamp(380px, 48vh, 680px);
+    min-height: clamp(260px, 38vh, 560px);
+  }
+
+  .pro-v2-photo-side-panel .pro-v2-preview-context .preview-stage {
+    min-height: clamp(220px, 30vh, 380px);
+    max-height: clamp(240px, 34vh, 440px);
   }
 
   .pro-v2-board-subgrid {

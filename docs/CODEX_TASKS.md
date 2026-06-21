@@ -519,6 +519,35 @@
 - Draft PR:
   - Keep as Draft until runtime QA and final review confirm no Must Fix blockers.
 
+## Task 2026-06-21 - PR 12 Layout Overflow Polish Follow-up
+
+- Phase: pr12-layout-overflow-polish-follow-up
+- Branch: fix/layout-overflow-scroll
+- Task type:
+  - PRO/LITE layout clipping and first-viewport polish follow-up.
+- Scope:
+  - Move transient status feedback away from narrow-width header navigation by anchoring it to the right side on compact windows.
+  - Reduce the PRO photo-side preview canvas height in photo preparation flows so the preview card fits the default first viewport more reliably.
+  - Hide duplicated preview-card rotation controls inside PRO v2 context previews where the same photo rotation controls are already available in the active photo step.
+  - Preserve the larger fullscreen preview scale with a dedicated large-viewport override.
+- Excluded:
+  - Product logic, IPC, preload, output payload, package config, DB/public/CI, and user manual PNG changes.
+  - PR #6 changes.
+  - committed review artifacts or generated output.
+- Verification planned:
+  - Electron full layout audit regeneration.
+  - Representative default/fullscreen/minimum screenshot review.
+  - git diff --check
+  - npm.cmd run build
+  - npm.cmd run verify:ui
+  - npm.cmd run verify:board
+  - node scripts/verify-output-settings.cjs
+  - node scripts/verify-pro-workspace-v2-layout.cjs
+  - node scripts/verify-pro-workspace-v2-board-flow.cjs
+  - node scripts/verify-pro-workspace-v2-pdf-flow.cjs
+  - node scripts/verify-pro-workspace-v2-accessibility.cjs
+  - npm.cmd run package:win
+
 ## Task 2026-06-21 - PR #12 Minimum Layout Follow-up
 
 - Phase: pr12-layout-overflow-scroll-follow-up
