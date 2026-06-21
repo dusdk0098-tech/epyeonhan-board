@@ -519,6 +519,40 @@
 - Draft PR:
   - Keep as Draft until runtime QA and final review confirm no Must Fix blockers.
 
+## Task 2026-06-21 - PR 12 Action Bar Reposition Layout Follow-up
+
+- Phase: pr12-actionbar-reposition-layout-follow-up
+- Branch: fix/layout-overflow-scroll
+- Task type:
+  - PRO Workspace v2 runtime layout polish for default-window clipping.
+- Scope:
+  - Move the PRO v2 workflow action bar out of the bottom edge and into a top task-action band so previous/next CTA controls remain visible in the first viewport.
+  - On desktop-width layouts, align the action bar with the header row to recover vertical workspace height instead of adding another stacked row.
+  - Keep tablet/minimum layouts on a stacked top action band for readable touch targets.
+  - Preserve horizontal overflow 0, 40px/44px target sizing, board/PDF/LITE functionality, and existing output contracts.
+- Excluded:
+  - PR #6 changes.
+  - IPC, preload, output payload, Electron window policy, or package metadata changes.
+  - package/package-lock changes.
+  - DB/public/CI changes.
+  - user manual PNG changes.
+  - committed review artifacts or generated output.
+- Verification planned:
+  - git diff --check
+  - npm.cmd run build
+  - npm.cmd run verify:ui
+  - npm.cmd run verify:board
+  - node scripts/verify-output-settings.cjs
+  - node scripts/verify-pro-workspace-v2-layout.cjs
+  - node scripts/verify-pro-workspace-v2-board-flow.cjs
+  - node scripts/verify-pro-workspace-v2-pdf-flow.cjs
+  - node scripts/verify-pro-workspace-v2-accessibility.cjs
+  - npm.cmd run package:win
+  - Electron runtime full layout audit at default, fullscreen-like, and minimum windows
+  - hidden/bidi/newline check
+  - no-exposure check
+  - scope check
+
 ## Task 2026-06-21 - PR 12 Layout Overflow Polish Follow-up
 
 - Phase: pr12-layout-overflow-polish-follow-up
