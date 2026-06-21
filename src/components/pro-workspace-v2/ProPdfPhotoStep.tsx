@@ -1,4 +1,5 @@
-import { Camera, ClipboardPaste, FolderOpen, RotateCcw, RotateCw, Trash2 } from 'lucide-react';
+import { useEffect, useRef } from 'react';
+import { ArrowDown, ArrowUp, Camera, ClipboardPaste, FolderOpen, RotateCcw, RotateCw, Trash2 } from 'lucide-react';
 
 import type { ProPdfFlowActions, ProPdfFlowModel } from './pdfFlowTypes';
 
@@ -8,6 +9,13 @@ interface ProPdfPhotoStepProps {
 }
 
 export function ProPdfPhotoStep({ model, actions }: ProPdfPhotoStepProps) {
+  const selectedRowRef = useRef<HTMLDivElement | null>(null);
+  const selectedOrdinal = model.hasSelectedPhoto && model.selectedPhotoIndex >= 0 ? model.selectedPhotoIndex + 1 : null;
+
+  useEffect(() => {
+    selectedRowRef.current?.scrollIntoView({ block: 'nearest' });
+  }, [model.selectedPhotoPath, model.photos.length]);
+
   return (
     <div className="pro-v2-pdf-step pro-v2-pdf-photo-step" data-evidence="pdf-photo-step">
       <section className="pro-v2-photo-import-panel">
@@ -28,84 +36,119 @@ export function ProPdfPhotoStep({ model, actions }: ProPdfPhotoStepProps) {
         </div>
       </section>
 
-      <section className="pro-v2-photo-selection-panel">
-        <div className="pro-v2-board-section-heading">
-          <div>
-            <h3>사진 순서와 선택</h3>
-            <p>사진대지 PDF는 현재 사진 목록 순서대로 한 페이지에 두 장씩 배치됩니다.</p>
+      <div className="pro-v2-photo-workbench" data-evidence="pdf-photo-workbench">
+        <section className="pro-v2-photo-selection-panel pro-v2-photo-list-pane">
+          <div className="pro-v2-board-section-heading">
+            <div>
+              <h3>사진 순서와 선택</h3>
+              <p>전체 {model.photoCount}장 / 출력 선택 {model.checkedCount}장</p>
+            </div>
+            <div className="pro-v2-photo-batch-actions">
+              <button type="button" className="pro-v2-action secondary" data-evidence="pdf-check-all" onClick={actions.onSelectAllPhotos}>
+                전체 체크
+              </button>
+              <button type="button" className="pro-v2-action secondary" data-evidence="pdf-clear-checks" onClick={actions.onClearPhotoChecks}>
+                체크 해제
+              </button>
+              <button type="button" className="pro-v2-action secondary" data-evidence="pdf-invert-checks" onClick={actions.onInvertPhotoChecks}>
+                체크 반전
+              </button>
+            </div>
           </div>
-          <div className="pro-v2-photo-batch-actions">
-            <button type="button" className="pro-v2-action secondary" data-evidence="pdf-check-all" onClick={actions.onSelectAllPhotos}>
-              전체 체크
-            </button>
-            <button type="button" className="pro-v2-action secondary" data-evidence="pdf-clear-checks" onClick={actions.onClearPhotoChecks}>
-              체크 해제
-            </button>
-            <button type="button" className="pro-v2-action secondary" data-evidence="pdf-invert-checks" onClick={actions.onInvertPhotoChecks}>
-              체크 반전
-            </button>
-          </div>
-        </div>
 
-        {model.photos.length === 0 ? (
-          <div className="pro-v2-board-empty">
-            아직 사진이 없습니다. 사진을 추가하면 순서, 선택, 회전 상태를 한 화면에서 확인할 수 있습니다.
-          </div>
-        ) : (
-          <div className="pro-v2-board-photo-list" data-evidence="pdf-photo-list">
-            {model.photos.map((photo, index) => {
-              const selected = photo.path === model.selectedPhotoPath;
-              return (
-                <div
-                  key={photo.path}
-                  className={selected ? 'pro-v2-board-photo-row selected' : 'pro-v2-board-photo-row'}
-                  data-evidence={selected ? 'pdf-photo-selected' : undefined}
-                >
-                  <input
-                    type="checkbox"
-                    aria-label={`${photo.name} PDF 처리 대상 체크`}
-                    checked={photo.selectedForProcessing}
-                    onChange={() => actions.onTogglePhotoChecked(photo.path)}
-                  />
-                  <button
-                    type="button"
-                    className="pro-v2-photo-name-button"
-                    aria-current={selected ? 'true' : undefined}
-                    onClick={() => actions.onSelectPhoto(photo.path)}
+          {model.photos.length === 0 ? (
+            <div className="pro-v2-board-empty">
+              아직 사진이 없습니다. 사진을 추가하면 순서, 선택, 회전 상태를 한 화면에서 확인할 수 있습니다.
+            </div>
+          ) : (
+            <div className="pro-v2-board-photo-list pro-v2-photo-list-scroll" data-evidence="pdf-photo-list">
+              {model.photos.map((photo, index) => {
+                const selected = photo.path === model.selectedPhotoPath;
+                return (
+                  <div
+                    key={photo.path}
+                    ref={selected ? selectedRowRef : undefined}
+                    className={selected ? 'pro-v2-board-photo-row selected' : 'pro-v2-board-photo-row'}
+                    data-evidence={selected ? 'pdf-photo-selected' : undefined}
                   >
-                    <span className="pro-v2-photo-order">{index + 1}</span>
-                    <span>{photo.name}</span>
-                    <em>{photo.rotation ?? 0}도</em>
-                  </button>
-                  <button
-                    type="button"
-                    className="pro-v2-row-delete"
-                    aria-label={`${photo.name} 제거`}
-                    onClick={() => actions.onRemovePhoto(photo.path)}
-                  >
-                    <Trash2 size={16} aria-hidden /> 제거
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </section>
+                    <input
+                      type="checkbox"
+                      aria-label={`${photo.name} PDF 처리 대상 체크`}
+                      checked={photo.selectedForProcessing}
+                      onChange={() => actions.onTogglePhotoChecked(photo.path)}
+                    />
+                    <button
+                      type="button"
+                      className="pro-v2-photo-name-button"
+                      aria-current={selected ? 'true' : undefined}
+                      onClick={() => actions.onSelectPhoto(photo.path)}
+                    >
+                      <span className="pro-v2-photo-order">{index + 1}</span>
+                      <span>{photo.name}</span>
+                      <em>{photo.rotation ?? 0}도</em>
+                      {selected ? <span className="pro-v2-selected-label">선택됨</span> : null}
+                    </button>
+                    <button
+                      type="button"
+                      className="pro-v2-row-delete"
+                      aria-label={`${photo.name} 제거`}
+                      onClick={() => actions.onRemovePhoto(photo.path)}
+                    >
+                      <Trash2 size={16} aria-hidden /> 제거
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
 
-      <section className="pro-v2-rotation-panel" data-evidence="pdf-photo-rotation">
-        <div>
-          <h3>사진 방향</h3>
-          <p>{model.hasSelectedPhoto ? `${model.selectedPhotoName} · 현재 ${model.selectedPhotoRotation}도` : '회전할 사진을 선택하세요.'}</p>
-        </div>
-        <div className="pro-v2-rotation-actions">
-          <button type="button" className="pro-v2-action secondary" data-evidence="pdf-rotate-left" disabled={!model.hasSelectedPhoto} onClick={() => actions.onRotateSelected(-1)}>
-            <RotateCcw size={16} aria-hidden /> 왼쪽 90도
-          </button>
-          <button type="button" className="pro-v2-action secondary" data-evidence="pdf-rotate-right" disabled={!model.hasSelectedPhoto} onClick={() => actions.onRotateSelected(1)}>
-            <RotateCw size={16} aria-hidden /> 오른쪽 90도
-          </button>
-        </div>
-      </section>
+        <aside className="pro-v2-photo-side-panel" data-evidence="pdf-photo-side-controls">
+          <section className="pro-v2-photo-summary-card">
+            <span>선택 사진</span>
+            <strong>{model.hasSelectedPhoto ? model.selectedPhotoName : '사진을 선택하세요'}</strong>
+            <small>
+              {selectedOrdinal ? `${selectedOrdinal} / ${model.photoCount} · 회전 ${model.selectedPhotoRotation}도` : `전체 ${model.photoCount}장 · 출력 선택 ${model.checkedCount}장`}
+            </small>
+          </section>
+          <section className="pro-v2-rotation-panel" data-evidence="pdf-photo-rotation">
+            <div>
+              <h3>사진 방향</h3>
+              <p>{model.hasSelectedPhoto ? '선택한 사진의 방향과 순서를 확인합니다.' : '회전할 사진을 선택하세요.'}</p>
+            </div>
+            <div className="pro-v2-rotation-actions">
+              <button type="button" className="pro-v2-action secondary" data-evidence="pdf-rotate-left" disabled={!model.hasSelectedPhoto} onClick={() => actions.onRotateSelected(-1)}>
+                <RotateCcw size={16} aria-hidden /> 왼쪽 90도
+              </button>
+              <button type="button" className="pro-v2-action secondary" data-evidence="pdf-rotate-right" disabled={!model.hasSelectedPhoto} onClick={() => actions.onRotateSelected(1)}>
+                <RotateCw size={16} aria-hidden /> 오른쪽 90도
+              </button>
+            </div>
+          </section>
+          <section className="pro-v2-photo-order-card" data-evidence="pdf-photo-order-controls">
+            <h3>사진 순서</h3>
+            <p>현재 목록 순서대로 한 페이지에 두 장씩 들어갑니다.</p>
+            <div className="pro-v2-photo-order-actions">
+              <button
+                type="button"
+                className="pro-v2-action secondary"
+                disabled={!model.hasSelectedPhoto || model.selectedPhotoIndex <= 0}
+                onClick={() => actions.onMoveSelectedPhotoOrder(-1)}
+              >
+                <ArrowUp size={16} aria-hidden /> 위로
+              </button>
+              <button
+                type="button"
+                className="pro-v2-action secondary"
+                disabled={!model.hasSelectedPhoto || model.selectedPhotoIndex < 0 || model.selectedPhotoIndex >= model.photoCount - 1}
+                onClick={() => actions.onMoveSelectedPhotoOrder(1)}
+              >
+                <ArrowDown size={16} aria-hidden /> 아래로
+              </button>
+            </div>
+          </section>
+        </aside>
+      </div>
     </div>
   );
 }

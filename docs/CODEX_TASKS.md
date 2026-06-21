@@ -519,6 +519,50 @@
 - Draft PR:
   - Keep as Draft until runtime QA and final review confirm no Must Fix blockers.
 
+## Task 2026-06-21 - PR 12 PRO Workflow UX Acceptance Delta
+
+- Phase: pr12-pro-workflow-ux-delta
+- Branch: fix/layout-overflow-scroll
+- Base PR:
+  - Existing Draft PR #12
+- Task type:
+  - UX acceptance delta / PRO workflow compactness and feature restoration
+- Scope:
+  - Restore the Photo Ledger PDF "사진에 보드판 삽입" control by wiring the existing `settings.showBoard` state into the PDF v2 model and actions.
+  - Keep "사진에 보드판 삽입" separate from "보드판 입력값 자동 적용" so image composition and PDF metadata mapping stay independent.
+  - Make PRO board and PDF photo preparation use a bounded, scrollable photo list with adjacent selected-photo rotation/order controls.
+  - Compact the lower-band item manager rows for 6-12+ item editing without horizontal overflow.
+  - Rework board adjust into a compact workbench with one preview near board size and position controls.
+  - Preserve board 1 / 5 through 5 / 5, PDF 1 / 4 through 4 / 4, LITE regression, and existing output engines.
+- Excluded:
+  - PR #6 cherry-pick, merge, or code copy.
+  - IPC channel, preload bridge, Electron security boundary, or output payload changes.
+  - package/package-lock changes.
+  - DB/public/CI changes.
+  - user manual PNG changes.
+  - generated/release output commits.
+  - committed review artifacts.
+- Verification planned:
+  - git diff --check
+  - npm.cmd run build
+  - npm.cmd run verify:ui
+  - npm.cmd run verify:board
+  - node scripts/verify-output-settings.cjs
+  - node scripts/verify-pro-workspace-v2-layout.cjs
+  - node scripts/verify-pro-workspace-v2-board-flow.cjs
+  - node scripts/verify-pro-workspace-v2-pdf-flow.cjs
+  - node scripts/verify-pro-workspace-v2-accessibility.cjs
+  - npm.cmd run package:win
+  - authenticated Electron runtime QA with synthetic photos
+  - PDF showBoard ON/OFF preview and generated-output evidence
+  - 20/50/100-photo list accessibility and overflow evidence
+  - board content and board adjust compact layout evidence
+  - hidden/bidi/newline check
+  - no-exposure check
+  - scope check
+- Draft PR:
+  - Keep PR #12 as Draft for user review.
+
 ## Task 2026-06-21 - PR E Viewport Overflow / Scroll Containment
 
 - Phase: pr-e-layout-overflow-scroll

@@ -20,6 +20,7 @@ const files = {
   boardResult: 'src/components/pro-workspace-v2/ProBoardResultStep.tsx',
   lowerBand: 'src/components/pro-workspace-v2/ProLowerBandItemManager.tsx',
   pdfFlow: 'src/components/pro-workspace-v2/ProPdfFlow.tsx',
+  pdfPhoto: 'src/components/pro-workspace-v2/ProPdfPhotoStep.tsx',
   pdfGenerate: 'src/components/pro-workspace-v2/ProPdfGenerateStep.tsx',
   pdfResult: 'src/components/pro-workspace-v2/ProPdfResultStep.tsx',
   pdfDetails: 'src/components/pro-workspace-v2/ProPdfDetailsStep.tsx',
@@ -41,6 +42,7 @@ const allV2Source = [
   source.boardResult,
   source.lowerBand,
   source.pdfFlow,
+  source.pdfPhoto,
   source.pdfGenerate,
   source.pdfResult,
   source.pdfDetails,
@@ -127,6 +129,20 @@ const checks = [
     pass: /aria-current=\{selected \? 'true' : undefined\}/.test(source.boardPhoto)
       && /pro-v2-selected-label/.test(source.boardPhoto)
       && /\.pro-v2-selected-label/.test(source.styles)
+  },
+  {
+    name: 'PDF photo selected state and scroll visibility are exposed beyond color',
+    pass: /aria-current=\{selected \? 'true' : undefined\}/.test(source.pdfPhoto)
+      && /pro-v2-selected-label/.test(source.pdfPhoto)
+      && /selectedRowRef\.current\?\.scrollIntoView/.test(source.pdfPhoto)
+      && /aria-label=\{`\$\{photo\.name\} PDF 처리 대상 체크`\}/.test(source.pdfPhoto)
+  },
+  {
+    name: 'PDF board insertion toggle has native state and descriptive label',
+    pass: /id=\{showBoardInputId\}/.test(source.pdfDetails)
+      && /htmlFor=\{showBoardInputId\}/.test(source.pdfDetails)
+      && /aria-describedby="pro-v2-pdf-show-board-help"/.test(source.pdfDetails)
+      && /checked=\{model\.showBoard\}/.test(source.pdfDetails)
   },
   {
     name: 'Board generate readiness accepts checked-only photo sets',

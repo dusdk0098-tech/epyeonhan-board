@@ -14,6 +14,9 @@ export function ProPdfDetailsStep({ model, actions, slots, onGoToPhotoStep }: Pr
   const manualLedgerDisabled = model.useBoardFields || !model.hasSelectedPhoto;
   const dateLedgerDisabled = manualLedgerDisabled || model.usePhotoDate;
   const pdfTitleInputId = 'pro-v2-pdf-title';
+  const showBoardInputId = 'pro-v2-pdf-show-board';
+  const useBoardFieldsInputId = 'pro-v2-pdf-use-board-fields';
+  const usePhotoDateInputId = 'pro-v2-pdf-use-photo-date';
   const ledgerLocationInputId = 'pro-v2-pdf-ledger-location';
   const ledgerContentInputId = 'pro-v2-pdf-ledger-content';
   const ledgerDateInputId = 'pro-v2-pdf-ledger-date';
@@ -33,23 +36,46 @@ export function ProPdfDetailsStep({ model, actions, slots, onGoToPhotoStep }: Pr
           <div className="settings-form board-pdf-form pro-v2-pdf-form">
             <label htmlFor={pdfTitleInputId}>문서 제목</label>
             <input id={pdfTitleInputId} value={model.pdfTitle} onChange={(event) => actions.onUpdatePdfTitle(event.target.value)} />
-            <label>정보 적용 방식</label>
-            <label className="check-label compact-check">
+            <label>사진 합성</label>
+            <label className="check-label compact-check pro-v2-pdf-option-check" htmlFor={showBoardInputId}>
               <input
+                id={showBoardInputId}
                 type="checkbox"
+                aria-describedby="pro-v2-pdf-show-board-help"
+                checked={model.showBoard}
+                onChange={(event) => actions.onToggleShowBoard(event.target.checked)}
+              />
+              <span>
+                <strong>사진에 보드판 삽입</strong>
+                <small id="pro-v2-pdf-show-board-help">선택한 사진 위에 현재 보드판을 합성해 사진대지를 만듭니다.</small>
+              </span>
+            </label>
+            <label>하단정보 적용</label>
+            <label className="check-label compact-check pro-v2-pdf-option-check" htmlFor={useBoardFieldsInputId}>
+              <input
+                id={useBoardFieldsInputId}
+                type="checkbox"
+                aria-describedby="pro-v2-pdf-board-fields-help"
                 checked={model.useBoardFields}
                 onChange={(event) => actions.onToggleUseBoardFields(event.target.checked)}
               />
-              보드판 입력값 자동 적용
+              <span>
+                <strong>보드판 입력값 자동 적용</strong>
+                <small id="pro-v2-pdf-board-fields-help">보드판 항목 값을 PDF 하단정보로 사용합니다. 사진 합성 여부와는 별도입니다.</small>
+              </span>
             </label>
             <label>촬영일자</label>
-            <label className="check-label compact-check">
+            <label className="check-label compact-check pro-v2-pdf-option-check" htmlFor={usePhotoDateInputId}>
               <input
+                id={usePhotoDateInputId}
                 type="checkbox"
                 checked={model.usePhotoDate}
                 onChange={(event) => actions.onToggleUsePhotoDate(event.target.checked)}
               />
-              사진정보 촬영일자 사용
+              <span>
+                <strong>사진정보 촬영일자 사용</strong>
+                <small>사진 파일에서 읽은 촬영일자를 하단정보 날짜로 표시합니다.</small>
+              </span>
             </label>
           </div>
         </section>

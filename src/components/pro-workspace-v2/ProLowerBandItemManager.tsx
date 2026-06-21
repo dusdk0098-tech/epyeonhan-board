@@ -32,7 +32,7 @@ export function ProLowerBandItemManager({
           <h3>{title}</h3>
           <p>{description}</p>
         </div>
-        <div className="pro-v2-lower-band-actions">
+        <div className="pro-v2-lower-band-actions" data-evidence="lower-band-toolbar">
           <button type="button" className="pro-v2-action secondary" onClick={onInsertSelectedFileName}>
             선택 사진명 넣기
           </button>
@@ -63,17 +63,21 @@ export function ProLowerBandItemManager({
                 >
                   {index + 1}
                 </button>
-                {selected ? <span className="pro-v2-selected-label">선택됨</span> : null}
-                <label>
+                <span className={selected ? 'pro-v2-selected-label' : 'pro-v2-row-state-label'}>
+                  {selected ? '선택됨' : '항목'}
+                </span>
+                <label className="pro-v2-lower-band-label-control">
                   항목명
                   <input
+                    aria-label={`${index + 1}번 하부띠 항목명`}
                     value={field.label}
                     onChange={(event) => onUpdateField(field.id, { label: event.currentTarget.value })}
                   />
                 </label>
-                <label>
+                <label className="pro-v2-lower-band-value-control">
                   내용
                   <input
+                    aria-label={`${index + 1}번 하부띠 내용`}
                     value={field.value}
                     onChange={(event) => onUpdateField(field.id, { value: event.currentTarget.value })}
                   />
