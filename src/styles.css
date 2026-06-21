@@ -7289,6 +7289,8 @@ body {
 .app:not(.start-active) .basic-settings-panel {
   flex: 1 1 auto;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .app:not(.start-active) .basic-save-panel {
@@ -7525,23 +7527,43 @@ body {
     min-height: 0;
   }
 
+  .app:not(.start-active) .basic-grid .panel-header {
+    min-height: 36px;
+    padding: 5px 12px;
+  }
+
+  .app:not(.start-active) .basic-grid .panel-header h2 {
+    font-size: 15px;
+    line-height: 20px;
+  }
+
+  .app:not(.start-active) .basic-grid .panel-title-icon {
+    width: 24px;
+    height: 24px;
+  }
+
   .app:not(.start-active) .basic-load-panel .panel-body {
     min-height: 0;
-    padding: 10px 12px 12px;
+    padding: 6px 12px 8px;
   }
 
   .app:not(.start-active) .basic-load-panel .form-row,
   .app:not(.start-active) .basic-load-panel .empty-line {
-    margin-bottom: 7px;
+    margin-bottom: 5px;
   }
 
   .app:not(.start-active) .basic-settings-panel .panel-body {
+    flex: 1 1 auto;
+    min-height: 0;
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     align-content: start;
-    gap: 8px;
-    padding: 10px 12px;
-    overflow: hidden;
+    gap: 6px;
+    padding: 8px 10px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
   }
 
   .app:not(.start-active) .basic-settings-panel .basic-setting-section {
@@ -7556,7 +7578,7 @@ body {
 
   .app:not(.start-active) .basic-settings-panel .basic-setting-section:first-child {
     grid-column: 1 / -1;
-    padding: 0 0 8px;
+    padding: 0 0 6px;
     border: 0;
     border-bottom: 1px solid #e4ebf5;
     border-radius: 0;
@@ -7574,7 +7596,7 @@ body {
   }
 
   .app:not(.start-active) .basic-settings-panel .basic-setting-section .position-preset {
-    min-height: 50px;
+    min-height: 44px;
   }
 
   .app:not(.start-active) .basic-settings-panel .basic-setting-section .form-row,
@@ -7599,7 +7621,7 @@ body {
     grid-template-columns: 218px minmax(0, 1fr);
     align-items: center;
     gap: 8px;
-    padding: 10px 12px;
+    padding: 6px 12px;
   }
 
   .app:not(.start-active) .basic-save-panel .button-row {
@@ -7625,6 +7647,24 @@ body {
 .app:not(.start-active) .basic-settings-panel .basic-setting-section .option-grid {
   grid-template-columns: minmax(0, 1fr);
   gap: 6px;
+}
+
+@media (min-width: 721px) and (max-width: 1499px) and (max-height: 760px) {
+  .app:not(.start-active) .basic-grid .panel-header {
+    min-height: 38px;
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
+  }
+
+  .app:not(.start-active) .basic-grid .panel-header h2 {
+    font-size: 15px;
+    line-height: 20px;
+  }
+
+  .app:not(.start-active) .basic-grid .panel-title-icon {
+    width: 24px;
+    height: 24px;
+  }
 }
 
 /* PRO Task Workspace v2 layout foundation */

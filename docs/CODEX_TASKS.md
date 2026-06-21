@@ -581,6 +581,38 @@
   - no-exposure check
   - scope check
 
+## Task 2026-06-21 - PR 12 LITE Default Window Fit Follow-up
+
+- Phase: pr-e-layout-lite-default-window-fit-follow-up
+- Branch: fix/layout-overflow-scroll
+- Task type:
+  - LITE default-window layout polish after full contact-sheet review.
+- Scope:
+  - Compact LITE default-window panel headers and setup/save bodies so the board settings panel no longer visually collides with the save-location panel.
+  - Make the LITE board settings panel a bounded internal scroll region when the default window is height constrained.
+  - Preserve LITE/PRO workflow behavior and all existing output contracts.
+- Excluded:
+  - PR #6 changes, merge, or Ready transition.
+  - IPC, preload, output payload, Electron window policy, package metadata, DB, public asset, CI, or user manual PNG changes.
+  - generated/release output commits.
+  - committed review artifacts.
+- Verification planned:
+  - LITE default-window runtime screenshot review
+  - Electron layout audit at default, fullscreen, and minimum windows
+  - git diff --check
+  - npm.cmd run build
+  - npm.cmd run verify:ui
+  - npm.cmd run verify:board
+  - node scripts/verify-output-settings.cjs
+  - node scripts/verify-pro-workspace-v2-layout.cjs
+  - node scripts/verify-pro-workspace-v2-board-flow.cjs
+  - node scripts/verify-pro-workspace-v2-pdf-flow.cjs
+  - node scripts/verify-pro-workspace-v2-accessibility.cjs
+  - npm.cmd run package:win
+  - hidden/bidi/newline check
+  - no-exposure check
+  - scope check
+
 ## Task 2026-06-21 - PR 12 Action Bar Reposition Layout Follow-up
 
 - Phase: pr12-actionbar-reposition-layout-follow-up
