@@ -7558,8 +7558,8 @@ body {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     align-content: start;
-    gap: 6px;
-    padding: 8px 10px;
+    gap: 5px;
+    padding: 6px 8px;
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: contain;
@@ -7568,8 +7568,8 @@ body {
 
   .app:not(.start-active) .basic-settings-panel .basic-setting-section {
     min-width: 0;
-    gap: 6px;
-    padding: 8px;
+    gap: 4px;
+    padding: 6px;
     border: 1px solid #dbe4f2;
     border-radius: 8px;
     background: #ffffff;
@@ -7578,7 +7578,7 @@ body {
 
   .app:not(.start-active) .basic-settings-panel .basic-setting-section:first-child {
     grid-column: 1 / -1;
-    padding: 0 0 6px;
+    padding: 0 0 4px;
     border: 0;
     border-bottom: 1px solid #e4ebf5;
     border-radius: 0;
@@ -7588,7 +7588,7 @@ body {
   .app:not(.start-active) .basic-settings-panel .basic-setting-section:last-child {
     grid-template-columns: minmax(0, 1fr);
     align-items: stretch;
-    padding-bottom: 8px;
+    padding-bottom: 6px;
   }
 
   .app:not(.start-active) .basic-settings-panel .basic-setting-section:last-child h3 {
@@ -7596,13 +7596,49 @@ body {
   }
 
   .app:not(.start-active) .basic-settings-panel .basic-setting-section .position-preset {
-    min-height: 44px;
+    position: relative;
+    min-height: 40px;
+    padding: 4px;
+  }
+
+  .app:not(.start-active) .basic-settings-panel .position-preset input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .app:not(.start-active) .basic-settings-panel .basic-setting-section .mini-frame {
+    width: 34px;
+    height: 20px;
+  }
+
+  .app:not(.start-active) .basic-settings-panel .basic-setting-section .mini-frame span {
+    width: 13px;
+    height: 8px;
   }
 
   .app:not(.start-active) .basic-settings-panel .basic-setting-section .form-row,
   .app:not(.start-active) .basic-settings-panel .basic-setting-section .slider-row,
   .app:not(.start-active) .basic-settings-panel .basic-setting-section .radio-group {
     margin: 0;
+  }
+
+  .app:not(.start-active) .basic-settings-panel .form-row input,
+  .app:not(.start-active) .basic-settings-panel .form-row select {
+    min-height: 30px;
+    padding: 4px 8px;
+  }
+
+  .app:not(.start-active) .basic-settings-panel .radio-group {
+    min-height: 28px;
+  }
+
+  .app:not(.start-active) .basic-settings-panel .radio-group label {
+    min-height: 28px;
+    padding-top: 2px;
+    padding-bottom: 2px;
   }
 
   .app:not(.start-active) .basic-settings-panel .basic-setting-section:nth-child(2) .option-grid,
@@ -7613,15 +7649,15 @@ body {
 
   .app:not(.start-active) .basic-settings-panel .basic-setting-section:nth-child(2) .radio-group,
   .app:not(.start-active) .basic-settings-panel .basic-setting-section:nth-child(3) .radio-group {
-    grid-template-columns: 64px minmax(0, 1fr);
+    grid-template-columns: 58px minmax(0, 1fr);
   }
 
   .app:not(.start-active) .basic-save-panel .panel-body {
     display: grid;
     grid-template-columns: 218px minmax(0, 1fr);
     align-items: center;
-    gap: 8px;
-    padding: 6px 12px;
+    gap: 6px;
+    padding: 5px 10px;
   }
 
   .app:not(.start-active) .basic-save-panel .button-row {
@@ -7629,7 +7665,7 @@ body {
   }
 
   .app:not(.start-active) .basic-save-panel .path-field {
-    grid-template-columns: 58px minmax(0, 1fr);
+    grid-template-columns: 54px minmax(0, 1fr);
     gap: 6px;
     margin-top: 0;
   }
@@ -7651,7 +7687,7 @@ body {
 
 @media (min-width: 721px) and (max-width: 1499px) and (max-height: 760px) {
   .app:not(.start-active) .basic-grid .panel-header {
-    min-height: 38px;
+    min-height: 36px;
     padding-top: 4px !important;
     padding-bottom: 4px !important;
   }
