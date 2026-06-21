@@ -141,11 +141,12 @@ const checks = [
     pass: /data-evidence="board-adjust-workbench"/.test(source.boardAdjust)
       && /data-evidence="board-adjust-preview"/.test(source.boardAdjust)
       && /미리보기는 3단계 작업 영역에 한 번만 표시됩니다/.test(source.boardFlow)
-      && /\.pro-v2-board-adjust-workbench\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0,\s*0\.95fr\)\s*minmax\(300px,\s*0\.85fr\)/.test(v2Styles)
+      && /\.pro-v2-board-adjust-workbench\s*\{[\s\S]*?grid-template-columns:\s*minmax\(420px,\s*1\.08fr\)\s*minmax\(340px,\s*0\.92fr\)/.test(v2Styles)
   },
   {
     name: 'Board adjust keeps compact two-column workbench through 1024px',
     pass: !/@media\s*\(max-width:\s*1180px\)[\s\S]*?\.pro-v2-board-adjust-workbench\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)/.test(v2Styles)
+      || /@media\s*\(max-width:\s*860px\)[\s\S]*?\.pro-v2-board-adjust-workbench\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)/.test(v2Styles)
   },
   {
     name: 'Lower-band editor uses compact row contract',

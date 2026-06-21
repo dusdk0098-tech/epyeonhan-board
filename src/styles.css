@@ -7736,6 +7736,18 @@ body {
   min-height: 0;
 }
 
+.pro-v2-body:has(.pro-v2-board-adjust-step) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.pro-v2-body:has(.pro-v2-board-adjust-step) .pro-v2-canvas {
+  grid-column: 1 / -1;
+}
+
+.pro-v2-body:has(.pro-v2-board-adjust-step) .pro-v2-context {
+  display: none;
+}
+
 .pro-v2-canvas,
 .pro-v2-context {
   min-width: 0;
@@ -9387,8 +9399,13 @@ body {
   max-width: 100%;
 }
 
+.pro-v2-board-adjust-step > .pro-v2-compact-photo-status {
+  display: none;
+}
+
 .pro-v2-board-adjust-workbench {
-  grid-template-columns: minmax(0, 0.95fr) minmax(300px, 0.85fr);
+  grid-template-columns: minmax(420px, 1.08fr) minmax(340px, 0.92fr);
+  align-items: stretch;
 }
 
 .pro-v2-board-adjust-secondary-grid {
@@ -9407,19 +9424,45 @@ body {
 .pro-v2-board-adjust-preview-card {
   position: sticky;
   top: 12px;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
 }
 
 .pro-v2-board-adjust-preview-card .preview-stage {
-  min-height: clamp(240px, 34vh, 460px);
-  max-height: min(42vh, 360px);
+  min-height: clamp(190px, 30vh, 380px);
+  max-height: clamp(220px, 42vh, 520px);
   overflow: hidden;
 }
 
 .pro-v2-board-adjust-primary-card > :last-child,
 .pro-v2-board-adjust-preview-card .output-preview-card {
-  max-block-size: clamp(260px, 48vh, 440px);
+  max-block-size: clamp(280px, 56vh, 560px);
   overflow: auto;
   overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  padding-block-end: 12px;
+}
+
+.pro-v2-board-adjust-preview-card .output-preview-card {
+  max-block-size: none;
+  overflow: visible;
+  padding-block-end: 0;
+}
+
+.pro-v2-board-adjust-preview-card .preview-card-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  width: 100%;
+}
+
+.pro-v2-board-adjust-preview-card .preview-card-actions .small-btn,
+.pro-v2-board-adjust-preview-card .output-rotation-controls .small-btn {
+  width: 100%;
+  min-width: 0;
+}
+
+.pro-v2-board-adjust-preview-card .output-rotation-controls {
+  grid-template-columns: repeat(2, minmax(120px, 1fr));
 }
 
 .pro-v2-board-adjust-details {
@@ -9460,7 +9503,13 @@ body {
   }
 
   .pro-v2-board-adjust-preview-card .preview-stage {
-    min-height: clamp(220px, 34vh, 360px);
+    min-height: clamp(180px, 30vh, 320px);
+  }
+}
+
+@media (max-width: 860px) {
+  .pro-v2-board-adjust-workbench {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

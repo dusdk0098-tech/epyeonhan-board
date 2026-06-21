@@ -641,6 +641,45 @@
 - Draft PR:
   - Keep as Draft until runtime overflow evidence and review confirm no Must Fix blockers.
 
+## Task 2026-06-21 - PR 12 Board Adjust Scale / Clipping Closure
+
+- Phase: pr12-board-adjust-scale-clipping-closure
+- Branch: fix/layout-overflow-scroll
+- Task type:
+  - PRO Workspace v2 board-adjust layout and visual acceptance closure.
+- Scope:
+  - Let the board-adjust canvas use the full PRO workspace width instead of keeping a sparse right context panel.
+  - Scale the board size/position controls and live preview as the window grows from default to fullscreen-like widths.
+  - Keep board-adjust controls and preview visible together at 1024x600, 1280x720, and 1440x900.
+  - Remove clipping from visible preview toolbar, rotation controls, primary CTA, and action bar controls.
+  - Hide redundant compact photo status in the board-adjust step to reduce density and prevent scroll-edge clipping.
+  - Update the static layout verifier to match the new board-adjust full-width workbench contract.
+- Excluded:
+  - PR #6 changes.
+  - IPC, preload, output payload, Electron window policy, or package metadata changes.
+  - package/package-lock changes.
+  - DB/public/CI changes.
+  - user manual PNG changes.
+  - committed review artifacts or generated output.
+- Verification planned:
+  - git diff --check
+  - npm.cmd run build
+  - npm.cmd run verify:ui
+  - npm.cmd run verify:board
+  - node scripts/verify-output-settings.cjs
+  - node scripts/verify-pro-workspace-v2-layout.cjs
+  - node scripts/verify-pro-workspace-v2-board-flow.cjs
+  - node scripts/verify-pro-workspace-v2-pdf-flow.cjs
+  - node scripts/verify-pro-workspace-v2-accessibility.cjs
+  - npm.cmd run package:win
+  - Electron runtime board-adjust broad interactive clipping check at 1024x600, 1280x720, and 1440x900
+  - viewport overflow runtime QA at 390x844, 768x1024, 1024x600, 1280x720, and 1440x900
+  - hidden/bidi/newline check
+  - no-exposure check
+  - scope check
+- PR status:
+  - Keep PR #12 open for normal review after the closure commit.
+
 ## Task 2026-06-21 - PR D PRO Workspace v2 Motion and Accessibility
 
 - Phase: pr-d-pro-workspace-v2-motion-accessibility
