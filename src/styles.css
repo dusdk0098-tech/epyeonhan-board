@@ -9914,6 +9914,43 @@ body {
   .pro-v2-photo-summary-card {
     grid-column: 1 / -1;
   }
+
+  .pro-v2-board-generate-step {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+  }
+
+  .pro-v2-board-generate-step .pro-v2-readiness-grid {
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .pro-v2-board-generate-step .pro-v2-readiness-card {
+    min-height: 0;
+    padding: 9px 10px;
+  }
+
+  .pro-v2-board-generate-step .pro-v2-readiness-card strong {
+    font-size: 0.9rem;
+  }
+
+  .pro-v2-board-generate-step .pro-v2-generate-folder-panel,
+  .pro-v2-board-generate-step .pro-v2-generate-blockers,
+  .pro-v2-board-generate-step .pro-v2-generate-ready-note {
+    min-height: 0;
+  }
+
+  .pro-v2-board-generate-step .pro-v2-generate-folder-panel {
+    display: grid;
+    align-content: start;
+  }
+
+  .pro-v2-board-generate-step .pro-v2-generate-folder-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    width: 100%;
+  }
 }
 
 @media (max-width: 720px) {

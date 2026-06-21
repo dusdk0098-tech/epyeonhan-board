@@ -519,6 +519,37 @@
 - Draft PR:
   - Keep as Draft until runtime QA and final review confirm no Must Fix blockers.
 
+## Task 2026-06-21 - PR 12 Minimum Generate Readiness Density Follow-up
+
+- Phase: pr-e-layout-overflow-scroll-follow-up
+- Branch: fix/layout-overflow-scroll
+- Task type:
+  - PRO Workspace v2 responsive layout follow-up for action visibility and default-window density.
+- Scope:
+  - Keep the relocated PRO v2 action area from the prior PR 12 fix.
+  - Compact the board generate readiness section at tablet/minimum widths so save-folder readiness and blocker feedback stay visible with the primary CTA area.
+  - Preserve board, PDF, and LITE workflow behavior.
+- Excluded:
+  - PR #6 changes, merge, or Ready transition.
+  - IPC, preload, output payload, Electron window policy, package metadata, DB, public asset, CI, or user manual PNG changes.
+  - generated/release output commits.
+  - committed review artifacts.
+- Verification planned:
+  - git diff --check
+  - npm.cmd run build
+  - npm.cmd run verify:ui
+  - npm.cmd run verify:board
+  - node scripts/verify-output-settings.cjs
+  - node scripts/verify-pro-workspace-v2-layout.cjs
+  - node scripts/verify-pro-workspace-v2-board-flow.cjs
+  - node scripts/verify-pro-workspace-v2-pdf-flow.cjs
+  - node scripts/verify-pro-workspace-v2-accessibility.cjs
+  - Electron layout audit at default, fullscreen, and minimum windows
+  - npm.cmd run package:win
+  - hidden/bidi/newline check
+  - no-exposure check
+  - scope check
+
 ## Task 2026-06-21 - PR 12 Action Bar Reposition Layout Follow-up
 
 - Phase: pr12-actionbar-reposition-layout-follow-up
