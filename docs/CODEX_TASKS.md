@@ -519,6 +519,44 @@
 - Draft PR:
   - Keep as Draft until runtime QA and final review confirm no Must Fix blockers.
 
+## Task 2026-06-21 - PR 12 Responsive Acceptance Delta 2
+
+- Phase: pr12-responsive-acceptance-delta-2
+- Branch: fix/layout-overflow-scroll
+- Task type:
+  - PRO Workspace v2 responsive acceptance follow-up for PR #12.
+- Scope:
+  - Fix the 390px PDF photo preparation collapse by forcing a readable single-column body and bounded photo rows.
+  - Keep PDF photo batch actions readable in a compact two-column layout at narrow width.
+  - Keep selected PDF rows visible after select and reorder in the narrow photo list.
+  - Keep 1024x600 board adjustment controls and the live preview visible together.
+  - Preserve a single board adjustment preview.
+  - Keep lower-band last-row fields visible in the 390px board-content evidence.
+  - Separate required acceptance target failures from broader all-interactive observations in runtime evidence.
+- Excluded:
+  - showBoard or output generation rework.
+  - Electron IPC, preload, security boundary, or output payload changes.
+  - package/package-lock changes.
+  - DB/public/CI/user manual PNG changes.
+  - PR #6 changes.
+  - committed review artifacts or generated output.
+- Verification planned:
+  - git diff --check
+  - npm.cmd run build
+  - npm.cmd run verify:ui
+  - npm.cmd run verify:board
+  - node scripts/verify-pro-workspace-v2-layout.cjs
+  - node scripts/verify-pro-workspace-v2-board-flow.cjs
+  - node scripts/verify-pro-workspace-v2-pdf-flow.cjs
+  - node scripts/verify-pro-workspace-v2-accessibility.cjs
+  - npm.cmd run package:win
+  - targeted Electron responsive runtime evidence
+  - hidden/bidi/newline check
+  - no-exposure check
+  - scope check
+- Draft PR:
+  - Keep PR #12 as Draft after the delta commit and request final review.
+
 ## Task 2026-06-21 - PR 12 PRO Workflow UX Acceptance Delta
 
 - Phase: pr12-pro-workflow-ux-delta

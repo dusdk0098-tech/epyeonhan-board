@@ -130,11 +130,22 @@ const checks = [
       && /\.pro-v2-photo-side-panel\s*\{[\s\S]*?align-self:\s*start/.test(v2Styles)
   },
   {
+    name: 'Narrow PDF photo prep collapses to a readable single column',
+    pass: /@media\s*\(max-width:\s*720px\)[\s\S]*?\.pro-v2-photo-workbench\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)/.test(v2Styles)
+      && /@media\s*\(max-width:\s*720px\)[\s\S]*?\.pro-v2-photo-batch-actions\s*\{[\s\S]*?grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/.test(v2Styles)
+      && /@media\s*\(max-width:\s*720px\)[\s\S]*?word-break:\s*keep-all/.test(v2Styles)
+      && /@media\s*\(max-width:\s*720px\)[\s\S]*?text-overflow:\s*ellipsis/.test(v2Styles)
+  },
+  {
     name: 'Board adjust renders a single preview near controls',
     pass: /data-evidence="board-adjust-workbench"/.test(source.boardAdjust)
       && /data-evidence="board-adjust-preview"/.test(source.boardAdjust)
       && /미리보기는 3단계 작업 영역에 한 번만 표시됩니다/.test(source.boardFlow)
       && /\.pro-v2-board-adjust-workbench\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0,\s*0\.95fr\)\s*minmax\(300px,\s*0\.85fr\)/.test(v2Styles)
+  },
+  {
+    name: 'Board adjust keeps compact two-column workbench through 1024px',
+    pass: !/@media\s*\(max-width:\s*1180px\)[\s\S]*?\.pro-v2-board-adjust-workbench\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)/.test(v2Styles)
   },
   {
     name: 'Lower-band editor uses compact row contract',

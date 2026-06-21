@@ -9455,10 +9455,6 @@ body {
 }
 
 @media (max-width: 1180px) {
-  .pro-v2-board-adjust-workbench {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
   .pro-v2-board-adjust-preview-card {
     position: static;
   }
@@ -9484,13 +9480,99 @@ body {
 }
 
 @media (max-width: 720px) {
+  .pro-v2-photo-workbench {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .pro-v2-photo-side-panel,
   .pro-v2-photo-order-actions {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .pro-v2-photo-selection-panel,
+  .pro-v2-photo-list-pane,
+  .pro-v2-photo-list-scroll,
+  .pro-v2-photo-side-panel,
+  .pro-v2-photo-side-panel > * {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
   .pro-v2-photo-list-scroll {
-    max-block-size: min(30vh, 260px);
+    max-block-size: min(18vh, 150px);
+  }
+
+  .pro-v2-photo-side-panel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+  }
+
+  .pro-v2-photo-summary-card {
+    grid-column: 1 / -1;
+  }
+
+  .pro-v2-photo-side-panel :is(.pro-v2-photo-summary-card, .pro-v2-rotation-panel, .pro-v2-photo-order-card) {
+    padding: 8px;
+  }
+
+  .pro-v2-photo-side-panel :is(.pro-v2-rotation-actions, .pro-v2-photo-order-actions) {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
+
+  .pro-v2-photo-side-panel .pro-v2-action {
+    min-width: 0;
+    padding-inline: 8px;
+    white-space: normal;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+  }
+
+  .pro-v2-photo-batch-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    min-width: 0;
+  }
+
+  .pro-v2-photo-batch-actions .pro-v2-action:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .pro-v2-photo-batch-actions .pro-v2-action,
+  .pro-v2-photo-import-actions .pro-v2-action,
+  .pro-v2-rotation-actions .pro-v2-action {
+    width: 100%;
+    min-width: 0;
+    white-space: normal;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+  }
+
+  .pro-v2-board-photo-row {
+    grid-template-columns: var(--pro-v2-control-height) minmax(0, 1fr);
+    width: 100%;
+    min-width: 0;
+  }
+
+  .pro-v2-board-photo-row .pro-v2-row-delete {
+    grid-column: 1 / -1;
+    justify-self: stretch;
+    width: 100%;
+  }
+
+  .pro-v2-photo-name-button {
+    min-width: 0;
+    width: 100%;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .pro-v2-photo-name-button > span:nth-child(2) {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .pro-v2-lower-band-rows {
