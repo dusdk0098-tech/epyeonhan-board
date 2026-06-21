@@ -550,6 +550,37 @@
   - no-exposure check
   - scope check
 
+## Task 2026-06-21 - PR 12 Complete Scroll Row Visual Follow-up
+
+- Phase: pr-e-layout-complete-scroll-row-follow-up
+- Branch: fix/layout-overflow-scroll
+- Task type:
+  - PRO Workspace v2 minimum/default window visual polish.
+- Scope:
+  - Tune bounded photo and lower-band scroll containers so default and minimum windows avoid showing partially clipped next rows.
+  - Tune the 900px board-adjust control scroller so the first viewport ends on a complete control row while keeping preview controls visible.
+  - Preserve existing board, PDF, and LITE behavior.
+- Excluded:
+  - PR #6 changes, merge, or Ready transition.
+  - IPC, preload, output payload, Electron window policy, package metadata, DB, public asset, CI, or user manual PNG changes.
+  - generated/release output commits.
+  - committed review artifacts.
+- Verification planned:
+  - git diff --check
+  - npm.cmd run build
+  - npm.cmd run verify:ui
+  - npm.cmd run verify:board
+  - node scripts/verify-output-settings.cjs
+  - node scripts/verify-pro-workspace-v2-layout.cjs
+  - node scripts/verify-pro-workspace-v2-board-flow.cjs
+  - node scripts/verify-pro-workspace-v2-pdf-flow.cjs
+  - node scripts/verify-pro-workspace-v2-accessibility.cjs
+  - Electron layout audit at default, fullscreen, and minimum windows
+  - npm.cmd run package:win
+  - hidden/bidi/newline check
+  - no-exposure check
+  - scope check
+
 ## Task 2026-06-21 - PR 12 Action Bar Reposition Layout Follow-up
 
 - Phase: pr12-actionbar-reposition-layout-follow-up

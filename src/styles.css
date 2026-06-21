@@ -9539,7 +9539,7 @@ body {
 
 .pro-v2-lower-band-rows {
   gap: 6px;
-  max-block-size: 162px;
+  max-block-size: 158px;
   overflow: auto;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
@@ -9782,6 +9782,10 @@ body {
     max-height: clamp(112px, 20vh, 148px);
   }
 
+  .pro-v2-board-adjust-primary-card > :last-child {
+    max-block-size: 190px;
+  }
+
   .pro-v2-board-adjust-preview-card .preview-card-actions,
   .pro-v2-board-adjust-preview-card .output-rotation-controls {
     gap: 6px;
@@ -9850,7 +9854,7 @@ body {
   }
 
   .pro-v2-lower-band-rows {
-    max-block-size: 78px;
+    max-block-size: 72px;
   }
 }
 
@@ -9874,6 +9878,10 @@ body {
 
   .pro-v2-photo-workbench {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pro-v2-photo-list-scroll {
+    max-block-size: 112px;
   }
 
   .pro-v2-actionbar {
