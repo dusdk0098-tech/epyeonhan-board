@@ -9537,6 +9537,60 @@ body {
 }
 
 @media (min-width: 721px) and (max-width: 960px) {
+  .pro-v2-choice {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pro-v2-job-card {
+    min-height: 184px;
+    padding: 14px;
+    gap: 8px;
+  }
+
+  .pro-v2-job-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+  }
+
+  .pro-v2-job-bullets {
+    gap: 5px;
+  }
+
+  .pro-v2-job-bullets span {
+    font-size: 0.84rem;
+  }
+
+  .pro-v2-board-adjust-workbench {
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 0.82fr);
+    gap: 12px;
+  }
+
+  .pro-v2-board-adjust-preview-card .preview-stage {
+    min-height: clamp(120px, 20vh, 155px);
+    max-height: clamp(130px, 22vh, 170px);
+  }
+
+  .pro-v2-board-adjust-preview-card .preview-card-actions,
+  .pro-v2-board-adjust-preview-card .output-rotation-controls {
+    gap: 6px;
+  }
+
+  .pro-v2-board-adjust-preview-card .preview-card-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pro-v2-board-adjust-preview-card .output-rotation-controls {
+    grid-template-columns: auto minmax(82px, 1fr) minmax(88px, 1fr) auto;
+    margin-top: 6px;
+  }
+
+  .pro-v2-board-adjust-preview-card .output-rotation-controls .small-btn {
+    min-height: var(--pro-v2-control-height);
+    padding-inline: 6px;
+    font-size: 0.82rem;
+  }
+
   .pro-v2-photo-import-actions,
   .pro-v2-photo-batch-actions,
   .pro-v2-rotation-actions,

@@ -519,6 +519,31 @@
 - Draft PR:
   - Keep as Draft until runtime QA and final review confirm no Must Fix blockers.
 
+## Task 2026-06-21 - PR #12 Minimum Layout Follow-up
+
+- Phase: pr12-layout-overflow-scroll-follow-up
+- Branch: fix/layout-overflow-scroll
+- Task type:
+  - PRO Workspace v2 layout hardening / minimum-window visual follow-up
+- Scope:
+  - Keep Task Choice cards side-by-side and fully visible in the 900px class viewport.
+  - Compress the Board Adjust preview area only in the 721px-960px range so rotation controls remain visible with the preview.
+  - Preserve the existing board/PDF flow structure, output payload, IPC, preload, package, public asset, DB, and CI contracts.
+- Verification:
+  - git diff --check PASS
+  - npm.cmd run build PASS
+  - node scripts/verify-pro-workspace-v2-layout.cjs PASS
+  - Electron 900x720 Task Choice runtime check PASS:
+    - horizontalOverflowPx: 0
+    - job card count: 2
+    - job card clipped: false
+  - Electron full layout audit rerun:
+    - screenshotCount: 27
+    - maxHorizontalOverflowPx: 0
+    - cardClippedCount: 0
+    - tooSmallInteractiveCount: 0
+  - Review artifacts remain local-only and are not staged.
+
 ## Task 2026-06-21 - PR 12 Layout Follow-up Hardening
 
 - Phase: pr-e-layout-overflow-scroll follow-up
