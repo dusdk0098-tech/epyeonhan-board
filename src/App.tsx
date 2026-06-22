@@ -3083,6 +3083,62 @@ export default function App() {
     );
   }
 
+  function renderHighlightGeometryControls() {
+    const highlight = selectedHighlight?.enabled ? selectedHighlight : defaultHighlight;
+    const disabled = !selectedHighlight?.enabled;
+    const xPercent = Math.round((highlight.xRatio ?? defaultHighlight.xRatio) * 100);
+    const yPercent = Math.round((highlight.yRatio ?? defaultHighlight.yRatio) * 100);
+    const radiusPercent = Math.round((highlight.radiusRatio ?? defaultHighlight.radiusRatio) * 100);
+
+    return (
+      <div className="pro-v2-highlight-geometry-controls" data-evidence="highlight-geometry-controls">
+        <div className="pro-v2-highlight-geometry-head">
+          <strong>강조 위치와 크기</strong>
+          <span>미리보기에서 드래그하거나 아래 값으로 맞춥니다.</span>
+        </div>
+        <label>
+          <span>가로 위치</span>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            step="1"
+            value={xPercent}
+            disabled={disabled}
+            onChange={(event) => updateSelectedHighlightPatch({ xRatio: Number(event.target.value) / 100 })}
+          />
+          <output>{xPercent}%</output>
+        </label>
+        <label>
+          <span>세로 위치</span>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            step="1"
+            value={yPercent}
+            disabled={disabled}
+            onChange={(event) => updateSelectedHighlightPatch({ yRatio: Number(event.target.value) / 100 })}
+          />
+          <output>{yPercent}%</output>
+        </label>
+        <label>
+          <span>원 크기</span>
+          <input
+            type="range"
+            min="2"
+            max="60"
+            step="1"
+            value={radiusPercent}
+            disabled={disabled}
+            onChange={(event) => updateSelectedHighlightPatch({ radiusRatio: Number(event.target.value) / 100 })}
+          />
+          <output>{radiusPercent}%</output>
+        </label>
+      </div>
+    );
+  }
+
   function renderPremiumHighlightAndActions() {
     return (
       <div className="premium-settings-stack">
@@ -3112,6 +3168,7 @@ export default function App() {
             disabled={!selectedHighlight?.enabled}
             onChange={(value) => updateSelectedHighlightPatch({ color: value })}
           />
+          {renderHighlightGeometryControls()}
           <button className="small-btn danger" type="button" disabled={!selectedHighlight?.enabled} onClick={() => updateSelectedPhotoHighlight(undefined)}>
             <Trash2 size={15} /> 강조 삭제
           </button>
@@ -3160,6 +3217,7 @@ export default function App() {
             disabled={!selectedHighlight?.enabled}
             onChange={(value) => updateSelectedHighlightPatch({ color: value })}
           />
+          {renderHighlightGeometryControls()}
           <button className="small-btn danger" type="button" disabled={!selectedHighlight?.enabled} onClick={() => updateSelectedPhotoHighlight(undefined)}>
             <Trash2 size={15} /> 강조 삭제
           </button>

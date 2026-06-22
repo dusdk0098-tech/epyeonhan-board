@@ -10838,10 +10838,10 @@ body .app:not(.start-active) > main.page-shell.output-shell.pro-v2-page,
 }
 
 .pro-v2-row-select {
-  width: 38px;
-  height: 38px;
-  min-width: 38px;
-  min-height: 38px;
+  width: var(--pro-v2-control-height);
+  height: var(--pro-v2-control-height);
+  min-width: var(--pro-v2-control-height);
+  min-height: var(--pro-v2-control-height);
   border-radius: 12px;
 }
 
@@ -10864,7 +10864,7 @@ body .app:not(.start-active) > main.page-shell.output-shell.pro-v2-page,
 }
 
 .pro-v2-lower-band-manager.editor .pro-v2-lower-band-row {
-  grid-template-columns: 36px 54px minmax(130px, 0.42fr) minmax(220px, 1fr) 36px;
+  grid-template-columns: var(--pro-v2-control-height) 58px minmax(130px, 0.42fr) minmax(220px, 1fr) var(--pro-v2-control-height);
   align-items: center;
   gap: 6px;
   min-height: 48px;
@@ -10884,10 +10884,10 @@ body .app:not(.start-active) > main.page-shell.output-shell.pro-v2-page,
 
 .pro-v2-lower-band-manager.editor .pro-v2-row-select,
 .pro-v2-lower-band-manager.editor .pro-v2-row-delete {
-  width: 36px;
-  min-width: 36px;
-  height: 36px;
-  min-height: 36px;
+  width: var(--pro-v2-control-height);
+  min-width: var(--pro-v2-control-height);
+  height: var(--pro-v2-control-height);
+  min-height: var(--pro-v2-control-height);
 }
 
 .pro-v2-lower-band-manager.editor .pro-v2-selected-label,
@@ -11024,6 +11024,131 @@ body .app:not(.start-active) > main.page-shell.output-shell.pro-v2-page,
 .pro-v2-board-adjust-step .range-with-number {
   grid-template-columns: minmax(0, 1fr) minmax(76px, 96px);
   gap: 6px;
+}
+
+.pro-v2-highlight-geometry-controls {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid #d8e1ef;
+  border-radius: 12px;
+  background: #f8fbff;
+}
+
+.pro-v2-highlight-geometry-head {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: baseline;
+  gap: 6px;
+}
+
+.pro-v2-highlight-geometry-head strong {
+  color: #1f2937;
+  font-size: 0.88rem;
+  font-weight: 950;
+}
+
+.pro-v2-highlight-geometry-head span {
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pro-v2-highlight-geometry-controls label {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px 6px;
+  min-width: 0;
+  color: #334155;
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.pro-v2-highlight-geometry-controls input[type="range"] {
+  grid-column: 1 / -1;
+  width: 100%;
+  min-width: 0;
+}
+
+.pro-v2-highlight-geometry-controls output {
+  justify-self: end;
+  min-width: 42px;
+  padding: 4px 6px;
+  border: 1px solid #d8e1ef;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #0f3d78;
+  font-size: 0.78rem;
+  font-weight: 950;
+  text-align: right;
+}
+
+.pro-v2-board-adjust-panel[data-evidence="board-adjust-highlight-controls"] .output-setting-section {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 8px;
+}
+
+.pro-v2-board-adjust-panel[data-evidence="board-adjust-highlight-controls"] .output-setting-section > h4,
+.pro-v2-board-adjust-panel[data-evidence="board-adjust-highlight-controls"] .color-select-row,
+.pro-v2-board-adjust-panel[data-evidence="board-adjust-highlight-controls"] .pro-v2-highlight-geometry-controls,
+.pro-v2-board-adjust-panel[data-evidence="board-adjust-highlight-controls"] .small-btn.danger {
+  grid-column: 1 / -1;
+}
+
+.pro-v2-board-adjust-panel[data-evidence="board-adjust-highlight-controls"] .output-setting-section > h4 {
+  margin-bottom: 0;
+}
+
+.pro-v2-board-adjust-panel[data-evidence="board-adjust-highlight-controls"] .pro-v2-board-section-heading p {
+  display: none;
+}
+
+.pro-v2-board-adjust-panel[data-evidence="board-adjust-highlight-controls"] .check-label {
+  min-height: 36px;
+  padding: 6px 8px;
+}
+
+.pro-v2-board-adjust-panel[data-evidence="board-adjust-highlight-controls"] .color-select-row {
+  grid-template-columns: minmax(68px, auto) minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+
+.pro-v2-board-adjust-panel[data-evidence="board-adjust-highlight-controls"] .color-select-row > label {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.pro-v2-board-adjust-panel[data-evidence="board-adjust-highlight-controls"] .color-options {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(40px, 1fr));
+  gap: 6px;
+  min-width: 0;
+}
+
+.pro-v2-board-adjust-panel[data-evidence="board-adjust-highlight-controls"] .color-option {
+  justify-content: center;
+  min-height: 36px;
+  padding: 5px 8px;
+  font-size: 0;
+}
+
+.pro-v2-board-adjust-panel[data-evidence="board-adjust-highlight-controls"] .color-option span {
+  width: 22px;
+  height: 22px;
+  margin: 0;
 }
 
 .pro-v2-board-adjust-preview-card {

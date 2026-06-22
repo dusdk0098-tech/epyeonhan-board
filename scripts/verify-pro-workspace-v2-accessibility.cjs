@@ -145,6 +145,16 @@ const checks = [
       && /slots\.highlightControls/.test(source.pdfDetails)
   },
   {
+    name: 'Highlight geometry controls keep labelled range inputs',
+    pass: /data-evidence="highlight-geometry-controls"/.test(source.app)
+      && /<span>가로 위치<\/span>[\s\S]*?type="range"[\s\S]*?xRatio/.test(source.app)
+      && /<span>세로 위치<\/span>[\s\S]*?type="range"[\s\S]*?yRatio/.test(source.app)
+      && /<span>원 크기<\/span>[\s\S]*?type="range"[\s\S]*?radiusRatio/.test(source.app)
+      && /<output>\{xPercent\}%<\/output>/.test(source.app)
+      && /<output>\{yPercent\}%<\/output>/.test(source.app)
+      && /<output>\{radiusPercent\}%<\/output>/.test(source.app)
+  },
+  {
     name: 'PDF details workbench uses tab semantics',
     pass: /role="tablist"/.test(source.pdfDetails)
       && /role="tab"/.test(source.pdfDetails)

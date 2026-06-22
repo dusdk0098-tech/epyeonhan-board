@@ -141,12 +141,6 @@ export function ProBoardAdjustStep({ model, actions, slots, onGoToPhotoStep }: P
           </div>
         </section>
         <section className="pro-v2-board-control-card pro-v2-board-adjust-preview-card" data-evidence="board-adjust-preview">
-          <div className="pro-v2-board-section-heading">
-            <div>
-              <h3>미리보기 확인</h3>
-              <p>크기, 위치, 하부띠 변경 결과를 바로 비교합니다.</p>
-            </div>
-          </div>
           {slots.previewPanel}
         </section>
       </div>

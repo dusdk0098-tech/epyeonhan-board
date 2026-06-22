@@ -166,7 +166,8 @@ const checks = [
       && /data-evidence="board-adjust-preview"/.test(source.boardAdjust)
       && /role="tablist"/.test(source.boardAdjust)
       && /role="tabpanel"/.test(source.boardAdjust)
-      && /미리보기는 3단계 작업 영역에 한 번만 표시됩니다/.test(source.boardFlow)
+      && /if \(step === 'adjust'\) return null/.test(source.boardFlow)
+      && !/pro-v2-board-adjust-context-note/.test(source.boardFlow)
       && !/<details/.test(source.boardAdjust)
       && /\.pro-v2-board-adjust-workbench\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)\s*minmax\(320px,\s*0\.9fr\)/.test(v2Styles)
   },
@@ -189,6 +190,17 @@ const checks = [
       && /\.pro-v2-board-adjust-combo-grid\s*\{[\s\S]*?grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/.test(v2Styles)
       && /\.pro-v2-board-adjust-panel-body\s*\{[\s\S]*?overflow:\s*visible/.test(v2Styles)
       && /\.pro-v2-board-adjust-step \.range-with-number\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)\s*minmax\(76px,\s*96px\)/.test(v2Styles)
+  },
+  {
+    name: 'Highlight adjustment exposes visible x/y/radius controls',
+    pass: /renderHighlightGeometryControls/.test(source.app)
+      && /data-evidence="highlight-geometry-controls"/.test(source.app)
+      && /xRatio:\s*Number\(event\.target\.value\)\s*\/\s*100/.test(source.app)
+      && /yRatio:\s*Number\(event\.target\.value\)\s*\/\s*100/.test(source.app)
+      && /radiusRatio:\s*Number\(event\.target\.value\)\s*\/\s*100/.test(source.app)
+      && /\.pro-v2-highlight-geometry-controls/.test(v2Styles)
+      && /\.pro-v2-highlight-geometry-controls\s*\{[\s\S]*?grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)/.test(v2Styles)
+      && /\.pro-v2-highlight-geometry-controls label\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)\s*auto/.test(v2Styles)
   },
   {
     name: 'V2 preview rotation controls can wrap without clipping',
