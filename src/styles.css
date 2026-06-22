@@ -7793,6 +7793,69 @@ body {
   }
 }
 
+@media (min-width: 901px) and (max-height: 760px) {
+  .app.start-active .start-shell {
+    padding: 84px 32px 42px;
+  }
+
+  .app.start-active .start-content {
+    gap: 42px;
+  }
+
+  .app.start-active .start-hero-title {
+    gap: 18px;
+  }
+
+  .app.start-active .start-hero-title h1 {
+    font-size: 72px;
+  }
+
+  .app.start-active .start-hero-title p {
+    font-size: 22px;
+  }
+
+  .app.start-active .start-mode-grid {
+    gap: 72px;
+  }
+
+  .app.start-active .start-mode-card {
+    min-height: 392px;
+    gap: 24px;
+    padding: 44px 28px 28px;
+  }
+
+  .app.start-active .start-mode-icon {
+    width: 76px;
+    height: 76px;
+  }
+
+  .app.start-active .start-mode-card.pro .start-mode-icon {
+    width: 70px;
+    height: 54px;
+  }
+
+  .app.start-active .start-mode-card strong {
+    font-size: 44px;
+  }
+
+  .app.start-active .start-card-copy {
+    min-height: 116px;
+    gap: 14px;
+    padding: 17px 18px;
+  }
+
+  .app.start-active .start-mode-card small {
+    font-size: 20px;
+  }
+
+  .app.start-active .start-settings-button {
+    right: 24px;
+    bottom: 24px;
+    width: 70px;
+    height: 70px;
+  }
+}
+
 /* PRO Task Workspace v2 layout foundation */
 .pro-v2-page.output-shell {
   --pro-v2-font-title: clamp(1.12rem, 0.96rem + 0.42vw, 1.5rem);
