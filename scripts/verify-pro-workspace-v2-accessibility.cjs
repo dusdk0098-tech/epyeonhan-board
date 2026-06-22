@@ -144,6 +144,16 @@ const checks = [
       && /slots\.highlightControls/.test(source.pdfDetails)
   },
   {
+    name: 'PDF details workbench uses tab semantics',
+    pass: /role="tablist"/.test(source.pdfDetails)
+      && /role="tab"/.test(source.pdfDetails)
+      && /aria-selected=\{active\}/.test(source.pdfDetails)
+      && /aria-controls=\{`pro-v2-pdf-\$\{panel\.id\}-panel`\}/.test(source.pdfDetails)
+      && /role="tabpanel"/.test(source.pdfDetails)
+      && /aria-labelledby=\{`pro-v2-pdf-\$\{activePanel\}-tab`\}/.test(source.pdfDetails)
+      && /data-evidence="pdf-details-workbench"/.test(source.pdfDetails)
+  },
+  {
     name: 'Board generate readiness accepts checked-only photo sets',
     pass: /!\s*model\.hasSelectedPhoto\s*&&\s*model\.checkedCount\s*===\s*0/.test(source.boardGenerate)
   },

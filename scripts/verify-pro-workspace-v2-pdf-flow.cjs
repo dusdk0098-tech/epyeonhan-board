@@ -113,6 +113,17 @@ const checks = [
       && /PDF 모드에서는 보드판을 삽입하지 않고/.test(source.pdfDetails)
   },
   {
+    name: 'PDF details uses a tabbed workbench instead of a long preview stack',
+    pass: /useState<ProPdfDetailsPanel>\('document'\)/.test(source.pdfDetails)
+      && /data-evidence="pdf-details-workbench"/.test(source.pdfDetails)
+      && /role="tablist"/.test(source.pdfDetails)
+      && /evidence:\s*'pdf-details-tab-document'/.test(source.pdfDetails)
+      && /evidence:\s*'pdf-details-tab-ledger'/.test(source.pdfDetails)
+      && /evidence:\s*'pdf-details-tab-highlight'/.test(source.pdfDetails)
+      && !/data-evidence="pdf-preview-near-settings"/.test(source.pdfDetails)
+      && !/slots\.previewPanel/.test(source.pdfDetails)
+  },
+  {
     name: 'PDF v2 checked UI matches generation readiness',
     pass: /const generateReady = model\.checkedCount > 0/.test(source.pdfFlow)
       && /if \(model\.checkedCount === 0\) blocked\.push/.test(source.pdfGenerate)

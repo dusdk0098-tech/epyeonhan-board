@@ -17,6 +17,7 @@ const files = {
   boardFlow: 'src/components/pro-workspace-v2/ProBoardFlow.tsx',
   boardPhoto: 'src/components/pro-workspace-v2/ProBoardPhotoStep.tsx',
   pdfPhoto: 'src/components/pro-workspace-v2/ProPdfPhotoStep.tsx',
+  pdfDetails: 'src/components/pro-workspace-v2/ProPdfDetailsStep.tsx',
   boardAdjust: 'src/components/pro-workspace-v2/ProBoardAdjustStep.tsx',
   lowerBand: 'src/components/pro-workspace-v2/ProLowerBandItemManager.tsx',
   pdfTypes: 'src/components/pro-workspace-v2/pdfFlowTypes.ts',
@@ -35,6 +36,7 @@ const v2ComponentSource = [
   source.boardFlow,
   source.boardPhoto,
   source.pdfPhoto,
+  source.pdfDetails,
   source.boardAdjust,
   source.lowerBand,
   source.pdfTypes,
@@ -135,6 +137,15 @@ const checks = [
       && /@media\s*\(max-width:\s*720px\)[\s\S]*?\.pro-v2-photo-batch-actions\s*\{[\s\S]*?grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/.test(v2Styles)
       && /@media\s*\(max-width:\s*720px\)[\s\S]*?word-break:\s*keep-all/.test(v2Styles)
       && /@media\s*\(max-width:\s*720px\)[\s\S]*?text-overflow:\s*ellipsis/.test(v2Styles)
+  },
+  {
+    name: 'PDF details uses compact tabbed workbench layout',
+    pass: /data-evidence="pdf-details-workbench"/.test(source.pdfDetails)
+      && /role="tablist"/.test(source.pdfDetails)
+      && !/slots\.previewPanel/.test(source.pdfDetails)
+      && /\.pro-v2-pdf-workbench\s*\{[\s\S]*?grid-template-columns:\s*minmax\(170px,\s*0\.34fr\)\s*minmax\(0,\s*1fr\)/.test(v2Styles)
+      && /@media\s*\(max-width:\s*960px\)[\s\S]*?\.pro-v2-pdf-workbench\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)/.test(v2Styles)
+      && /@media\s*\(max-width:\s*960px\)[\s\S]*?\.pro-v2-pdf-workbench-nav\s*\{[\s\S]*?grid-template-columns:\s*repeat\(3,\s*minmax\(150px,\s*1fr\)\)/.test(v2Styles)
   },
   {
     name: 'Board adjust renders a single preview near controls',
