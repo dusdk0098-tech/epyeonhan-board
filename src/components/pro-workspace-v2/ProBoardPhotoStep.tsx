@@ -25,10 +25,6 @@ export function ProBoardPhotoStep({ model, actions }: ProBoardPhotoStepProps) {
   return (
     <div className="pro-v2-board-step pro-v2-board-photo-step" data-evidence="board-photo-step">
       <section className="pro-v2-photo-import-panel">
-        <div>
-          <h3>사진을 먼저 준비하세요</h3>
-          <p>사진을 추가한 뒤 사용할 사진을 선택하거나 체크하고, 방향을 확인하세요.</p>
-        </div>
         <div className="pro-v2-photo-import-actions">
           <button type="button" className="pro-v2-action primary pro-v2-board-primary" data-evidence="board-add-photos" onClick={actions.onAddPhotos}>
             <Camera size={16} aria-hidden /> 사진 불러오기

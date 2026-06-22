@@ -25,10 +25,6 @@ export function ProPdfPhotoStep({ model, actions }: ProPdfPhotoStepProps) {
   return (
     <div className="pro-v2-pdf-step pro-v2-pdf-photo-step" data-evidence="pdf-photo-step">
       <section className="pro-v2-photo-import-panel">
-        <div>
-          <h3>PDF에 넣을 사진을 준비하세요</h3>
-          <p>사진을 추가하고 출력 순서, 선택 상태, 회전 방향을 먼저 확인합니다.</p>
-        </div>
         <div className="pro-v2-photo-import-actions">
           <button type="button" className="pro-v2-action primary pro-v2-pdf-primary" data-evidence="pdf-add-photos" onClick={actions.onAddPhotos}>
             <Camera size={16} aria-hidden /> 사진 불러오기

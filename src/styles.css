@@ -10071,7 +10071,7 @@ body {
 .pro-v2-board-photo-step .pro-v2-photo-import-panel,
 .pro-v2-pdf-photo-step .pro-v2-photo-import-panel {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr);
   align-items: center;
   padding: 10px 12px;
   gap: 8px;
@@ -10080,7 +10080,8 @@ body {
 .pro-v2-board-photo-step .pro-v2-photo-import-actions,
 .pro-v2-pdf-photo-step .pro-v2-photo-import-actions {
   display: grid;
-  grid-template-columns: repeat(3, minmax(132px, 1fr));
+  grid-template-columns: minmax(150px, 1.12fr) repeat(2, minmax(138px, 1fr));
+  width: 100%;
 }
 
 .pro-v2-board-photo-step .pro-v2-photo-import-panel p,
@@ -10509,13 +10510,8 @@ body {
 
   .pro-v2-board-photo-step:has(.pro-v2-board-photo-row) .pro-v2-photo-import-panel,
   .pro-v2-pdf-photo-step:has(.pro-v2-board-photo-row) .pro-v2-photo-import-panel {
-    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
     align-items: center;
-  }
-
-  .pro-v2-board-photo-step:has(.pro-v2-board-photo-row) .pro-v2-photo-import-panel h3,
-  .pro-v2-pdf-photo-step:has(.pro-v2-board-photo-row) .pro-v2-photo-import-panel h3 {
-    font-size: 0.96rem;
   }
 
   .pro-v2-board-photo-step:has(.pro-v2-board-photo-row) .pro-v2-photo-import-actions,
