@@ -2157,8 +2157,8 @@ export default function App() {
               </span>
               <strong>LITE</strong>
               <span className="start-card-copy">
-                <small>가볍고 빠른 시작</small>
-                <em>라이트모드 설명</em>
+                <small>사진 보드판 만들기</small>
+                <em>LITE 바로 시작</em>
               </span>
             </button>
 
@@ -2168,8 +2168,8 @@ export default function App() {
               </span>
               <strong>PRO</strong>
               <span className="start-card-copy">
-                <small>전문가를 위한 강력한 기능</small>
-                <em>프로모드 설명</em>
+                <small>보드판·PDF 만들기</small>
+                <em>PRO 작업 선택</em>
               </span>
             </button>
           </div>
