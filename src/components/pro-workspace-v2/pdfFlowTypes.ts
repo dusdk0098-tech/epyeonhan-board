@@ -31,8 +31,6 @@ export interface ProPdfFlowModel {
   saveFolderReady: boolean;
   previewReady: boolean;
   pdfTitle: string;
-  showBoard: boolean;
-  useBoardFields: boolean;
   usePhotoDate: boolean;
   previewPage: number;
   previewPageCount: number;
@@ -57,11 +55,8 @@ export interface ProPdfFlowActions {
   onSelectSaveFolder: () => void;
   onOpenSaveFolder: () => void;
   onUpdatePdfTitle: (value: string) => void;
-  onToggleShowBoard: (enabled: boolean) => void;
-  onToggleUseBoardFields: (enabled: boolean) => void;
   onToggleUsePhotoDate: (enabled: boolean) => void;
   onUpdateSelectedLedger: (patch: Partial<PhotoLedgerInfo>) => void;
-  onApplyBoardFieldsToSelectedLedger: () => void;
   onApplySelectedLedgerToCheckedPhotos: () => void;
   onOpenPreview: () => void;
   onPreviousPreviewPage: () => void;
@@ -71,6 +66,7 @@ export interface ProPdfFlowActions {
 
 export interface ProPdfFlowSlots {
   previewPanel: ReactNode;
+  highlightControls: ReactNode;
 }
 
 export interface ProPdfFlowController {

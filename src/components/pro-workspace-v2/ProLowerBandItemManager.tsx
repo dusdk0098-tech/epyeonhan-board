@@ -1,4 +1,4 @@
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 
 import type { ProBoardField } from './boardFlowTypes';
 
@@ -7,6 +7,7 @@ interface ProLowerBandItemManagerProps {
   selectedFieldId: string;
   title?: string;
   description?: string;
+  variant?: 'editor' | 'compact';
   onAddField: () => void;
   onUpdateField: (id: string, patch: Partial<ProBoardField>) => void;
   onDeleteField: (id: string) => void;
@@ -19,6 +20,7 @@ export function ProLowerBandItemManager({
   selectedFieldId,
   title = '하부띠 항목',
   description = '보드판에 표시할 항목명과 내용을 정리합니다.',
+  variant = 'editor',
   onAddField,
   onUpdateField,
   onDeleteField,
@@ -26,7 +28,7 @@ export function ProLowerBandItemManager({
   onInsertSelectedFileName
 }: ProLowerBandItemManagerProps) {
   return (
-    <section className="pro-v2-lower-band-manager" data-evidence="lower-band-controls">
+    <section className={`pro-v2-lower-band-manager ${variant === 'compact' ? 'compact' : 'editor'}`} data-evidence="lower-band-controls">
       <div className="pro-v2-board-section-heading">
         <div>
           <h3>{title}</h3>
@@ -53,6 +55,7 @@ export function ProLowerBandItemManager({
                 key={field.id}
                 className={selected ? 'pro-v2-lower-band-row selected' : 'pro-v2-lower-band-row'}
                 data-evidence={index === 0 ? 'lower-band-added-row' : undefined}
+                onFocusCapture={() => onSelectField(field.id)}
               >
                 <button
                   type="button"
@@ -62,10 +65,8 @@ export function ProLowerBandItemManager({
                   onClick={() => onSelectField(field.id)}
                 >
                   {index + 1}
+                  {selected ? <span className="pro-v2-selected-label pro-v2-sr-only">선택됨</span> : null}
                 </button>
-                <span className={selected ? 'pro-v2-selected-label' : 'pro-v2-row-state-label'}>
-                  {selected ? '선택됨' : '항목'}
-                </span>
                 <label className="pro-v2-lower-band-label-control">
                   항목명
                   <input
@@ -88,8 +89,9 @@ export function ProLowerBandItemManager({
                   data-evidence={index === 0 ? 'lower-band-delete-ready' : undefined}
                   aria-label={`${field.label || '항목'} 삭제`}
                   onClick={() => onDeleteField(field.id)}
+                  title="삭제"
                 >
-                  <Trash2 size={16} aria-hidden /> 삭제
+                  <X size={17} aria-hidden />
                 </button>
               </div>
             );

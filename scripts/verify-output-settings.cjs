@@ -228,6 +228,9 @@ function verifyWorkspaceAndBridgeStatic() {
   assert(app.includes('output-photo-select-actions') && app.includes('setAllPhotoChecks(true)') && app.includes('invertPhotoChecks'), 'premium tab must expose loaded-photo bulk selection controls');
   assert(app.includes('handleSelectPhotoFolder') && app.includes('handleOpenSaveFolder') && app.includes('handleClearPhotos'), 'premium tab must expose advanced photo/folder/list actions');
   assert(app.includes('moveSelectedPhotoOrder') && app.includes('출력 순서'), 'premium photo ledger must allow output order changes');
+  assert(app.includes('사진대지 PDF는 보드판을 삽입하지 않고 사진, 하단정보, 강조 효과만 정리합니다.'), 'photo ledger mode must explain board-free PDF output');
+  assert(app.includes('showBoard: false') && app.includes('photoLedgerUseBoardFields: false'), 'photo ledger preview/generation must force board overlay and board-field sync off');
+  assert(app.includes('highlightControls: renderPremiumHighlightSettingsOnly()'), 'photo ledger mode must expose highlight controls');
   assert(app.includes("label: 'LITE'") && app.includes("label: 'PRO'"), 'top navigation must expose LITE and PRO labels');
   assert(!app.includes("label: '사용방법'") && !app.includes("label: '보드판 작성 [고급]'"), 'help and advanced tabs must be removed from top navigation');
   assert(app.includes("useState<Screen>('start')") && app.includes('function renderStartScreen()'), 'the app must open to the button-style start screen');

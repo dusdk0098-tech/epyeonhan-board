@@ -112,7 +112,7 @@ export function ProBoardFlow({ model, actions, slots, onChangeJob }: ProBoardFlo
       case 'photo':
         return <ProBoardPhotoStep model={model} actions={actions} />;
       case 'content':
-        return <ProBoardContentStep model={model} actions={actions} onGoToPhotoStep={goToPhotoStep} />;
+        return <ProBoardContentStep model={model} actions={actions} />;
       case 'adjust':
         return <ProBoardAdjustStep model={model} actions={actions} slots={slots} onGoToPhotoStep={goToPhotoStep} />;
       case 'generate':
@@ -139,17 +139,8 @@ export function ProBoardFlow({ model, actions, slots, onChangeJob }: ProBoardFlo
       );
     }
 
-    if (step === 'adjust') {
-      return (
-        <div className="pro-v2-context-stack">
-          <ProCompactPhotoStatus model={model} onGoToPhotoStep={goToPhotoStep} />
-          <div className="pro-v2-board-adjust-context-note">
-            <strong>미리보기는 3단계 작업 영역에 한 번만 표시됩니다.</strong>
-            <span>크기·위치 조작과 나란히 확인해 중복 preview 없이 조정합니다.</span>
-          </div>
-        </div>
-      );
-    }
+    if (step === 'adjust') return null;
+
 
     if (step === 'result') {
       return (
@@ -160,11 +151,14 @@ export function ProBoardFlow({ model, actions, slots, onChangeJob }: ProBoardFlo
       );
     }
 
+    if (step === 'photo' && model.photoCount === 0) return null;
+
     return (
       <ProBoardPreviewContext
         model={model}
         previewPanel={slots.previewPanel}
         onGoToPhotoStep={goToPhotoStep}
+        showManageAction={step !== 'photo'}
       />
     );
   }

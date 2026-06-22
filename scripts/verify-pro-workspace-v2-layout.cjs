@@ -17,6 +17,7 @@ const files = {
   boardFlow: 'src/components/pro-workspace-v2/ProBoardFlow.tsx',
   boardPhoto: 'src/components/pro-workspace-v2/ProBoardPhotoStep.tsx',
   pdfPhoto: 'src/components/pro-workspace-v2/ProPdfPhotoStep.tsx',
+  pdfDetails: 'src/components/pro-workspace-v2/ProPdfDetailsStep.tsx',
   boardAdjust: 'src/components/pro-workspace-v2/ProBoardAdjustStep.tsx',
   lowerBand: 'src/components/pro-workspace-v2/ProLowerBandItemManager.tsx',
   pdfTypes: 'src/components/pro-workspace-v2/pdfFlowTypes.ts',
@@ -35,6 +36,7 @@ const v2ComponentSource = [
   source.boardFlow,
   source.boardPhoto,
   source.pdfPhoto,
+  source.pdfDetails,
   source.boardAdjust,
   source.lowerBand,
   source.pdfTypes,
@@ -113,14 +115,27 @@ const checks = [
       && !/position:\s*fixed/.test(actionBarBlock)
   },
   {
-    name: 'Large photo lists use explicit bounded scroll containers',
+    name: 'Photo lists use compact no-scroll row containers',
     pass: /pro-v2-photo-workbench/.test(source.boardPhoto)
       && /pro-v2-photo-list-scroll/.test(source.boardPhoto)
       && /selectedRowRef\.current\?\.scrollIntoView/.test(source.boardPhoto)
       && /pro-v2-photo-workbench/.test(source.pdfPhoto)
       && /pro-v2-photo-list-scroll/.test(source.pdfPhoto)
       && /selectedRowRef\.current\?\.scrollIntoView/.test(source.pdfPhoto)
-      && /\.pro-v2-photo-list-scroll\s*\{[\s\S]*?max-block-size:[\s\S]*?overflow:\s*auto/.test(v2Styles)
+      && /\.pro-v2-photo-list-scroll,[\s\S]*?\.pro-v2-lower-band-rows,[\s\S]*?\{[\s\S]*?overflow:\s*visible/.test(v2Styles)
+  },
+  {
+    name: 'Photo rows use custom refined check, selected, rotation, and delete affordances',
+    pass: /pro-v2-photo-check/.test(source.boardPhoto)
+      && /pro-v2-photo-check/.test(source.pdfPhoto)
+      && /pro-v2-photo-rotation-chip/.test(source.boardPhoto)
+      && /pro-v2-photo-rotation-chip/.test(source.pdfPhoto)
+      && /CheckCircle2/.test(source.boardPhoto)
+      && /CheckCircle2/.test(source.pdfPhoto)
+      && /pro-v2-icon-danger/.test(source.boardPhoto)
+      && /pro-v2-icon-danger/.test(source.pdfPhoto)
+      && /\.pro-v2-photo-check\.checked/.test(v2Styles)
+      && /\.pro-v2-photo-rotation-chip\.rotated/.test(v2Styles)
   },
   {
     name: 'Photo rotation and order controls stay outside the long list',
@@ -137,11 +152,24 @@ const checks = [
       && /@media\s*\(max-width:\s*720px\)[\s\S]*?text-overflow:\s*ellipsis/.test(v2Styles)
   },
   {
+    name: 'PDF details uses compact tabbed workbench layout',
+    pass: /data-evidence="pdf-details-workbench"/.test(source.pdfDetails)
+      && /role="tablist"/.test(source.pdfDetails)
+      && !/slots\.previewPanel/.test(source.pdfDetails)
+      && /\.pro-v2-pdf-workbench\s*\{[\s\S]*?grid-template-columns:\s*minmax\(170px,\s*0\.34fr\)\s*minmax\(0,\s*1fr\)/.test(v2Styles)
+      && /@media\s*\(max-width:\s*960px\)[\s\S]*?\.pro-v2-pdf-workbench\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)/.test(v2Styles)
+      && /@media\s*\(max-width:\s*960px\)[\s\S]*?\.pro-v2-pdf-workbench-nav\s*\{[\s\S]*?grid-template-columns:\s*repeat\(3,\s*minmax\(150px,\s*1fr\)\)/.test(v2Styles)
+  },
+  {
     name: 'Board adjust renders a single preview near controls',
     pass: /data-evidence="board-adjust-workbench"/.test(source.boardAdjust)
       && /data-evidence="board-adjust-preview"/.test(source.boardAdjust)
-      && /미리보기는 3단계 작업 영역에 한 번만 표시됩니다/.test(source.boardFlow)
-      && /\.pro-v2-board-adjust-workbench\s*\{[\s\S]*?grid-template-columns:\s*minmax\(420px,\s*1\.08fr\)\s*minmax\(340px,\s*0\.92fr\)/.test(v2Styles)
+      && /role="tablist"/.test(source.boardAdjust)
+      && /role="tabpanel"/.test(source.boardAdjust)
+      && /if \(step === 'adjust'\) return null/.test(source.boardFlow)
+      && !/pro-v2-board-adjust-context-note/.test(source.boardFlow)
+      && !/<details/.test(source.boardAdjust)
+      && /\.pro-v2-board-adjust-workbench\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)\s*minmax\(320px,\s*0\.9fr\)/.test(v2Styles)
   },
   {
     name: 'Board adjust keeps compact two-column workbench through 1024px',
@@ -153,7 +181,26 @@ const checks = [
     pass: /pro-v2-lower-band-label-control/.test(source.lowerBand)
       && /pro-v2-lower-band-value-control/.test(source.lowerBand)
       && /data-evidence="lower-band-toolbar"/.test(source.lowerBand)
-      && /\.pro-v2-lower-band-row\s*\{[\s\S]*?grid-template-columns:\s*auto auto minmax\(132px,\s*0\.42fr\) minmax\(220px,\s*1fr\) auto/.test(v2Styles)
+      && /onFocusCapture=\{\(\) => onSelectField\(field\.id\)\}/.test(source.lowerBand)
+      && /\.pro-v2-lower-band-row\s*\{[\s\S]*?grid-template-columns:\s*38px auto minmax\(150px,\s*0\.62fr\) minmax\(220px,\s*1fr\) var\(--pro-v2-control-height\)/.test(v2Styles)
+  },
+  {
+    name: 'Board adjust uses compact no-scroll tab panels while preserving controls',
+    pass: /\.pro-v2-board-adjust-tabs\s*\{[\s\S]*?grid-template-columns:\s*repeat\(4,\s*minmax\(0,\s*1fr\)\)/.test(v2Styles)
+      && /\.pro-v2-board-adjust-combo-grid\s*\{[\s\S]*?grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/.test(v2Styles)
+      && /\.pro-v2-board-adjust-panel-body\s*\{[\s\S]*?overflow:\s*visible/.test(v2Styles)
+      && /\.pro-v2-board-adjust-step \.range-with-number\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)\s*minmax\(76px,\s*96px\)/.test(v2Styles)
+  },
+  {
+    name: 'Highlight adjustment exposes visible x/y/radius controls',
+    pass: /renderHighlightGeometryControls/.test(source.app)
+      && /data-evidence="highlight-geometry-controls"/.test(source.app)
+      && /xRatio:\s*Number\(event\.target\.value\)\s*\/\s*100/.test(source.app)
+      && /yRatio:\s*Number\(event\.target\.value\)\s*\/\s*100/.test(source.app)
+      && /radiusRatio:\s*Number\(event\.target\.value\)\s*\/\s*100/.test(source.app)
+      && /\.pro-v2-highlight-geometry-controls/.test(v2Styles)
+      && /\.pro-v2-highlight-geometry-controls\s*\{[\s\S]*?grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)/.test(v2Styles)
+      && /\.pro-v2-highlight-geometry-controls label\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)\s*auto/.test(v2Styles)
   },
   {
     name: 'V2 preview rotation controls can wrap without clipping',

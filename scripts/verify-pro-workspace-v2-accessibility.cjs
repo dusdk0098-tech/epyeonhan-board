@@ -135,14 +135,34 @@ const checks = [
     pass: /aria-current=\{selected \? 'true' : undefined\}/.test(source.pdfPhoto)
       && /pro-v2-selected-label/.test(source.pdfPhoto)
       && /selectedRowRef\.current\?\.scrollIntoView/.test(source.pdfPhoto)
-      && /aria-label=\{`\$\{photo\.name\} PDF 처리 대상 체크`\}/.test(source.pdfPhoto)
+      && /aria-pressed=\{photo\.selectedForProcessing\}/.test(source.pdfPhoto)
+      && /PDF 처리 대상 \$\{photo\.selectedForProcessing \? '해제' : '체크'\}/.test(source.pdfPhoto)
   },
   {
-    name: 'PDF board insertion toggle has native state and descriptive label',
-    pass: /id=\{showBoardInputId\}/.test(source.pdfDetails)
-      && /htmlFor=\{showBoardInputId\}/.test(source.pdfDetails)
-      && /aria-describedby="pro-v2-pdf-show-board-help"/.test(source.pdfDetails)
-      && /checked=\{model\.showBoard\}/.test(source.pdfDetails)
+    name: 'PDF mode removes board insertion and exposes highlight controls',
+    pass: !/showBoardInputId|useBoardFieldsInputId|사진에 보드판 삽입|보드판 입력값 자동 적용/.test(source.pdfDetails)
+      && /data-evidence="pdf-highlight-controls"/.test(source.pdfDetails + source.pdfFlow)
+      && /slots\.highlightControls/.test(source.pdfDetails + source.pdfFlow)
+  },
+  {
+    name: 'Highlight geometry controls keep labelled range inputs',
+    pass: /data-evidence="highlight-geometry-controls"/.test(source.app)
+      && /<span>가로 위치<\/span>[\s\S]*?type="range"[\s\S]*?xRatio/.test(source.app)
+      && /<span>세로 위치<\/span>[\s\S]*?type="range"[\s\S]*?yRatio/.test(source.app)
+      && /<span>원 크기<\/span>[\s\S]*?type="range"[\s\S]*?radiusRatio/.test(source.app)
+      && /<output>\{xPercent\}%<\/output>/.test(source.app)
+      && /<output>\{yPercent\}%<\/output>/.test(source.app)
+      && /<output>\{radiusPercent\}%<\/output>/.test(source.app)
+  },
+  {
+    name: 'PDF details workbench uses tab semantics',
+    pass: /role="tablist"/.test(source.pdfDetails)
+      && /role="tab"/.test(source.pdfDetails)
+      && /aria-selected=\{active\}/.test(source.pdfDetails)
+      && /aria-controls=\{`pro-v2-pdf-\$\{panel\.id\}-panel`\}/.test(source.pdfDetails)
+      && /role="tabpanel"/.test(source.pdfDetails)
+      && /aria-labelledby=\{`pro-v2-pdf-\$\{activePanel\}-tab`\}/.test(source.pdfDetails)
+      && /data-evidence="pdf-details-workbench"/.test(source.pdfDetails)
   },
   {
     name: 'Board generate readiness accepts checked-only photo sets',

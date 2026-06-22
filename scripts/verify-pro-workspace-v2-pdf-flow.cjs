@@ -97,22 +97,31 @@ const checks = [
       && /createPdf:\s*Boolean\(options\.createPhotoLedgerPdf\)/.test(source.app)
   },
   {
-    name: 'PDF v2 restores existing board insertion setting without duplicate state',
-    pass: /showBoard:\s*boolean/.test(source.pdfTypes)
-      && /onToggleShowBoard:\s*\(enabled:\s*boolean\)\s*=>\s*void/.test(source.pdfTypes)
-      && /showBoard:\s*settings\.showBoard/.test(source.app)
-      && /onToggleShowBoard:\s*\(enabled\)\s*=>\s*updateSettings\(\{\s*showBoard:\s*enabled\s*\}\)/.test(source.app)
-      && /checked=\{model\.showBoard\}/.test(source.pdfDetails)
-      && /사진에 보드판 삽입/.test(source.pdfDetails)
+    name: 'PDF v2 removes board insertion controls and forces board overlay off',
+    pass: !/showBoard:\s*boolean/.test(source.pdfTypes)
+      && !/onToggleShowBoard/.test(source.pdfTypes)
+      && !/사진에 보드판 삽입|보드판 입력값 자동 적용/.test(source.pdfDetails)
+      && /showBoard:\s*false/.test(source.app)
+      && /photoLedgerUseBoardFields:\s*false/.test(source.app)
   },
   {
-    name: 'PDF board insertion and board-field metadata options are separate controls',
-    pass: /id=\{showBoardInputId\}/.test(source.pdfDetails)
-      && /id=\{useBoardFieldsInputId\}/.test(source.pdfDetails)
-      && /사진에 보드판 삽입[\s\S]*보드판 입력값 자동 적용/.test(source.pdfDetails)
-      && /사진 합성/.test(source.pdfDetails)
-      && /하단정보 적용/.test(source.pdfDetails)
-      && /사진 합성 여부와는 별도/.test(source.pdfDetails)
+    name: 'PDF v2 exposes per-photo highlight controls without board controls',
+    pass: /highlightControls:\s*ReactNode/.test(source.pdfTypes)
+      && /slots\.highlightControls/.test(source.pdfDetails)
+      && /data-evidence="pdf-highlight-controls"/.test(source.pdfDetails)
+      && /highlightControls:\s*renderPremiumHighlightSettingsOnly\(\)/.test(source.app)
+      && /PDF 모드에서는 보드판을 삽입하지 않고/.test(source.pdfDetails)
+  },
+  {
+    name: 'PDF details uses a tabbed workbench instead of a long preview stack',
+    pass: /useState<ProPdfDetailsPanel>\('document'\)/.test(source.pdfDetails)
+      && /data-evidence="pdf-details-workbench"/.test(source.pdfDetails)
+      && /role="tablist"/.test(source.pdfDetails)
+      && /evidence:\s*'pdf-details-tab-document'/.test(source.pdfDetails)
+      && /evidence:\s*'pdf-details-tab-ledger'/.test(source.pdfDetails)
+      && /evidence:\s*'pdf-details-tab-highlight'/.test(source.pdfDetails)
+      && !/data-evidence="pdf-preview-near-settings"/.test(source.pdfDetails)
+      && !/slots\.previewPanel/.test(source.pdfDetails)
   },
   {
     name: 'PDF v2 checked UI matches generation readiness',
@@ -120,6 +129,13 @@ const checks = [
       && /if \(model\.checkedCount === 0\) blocked\.push/.test(source.pdfGenerate)
       && /checkedCount > 0 \? `\$\{model\.checkedCount\}장 체크` : '체크 필요'/.test(source.pdfReadiness)
       && /data-evidence="pdf-clear-checks"/.test(source.pdfPhoto)
+  },
+  {
+    name: 'PDF v2 preview uses checked output photos',
+    pass: /photoLedgerPreviewPhotos = useMemo/.test(source.app)
+      && /photos\.filter\(\(photo\) => photo\.selectedForProcessing\)/.test(source.app)
+      && /photoLedgerPreviewPhotos\.slice\(photoLedgerPreviewPage \* 2, photoLedgerPreviewPage \* 2 \+ 2\)/.test(source.app)
+      && /previewReady:\s*photoLedgerPreviewPhotoCount > 0/.test(source.app)
   },
   {
     name: 'PDF v2 persists result status after global status auto-clear',
@@ -144,8 +160,8 @@ const checks = [
     pass: !/ProcessImagesPayload|processImages|window\.constructView|ipcRenderer|createPhotoLedgerPdf/.test(pdfSource)
   },
   {
-    name: 'PDF v2 preserves board-only controls outside PDF components',
-    pass: !/ProLowerBandItemManager|highlightControls|bottomStrip|boardLayoutMode|setSelectedHighlightEnabled|updateSelectedHighlightPatch/.test(pdfSource)
+    name: 'PDF v2 keeps board layout and lower-band controls outside PDF components',
+    pass: !/ProLowerBandItemManager|bottomStrip|boardLayoutMode/.test(pdfSource)
   },
   {
     name: 'PDF v2 exposes PDF-specific metadata and ordering',
@@ -153,7 +169,7 @@ const checks = [
       && /selectedPhotoLedger/.test(source.pdfTypes)
       && /onMoveSelectedPhotoOrder/.test(source.pdfTypes)
       && /onUpdatePdfTitle/.test(source.pdfTypes)
-      && /PDF 정보와 배치/.test(source.pdfFlow)
+      && /PDF 정보와 강조/.test(source.pdfFlow)
   },
   {
     name: 'Board flow remains fixed to 1/5 through 5/5',

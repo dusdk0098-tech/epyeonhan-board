@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { ArrowDown, ArrowUp, Camera, ClipboardPaste, FolderOpen, RotateCcw, RotateCw, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, Camera, Check, CheckCircle2, ClipboardPaste, FolderOpen, RotateCcw, RotateCw, X } from 'lucide-react';
 
 import type { ProPdfFlowActions, ProPdfFlowModel } from './pdfFlowTypes';
 
@@ -8,9 +8,15 @@ interface ProPdfPhotoStepProps {
   actions: ProPdfFlowActions;
 }
 
+function formatRotation(rotation?: number) {
+  const value = ((rotation ?? 0) + 360) % 360;
+  return value === 0 ? '정방향' : `${value}°`;
+}
+
 export function ProPdfPhotoStep({ model, actions }: ProPdfPhotoStepProps) {
   const selectedRowRef = useRef<HTMLDivElement | null>(null);
   const selectedOrdinal = model.hasSelectedPhoto && model.selectedPhotoIndex >= 0 ? model.selectedPhotoIndex + 1 : null;
+  const hasPhotos = model.photoCount > 0;
 
   useEffect(() => {
     selectedRowRef.current?.scrollIntoView({ block: 'nearest' });
@@ -19,10 +25,6 @@ export function ProPdfPhotoStep({ model, actions }: ProPdfPhotoStepProps) {
   return (
     <div className="pro-v2-pdf-step pro-v2-pdf-photo-step" data-evidence="pdf-photo-step">
       <section className="pro-v2-photo-import-panel">
-        <div>
-          <h3>PDF에 넣을 사진을 준비하세요</h3>
-          <p>사진을 추가하고 출력 순서, 선택 상태, 회전 방향을 먼저 확인합니다.</p>
-        </div>
         <div className="pro-v2-photo-import-actions">
           <button type="button" className="pro-v2-action primary pro-v2-pdf-primary" data-evidence="pdf-add-photos" onClick={actions.onAddPhotos}>
             <Camera size={16} aria-hidden /> 사진 불러오기
@@ -44,13 +46,13 @@ export function ProPdfPhotoStep({ model, actions }: ProPdfPhotoStepProps) {
               <p>전체 {model.photoCount}장 / 출력 선택 {model.checkedCount}장</p>
             </div>
             <div className="pro-v2-photo-batch-actions">
-              <button type="button" className="pro-v2-action secondary" data-evidence="pdf-check-all" onClick={actions.onSelectAllPhotos}>
+              <button type="button" className="pro-v2-action secondary" data-evidence="pdf-check-all" disabled={!hasPhotos} onClick={actions.onSelectAllPhotos}>
                 전체 체크
               </button>
-              <button type="button" className="pro-v2-action secondary" data-evidence="pdf-clear-checks" onClick={actions.onClearPhotoChecks}>
+              <button type="button" className="pro-v2-action secondary" data-evidence="pdf-clear-checks" disabled={!hasPhotos} onClick={actions.onClearPhotoChecks}>
                 체크 해제
               </button>
-              <button type="button" className="pro-v2-action secondary" data-evidence="pdf-invert-checks" onClick={actions.onInvertPhotoChecks}>
+              <button type="button" className="pro-v2-action secondary" data-evidence="pdf-invert-checks" disabled={!hasPhotos} onClick={actions.onInvertPhotoChecks}>
                 체크 반전
               </button>
             </div>
@@ -71,12 +73,15 @@ export function ProPdfPhotoStep({ model, actions }: ProPdfPhotoStepProps) {
                     className={selected ? 'pro-v2-board-photo-row selected' : 'pro-v2-board-photo-row'}
                     data-evidence={selected ? 'pdf-photo-selected' : undefined}
                   >
-                    <input
-                      type="checkbox"
-                      aria-label={`${photo.name} PDF 처리 대상 체크`}
-                      checked={photo.selectedForProcessing}
-                      onChange={() => actions.onTogglePhotoChecked(photo.path)}
-                    />
+                    <button
+                      type="button"
+                      className={photo.selectedForProcessing ? 'pro-v2-photo-check checked' : 'pro-v2-photo-check'}
+                      aria-pressed={photo.selectedForProcessing}
+                      aria-label={`${photo.name} PDF 처리 대상 ${photo.selectedForProcessing ? '해제' : '체크'}`}
+                      onClick={() => actions.onTogglePhotoChecked(photo.path)}
+                    >
+                      <Check size={15} aria-hidden />
+                    </button>
                     <button
                       type="button"
                       className="pro-v2-photo-name-button"
@@ -85,16 +90,25 @@ export function ProPdfPhotoStep({ model, actions }: ProPdfPhotoStepProps) {
                     >
                       <span className="pro-v2-photo-order">{index + 1}</span>
                       <span>{photo.name}</span>
-                      <em>{photo.rotation ?? 0}도</em>
-                      {selected ? <span className="pro-v2-selected-label">선택됨</span> : null}
+                      <em className={photo.rotation ? 'pro-v2-photo-rotation-chip rotated' : 'pro-v2-photo-rotation-chip'}>
+                        <RotateCw size={13} aria-hidden />
+                        {formatRotation(photo.rotation)}
+                      </em>
+                      {selected ? (
+                        <span className="pro-v2-selected-label">
+                          <CheckCircle2 size={13} aria-hidden />
+                          선택
+                        </span>
+                      ) : null}
                     </button>
                     <button
                       type="button"
-                      className="pro-v2-row-delete"
+                      className="pro-v2-row-delete pro-v2-icon-danger"
                       aria-label={`${photo.name} 제거`}
                       onClick={() => actions.onRemovePhoto(photo.path)}
+                      title="제거"
                     >
-                      <Trash2 size={16} aria-hidden /> 제거
+                      <X size={17} aria-hidden />
                     </button>
                   </div>
                 );
@@ -103,7 +117,8 @@ export function ProPdfPhotoStep({ model, actions }: ProPdfPhotoStepProps) {
           )}
         </section>
 
-        <aside className="pro-v2-photo-side-panel" data-evidence="pdf-photo-side-controls">
+        {hasPhotos ? (
+          <aside className="pro-v2-photo-side-panel" data-evidence="pdf-photo-side-controls">
           <section className="pro-v2-photo-summary-card">
             <span>선택 사진</span>
             <strong>{model.hasSelectedPhoto ? model.selectedPhotoName : '사진을 선택하세요'}</strong>
@@ -147,7 +162,8 @@ export function ProPdfPhotoStep({ model, actions }: ProPdfPhotoStepProps) {
               </button>
             </div>
           </section>
-        </aside>
+          </aside>
+        ) : null}
       </div>
     </div>
   );
