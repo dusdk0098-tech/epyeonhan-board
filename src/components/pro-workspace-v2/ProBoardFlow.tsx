@@ -156,6 +156,7 @@ export function ProBoardFlow({ model, actions, slots, onChangeJob }: ProBoardFlo
         model={model}
         previewPanel={slots.previewPanel}
         onGoToPhotoStep={goToPhotoStep}
+        showManageAction={step !== 'photo'}
       />
     );
   }

@@ -7,12 +7,18 @@ interface ProBoardPreviewContextProps {
   model: ProBoardFlowModel;
   previewPanel: ReactNode;
   onGoToPhotoStep: () => void;
+  showManageAction?: boolean;
 }
 
-export function ProBoardPreviewContext({ model, previewPanel, onGoToPhotoStep }: ProBoardPreviewContextProps) {
+export function ProBoardPreviewContext({
+  model,
+  previewPanel,
+  onGoToPhotoStep,
+  showManageAction = true
+}: ProBoardPreviewContextProps) {
   return (
     <div className="pro-v2-preview-context" data-evidence="board-adjust-preview">
-      <ProCompactPhotoStatus model={model} onGoToPhotoStep={onGoToPhotoStep} />
+      <ProCompactPhotoStatus model={model} onGoToPhotoStep={onGoToPhotoStep} showManageAction={showManageAction} />
       {previewPanel}
     </div>
   );
