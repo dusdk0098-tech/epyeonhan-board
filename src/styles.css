@@ -9823,6 +9823,60 @@ body {
   }
 }
 
+@media (min-width: 1500px) and (min-height: 820px) {
+  .pro-v2-shell:has(.pro-v2-choice) {
+    --pro-v2-card-padding: clamp(22px, 1.35vw, 34px);
+    --pro-v2-gap: clamp(18px, 1.35vw, 30px);
+    min-height: calc(100dvh - 104px);
+  }
+
+  .pro-v2-shell:has(.pro-v2-choice) .pro-v2-body,
+  .pro-v2-shell:has(.pro-v2-choice) .pro-v2-canvas {
+    min-height: 0;
+    align-self: stretch;
+  }
+
+  .pro-v2-shell:has(.pro-v2-choice) .pro-v2-canvas {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .pro-v2-shell:has(.pro-v2-choice) .pro-v2-choice {
+    align-self: stretch;
+    align-items: stretch;
+    min-height: clamp(380px, 52vh, 560px);
+  }
+
+  .pro-v2-shell:has(.pro-v2-choice) .pro-v2-job-card {
+    min-height: clamp(340px, 44vh, 480px);
+    padding: clamp(24px, 1.5vw, 36px);
+    gap: clamp(14px, 1vw, 20px);
+  }
+
+  .pro-v2-shell:has(.pro-v2-choice) .pro-v2-job-icon {
+    width: clamp(56px, 4vw, 72px);
+    height: clamp(56px, 4vw, 72px);
+  }
+
+  .pro-v2-shell:has(.pro-v2-choice) .pro-v2-job-copy strong {
+    font-size: clamp(1.32rem, 1rem + 0.55vw, 1.62rem);
+  }
+
+  .pro-v2-shell:has(.pro-v2-choice) .pro-v2-job-copy span,
+  .pro-v2-shell:has(.pro-v2-choice) .pro-v2-job-result {
+    font-size: clamp(1rem, 0.9rem + 0.24vw, 1.14rem);
+  }
+
+  .pro-v2-shell:has(.pro-v2-choice) .pro-v2-job-bullets {
+    align-content: end;
+    gap: clamp(9px, 0.8vw, 14px);
+  }
+
+  .pro-v2-shell:has(.pro-v2-choice) .pro-v2-job-bullets span {
+    font-size: clamp(0.98rem, 0.88rem + 0.22vw, 1.1rem);
+  }
+}
+
 @media (min-width: 721px) and (max-width: 960px) {
   .pro-v2-choice {
     grid-template-columns: repeat(2, minmax(0, 1fr));
