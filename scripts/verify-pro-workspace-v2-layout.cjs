@@ -14,6 +14,11 @@ const files = {
   context: 'src/components/pro-workspace-v2/ProContextPanel.tsx',
   adapter: 'src/components/pro-workspace-v2/ProLegacyWorkflowAdapter.tsx',
   pdfFlow: 'src/components/pro-workspace-v2/ProPdfFlow.tsx',
+  boardFlow: 'src/components/pro-workspace-v2/ProBoardFlow.tsx',
+  boardPhoto: 'src/components/pro-workspace-v2/ProBoardPhotoStep.tsx',
+  pdfPhoto: 'src/components/pro-workspace-v2/ProPdfPhotoStep.tsx',
+  boardAdjust: 'src/components/pro-workspace-v2/ProBoardAdjustStep.tsx',
+  lowerBand: 'src/components/pro-workspace-v2/ProLowerBandItemManager.tsx',
   pdfTypes: 'src/components/pro-workspace-v2/pdfFlowTypes.ts',
   types: 'src/components/pro-workspace-v2/types.ts'
 };
@@ -27,10 +32,22 @@ const v2ComponentSource = [
   source.context,
   source.adapter,
   source.pdfFlow,
+  source.boardFlow,
+  source.boardPhoto,
+  source.pdfPhoto,
+  source.boardAdjust,
+  source.lowerBand,
   source.pdfTypes,
   source.types
 ].join('\n');
 const v2Styles = source.styles.split('/* PRO Task Workspace v2 layout foundation */')[1] ?? '';
+function cssBlock(selector) {
+  const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const match = source.styles.match(new RegExp(`${escaped}\\s*\\{([^}]*)\\}`));
+  return match ? match[1] : '';
+}
+
+const actionBarBlock = cssBlock('.pro-v2-actionbar');
 
 const checks = [
   {
@@ -89,10 +106,54 @@ const checks = [
       && /Math\.max\(Math\.round\(size\.height\),\s*MIN_WINDOW_HEIGHT\)/.test(source.main)
   },
   {
-    name: 'V2 action bar stays in normal flow',
-    pass: /\.pro-v2-actionbar\s*\{[\s\S]*?position:\s*static/.test(v2Styles)
-      && !/\.pro-v2-actionbar\s*\{[\s\S]*?position:\s*sticky/.test(v2Styles)
-      && !/\.pro-v2-actionbar\s*\{[\s\S]*?position:\s*fixed/.test(v2Styles)
+    name: 'V2 action bar remains reachable without overlaying content',
+    pass: /position:\s*static/.test(actionBarBlock)
+      && /env\(safe-area-inset-bottom\)/.test(actionBarBlock)
+      && !/position:\s*sticky/.test(actionBarBlock)
+      && !/position:\s*fixed/.test(actionBarBlock)
+  },
+  {
+    name: 'Large photo lists use explicit bounded scroll containers',
+    pass: /pro-v2-photo-workbench/.test(source.boardPhoto)
+      && /pro-v2-photo-list-scroll/.test(source.boardPhoto)
+      && /selectedRowRef\.current\?\.scrollIntoView/.test(source.boardPhoto)
+      && /pro-v2-photo-workbench/.test(source.pdfPhoto)
+      && /pro-v2-photo-list-scroll/.test(source.pdfPhoto)
+      && /selectedRowRef\.current\?\.scrollIntoView/.test(source.pdfPhoto)
+      && /\.pro-v2-photo-list-scroll\s*\{[\s\S]*?max-block-size:[\s\S]*?overflow:\s*auto/.test(v2Styles)
+  },
+  {
+    name: 'Photo rotation and order controls stay outside the long list',
+    pass: /data-evidence="board-photo-side-controls"/.test(source.boardPhoto)
+      && /data-evidence="pdf-photo-side-controls"/.test(source.pdfPhoto)
+      && /data-evidence="pdf-photo-order-controls"/.test(source.pdfPhoto)
+      && /\.pro-v2-photo-side-panel\s*\{[\s\S]*?align-self:\s*start/.test(v2Styles)
+  },
+  {
+    name: 'Narrow PDF photo prep collapses to a readable single column',
+    pass: /@media\s*\(max-width:\s*720px\)[\s\S]*?\.pro-v2-photo-workbench\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)/.test(v2Styles)
+      && /@media\s*\(max-width:\s*720px\)[\s\S]*?\.pro-v2-photo-batch-actions\s*\{[\s\S]*?grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/.test(v2Styles)
+      && /@media\s*\(max-width:\s*720px\)[\s\S]*?word-break:\s*keep-all/.test(v2Styles)
+      && /@media\s*\(max-width:\s*720px\)[\s\S]*?text-overflow:\s*ellipsis/.test(v2Styles)
+  },
+  {
+    name: 'Board adjust renders a single preview near controls',
+    pass: /data-evidence="board-adjust-workbench"/.test(source.boardAdjust)
+      && /data-evidence="board-adjust-preview"/.test(source.boardAdjust)
+      && /미리보기는 3단계 작업 영역에 한 번만 표시됩니다/.test(source.boardFlow)
+      && /\.pro-v2-board-adjust-workbench\s*\{[\s\S]*?grid-template-columns:\s*minmax\(420px,\s*1\.08fr\)\s*minmax\(340px,\s*0\.92fr\)/.test(v2Styles)
+  },
+  {
+    name: 'Board adjust keeps compact two-column workbench through 1024px',
+    pass: !/@media\s*\(max-width:\s*1180px\)[\s\S]*?\.pro-v2-board-adjust-workbench\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)/.test(v2Styles)
+      || /@media\s*\(max-width:\s*860px\)[\s\S]*?\.pro-v2-board-adjust-workbench\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)/.test(v2Styles)
+  },
+  {
+    name: 'Lower-band editor uses compact row contract',
+    pass: /pro-v2-lower-band-label-control/.test(source.lowerBand)
+      && /pro-v2-lower-band-value-control/.test(source.lowerBand)
+      && /data-evidence="lower-band-toolbar"/.test(source.lowerBand)
+      && /\.pro-v2-lower-band-row\s*\{[\s\S]*?grid-template-columns:\s*auto auto minmax\(132px,\s*0\.42fr\) minmax\(220px,\s*1fr\) auto/.test(v2Styles)
   },
   {
     name: 'V2 preview rotation controls can wrap without clipping',

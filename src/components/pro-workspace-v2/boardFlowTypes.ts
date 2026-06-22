@@ -22,6 +22,7 @@ export interface ProBoardFlowModel {
   fields: ProBoardField[];
   selectedPhotoPath: string;
   selectedPhotoName?: string;
+  selectedPhotoIndex: number;
   selectedFieldId: string;
   selectedPhotoRotation: number;
   photoCount: number;

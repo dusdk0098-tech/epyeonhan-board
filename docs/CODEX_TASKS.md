@@ -519,6 +519,423 @@
 - Draft PR:
   - Keep as Draft until runtime QA and final review confirm no Must Fix blockers.
 
+## Task 2026-06-21 - PR 12 Minimum Generate Readiness Density Follow-up
+
+- Phase: pr-e-layout-overflow-scroll-follow-up
+- Branch: fix/layout-overflow-scroll
+- Task type:
+  - PRO Workspace v2 responsive layout follow-up for action visibility and default-window density.
+- Scope:
+  - Keep the relocated PRO v2 action area from the prior PR 12 fix.
+  - Compact the board generate readiness section at tablet/minimum widths so save-folder readiness and blocker feedback stay visible with the primary CTA area.
+  - Preserve board, PDF, and LITE workflow behavior.
+- Excluded:
+  - PR #6 changes, merge, or Ready transition.
+  - IPC, preload, output payload, Electron window policy, package metadata, DB, public asset, CI, or user manual PNG changes.
+  - generated/release output commits.
+  - committed review artifacts.
+- Verification planned:
+  - git diff --check
+  - npm.cmd run build
+  - npm.cmd run verify:ui
+  - npm.cmd run verify:board
+  - node scripts/verify-output-settings.cjs
+  - node scripts/verify-pro-workspace-v2-layout.cjs
+  - node scripts/verify-pro-workspace-v2-board-flow.cjs
+  - node scripts/verify-pro-workspace-v2-pdf-flow.cjs
+  - node scripts/verify-pro-workspace-v2-accessibility.cjs
+  - Electron layout audit at default, fullscreen, and minimum windows
+  - npm.cmd run package:win
+  - hidden/bidi/newline check
+  - no-exposure check
+  - scope check
+
+## Task 2026-06-21 - PR 12 Complete Scroll Row Visual Follow-up
+
+- Phase: pr-e-layout-complete-scroll-row-follow-up
+- Branch: fix/layout-overflow-scroll
+- Task type:
+  - PRO Workspace v2 minimum/default window visual polish.
+- Scope:
+  - Tune bounded photo and lower-band scroll containers so default and minimum windows avoid showing partially clipped next rows.
+  - Tune the 900px board-adjust control scroller so the first viewport ends on a complete control row while keeping preview controls visible.
+  - Preserve existing board, PDF, and LITE behavior.
+- Excluded:
+  - PR #6 changes, merge, or Ready transition.
+  - IPC, preload, output payload, Electron window policy, package metadata, DB, public asset, CI, or user manual PNG changes.
+  - generated/release output commits.
+  - committed review artifacts.
+- Verification planned:
+  - git diff --check
+  - npm.cmd run build
+  - npm.cmd run verify:ui
+  - npm.cmd run verify:board
+  - node scripts/verify-output-settings.cjs
+  - node scripts/verify-pro-workspace-v2-layout.cjs
+  - node scripts/verify-pro-workspace-v2-board-flow.cjs
+  - node scripts/verify-pro-workspace-v2-pdf-flow.cjs
+  - node scripts/verify-pro-workspace-v2-accessibility.cjs
+  - Electron layout audit at default, fullscreen, and minimum windows
+  - npm.cmd run package:win
+  - hidden/bidi/newline check
+  - no-exposure check
+  - scope check
+
+## Task 2026-06-21 - PR 12 LITE Default Window Fit Follow-up
+
+- Phase: pr-e-layout-lite-default-window-fit-follow-up
+- Branch: fix/layout-overflow-scroll
+- Task type:
+  - LITE default-window layout polish after full contact-sheet review.
+- Scope:
+  - Compact LITE default-window panel headers and setup/save bodies so the board settings panel no longer visually collides with the save-location panel.
+  - Make the LITE board settings panel a bounded internal scroll region when the default window is height constrained.
+  - Preserve LITE/PRO workflow behavior and all existing output contracts.
+- Excluded:
+  - PR #6 changes, merge, or Ready transition.
+  - IPC, preload, output payload, Electron window policy, package metadata, DB, public asset, CI, or user manual PNG changes.
+  - generated/release output commits.
+  - committed review artifacts.
+- Verification planned:
+  - LITE default-window runtime screenshot review
+  - Electron layout audit at default, fullscreen, and minimum windows
+  - git diff --check
+  - npm.cmd run build
+  - npm.cmd run verify:ui
+  - npm.cmd run verify:board
+  - node scripts/verify-output-settings.cjs
+  - node scripts/verify-pro-workspace-v2-layout.cjs
+  - node scripts/verify-pro-workspace-v2-board-flow.cjs
+  - node scripts/verify-pro-workspace-v2-pdf-flow.cjs
+  - node scripts/verify-pro-workspace-v2-accessibility.cjs
+  - npm.cmd run package:win
+  - hidden/bidi/newline check
+  - no-exposure check
+  - scope check
+
+## Task 2026-06-21 - PR 12 Action Bar Reposition Layout Follow-up
+
+- Phase: pr12-actionbar-reposition-layout-follow-up
+- Branch: fix/layout-overflow-scroll
+- Task type:
+  - PRO Workspace v2 runtime layout polish for default-window clipping.
+- Scope:
+  - Move the PRO v2 workflow action bar out of the bottom edge and into a top task-action band so previous/next CTA controls remain visible in the first viewport.
+  - On desktop-width layouts, align the action bar with the header row to recover vertical workspace height instead of adding another stacked row.
+  - Keep tablet/minimum layouts on a stacked top action band for readable touch targets.
+  - Preserve horizontal overflow 0, 40px/44px target sizing, board/PDF/LITE functionality, and existing output contracts.
+- Excluded:
+  - PR #6 changes.
+  - IPC, preload, output payload, Electron window policy, or package metadata changes.
+  - package/package-lock changes.
+  - DB/public/CI changes.
+  - user manual PNG changes.
+  - committed review artifacts or generated output.
+- Verification planned:
+  - git diff --check
+  - npm.cmd run build
+  - npm.cmd run verify:ui
+  - npm.cmd run verify:board
+  - node scripts/verify-output-settings.cjs
+  - node scripts/verify-pro-workspace-v2-layout.cjs
+  - node scripts/verify-pro-workspace-v2-board-flow.cjs
+  - node scripts/verify-pro-workspace-v2-pdf-flow.cjs
+  - node scripts/verify-pro-workspace-v2-accessibility.cjs
+  - npm.cmd run package:win
+  - Electron runtime full layout audit at default, fullscreen-like, and minimum windows
+  - hidden/bidi/newline check
+  - no-exposure check
+  - scope check
+
+## Task 2026-06-21 - PR 12 Layout Overflow Polish Follow-up
+
+- Phase: pr12-layout-overflow-polish-follow-up
+- Branch: fix/layout-overflow-scroll
+- Task type:
+  - PRO/LITE layout clipping and first-viewport polish follow-up.
+- Scope:
+  - Move transient status feedback away from narrow-width header navigation by anchoring it to the right side on compact windows.
+  - Reduce the PRO photo-side preview canvas height in photo preparation flows so the preview card fits the default first viewport more reliably.
+  - Hide duplicated preview-card rotation controls inside PRO v2 context previews where the same photo rotation controls are already available in the active photo step.
+  - Scale task-choice cards and status counters on large windows so fullscreen-like layouts use the workspace area instead of leaving the main choice surface visually undersized.
+  - Let the task-choice canvas span the full workspace width because that screen has no right-side context panel.
+  - Let PDF readiness cards shrink inside the default-width context rail instead of forcing a 152px minimum per column.
+  - Reduce the default-width board-adjust preview stage height and compact its rotation controls into one row while preserving a larger stage on fullscreen-like windows so preview actions do not sit on the first-viewport edge.
+  - Compress the mid-flow photo status summary into one row at Electron-supported widths so board/PDF content controls keep more first-viewport space.
+  - Increase the visible photo-list window, compact photo-row padding, place photo import actions beside the guide copy on default-width board/PDF photo preparation screens, and give 900px-class windows a full-width photo list before the side controls while keeping row delete actions visible on the right without shrinking the 40px controls.
+  - Hide inactive date/time detail controls inside PRO v2 context panels until their matching radio mode is selected so default-window side panels do not cut off file-picker controls.
+  - Rebalance the LITE default workbench rows and compact the preview panel spacing so the preview copy/print and run buttons remain inside the first viewport.
+  - Collapse the PRO task-choice status summary into one row at Electron-supported 900px widths and trim choice-card padding so the first action remains discoverable without extra vertical hunting.
+  - Keep the 900px action bar on one row so minimum-window task controls do not lose space to stacked navigation buttons.
+  - Preserve the larger fullscreen preview scale with a dedicated large-viewport override.
+- Excluded:
+  - Product logic, IPC, preload, output payload, package config, DB/public/CI, and user manual PNG changes.
+  - PR #6 changes.
+  - committed review artifacts or generated output.
+- Verification planned:
+  - Electron full layout audit regeneration.
+  - Representative default/fullscreen/minimum screenshot review.
+  - git diff --check
+  - npm.cmd run build
+  - npm.cmd run verify:ui
+  - npm.cmd run verify:board
+  - node scripts/verify-output-settings.cjs
+  - node scripts/verify-pro-workspace-v2-layout.cjs
+  - node scripts/verify-pro-workspace-v2-board-flow.cjs
+  - node scripts/verify-pro-workspace-v2-pdf-flow.cjs
+  - node scripts/verify-pro-workspace-v2-accessibility.cjs
+  - npm.cmd run package:win
+
+## Task 2026-06-21 - PR #12 Minimum Layout Follow-up
+
+- Phase: pr12-layout-overflow-scroll-follow-up
+- Branch: fix/layout-overflow-scroll
+- Task type:
+  - PRO Workspace v2 layout hardening / minimum-window visual follow-up
+- Scope:
+  - Keep Task Choice cards side-by-side and fully visible in the 900px class viewport.
+  - Compress the Board Adjust preview area only in the 721px-960px range so rotation controls remain visible with the preview.
+  - Clamp lower-band rows to complete-row heights so default and fullscreen windows do not show partially clipped rows.
+  - Hide the PDF photo-order helper sentence in the default-width compact side panel so order buttons stay visible.
+  - Preserve the existing board/PDF flow structure, output payload, IPC, preload, package, public asset, DB, and CI contracts.
+- Verification:
+  - git diff --check PASS
+  - npm.cmd run build PASS
+  - node scripts/verify-pro-workspace-v2-layout.cjs PASS
+  - Electron 900x720 Task Choice runtime check PASS:
+    - horizontalOverflowPx: 0
+    - job card count: 2
+    - job card clipped: false
+  - Electron full layout audit rerun:
+    - screenshotCount: 27
+    - maxHorizontalOverflowPx: 0
+    - cardClippedCount: 0
+    - tooSmallInteractiveCount: 0
+    - coveredInteractiveCount reduced from 18 to 14 after row-unit list sizing.
+  - Review artifacts remain local-only and are not staged.
+
+## Task 2026-06-21 - PR 12 Layout Follow-up Hardening
+
+- Phase: pr-e-layout-overflow-scroll follow-up
+- Branch: fix/layout-overflow-scroll
+- Task type:
+  - Layout overflow, clipping, responsive scale, and target-size hardening.
+- Scope:
+  - Keep PR #12 focused on layout/CSS acceptance delta work.
+  - Move the PRO v2 action bar back into normal document flow so it does not cover photo rows, lower-band controls, PDF helper controls, or preview actions.
+  - Strengthen top navigation and LITE workbench button target sizes to 40px, with primary LITE actions at 44px.
+  - Tighten board-adjust preview stage height so preview toolbar and rotation controls remain visible in fullscreen-like windows.
+  - Use a compact 900px-class grid for PRO v2 photo import, batch, rotation, folder, and result actions to reduce unnecessary vertical stacking.
+  - Update the static layout verifier to assert the non-overlay action bar contract.
+- Verification:
+  - git diff --check PASS
+  - npm.cmd run build PASS
+  - node scripts/verify-pro-workspace-v2-layout.cjs PASS
+  - Electron full-layout audit regenerated with 27 screenshots:
+    - maxHorizontalOverflowPx: 0
+    - tooSmallInteractiveCount: 0
+    - cardClippedCount: 0
+  - Targeted runtime overflow evidence regenerated with failedTargetCount: 0.
+- Notes:
+  - Remaining clipped counts in the broad audit correspond to scrollable content continuing below the viewport, not horizontal overflow or covered action controls.
+  - review-artifacts remain local-only and must not be committed.
+
+## Task 2026-06-21 - PR 12 Responsive Acceptance Delta 2
+
+- Phase: pr12-responsive-acceptance-delta-2
+- Branch: fix/layout-overflow-scroll
+- Task type:
+  - PRO Workspace v2 responsive acceptance follow-up for PR #12.
+- Scope:
+  - Fix the 390px PDF photo preparation collapse by forcing a readable single-column body and bounded photo rows.
+  - Keep PDF photo batch actions readable in a compact two-column layout at narrow width.
+  - Keep selected PDF rows visible after select and reorder in the narrow photo list.
+  - Keep 1024x600 board adjustment controls and the live preview visible together.
+  - Preserve a single board adjustment preview.
+  - Keep lower-band last-row fields visible in the 390px board-content evidence.
+  - Separate required acceptance target failures from broader all-interactive observations in runtime evidence.
+- Excluded:
+  - showBoard or output generation rework.
+  - Electron IPC, preload, security boundary, or output payload changes.
+  - package/package-lock changes.
+  - DB/public/CI/user manual PNG changes.
+  - PR #6 changes.
+  - committed review artifacts or generated output.
+- Verification planned:
+  - git diff --check
+  - npm.cmd run build
+  - npm.cmd run verify:ui
+  - npm.cmd run verify:board
+  - node scripts/verify-pro-workspace-v2-layout.cjs
+  - node scripts/verify-pro-workspace-v2-board-flow.cjs
+  - node scripts/verify-pro-workspace-v2-pdf-flow.cjs
+  - node scripts/verify-pro-workspace-v2-accessibility.cjs
+  - npm.cmd run package:win
+  - targeted Electron responsive runtime evidence
+  - hidden/bidi/newline check
+  - no-exposure check
+  - scope check
+- Draft PR:
+  - Keep PR #12 as Draft after the delta commit and request final review.
+
+## Task 2026-06-21 - PR 12 PRO Workflow UX Acceptance Delta
+
+- Phase: pr12-pro-workflow-ux-delta
+- Branch: fix/layout-overflow-scroll
+- Base PR:
+  - Existing Draft PR #12
+- Task type:
+  - UX acceptance delta / PRO workflow compactness and feature restoration
+- Scope:
+  - Restore the Photo Ledger PDF "사진에 보드판 삽입" control by wiring the existing `settings.showBoard` state into the PDF v2 model and actions.
+  - Keep "사진에 보드판 삽입" separate from "보드판 입력값 자동 적용" so image composition and PDF metadata mapping stay independent.
+  - Make PRO board and PDF photo preparation use a bounded, scrollable photo list with adjacent selected-photo rotation/order controls.
+  - Compact the lower-band item manager rows for 6-12+ item editing without horizontal overflow.
+  - Rework board adjust into a compact workbench with one preview near board size and position controls.
+  - Preserve board 1 / 5 through 5 / 5, PDF 1 / 4 through 4 / 4, LITE regression, and existing output engines.
+- Excluded:
+  - PR #6 cherry-pick, merge, or code copy.
+  - IPC channel, preload bridge, Electron security boundary, or output payload changes.
+  - package/package-lock changes.
+  - DB/public/CI changes.
+  - user manual PNG changes.
+  - generated/release output commits.
+  - committed review artifacts.
+- Verification planned:
+  - git diff --check
+  - npm.cmd run build
+  - npm.cmd run verify:ui
+  - npm.cmd run verify:board
+  - node scripts/verify-output-settings.cjs
+  - node scripts/verify-pro-workspace-v2-layout.cjs
+  - node scripts/verify-pro-workspace-v2-board-flow.cjs
+  - node scripts/verify-pro-workspace-v2-pdf-flow.cjs
+  - node scripts/verify-pro-workspace-v2-accessibility.cjs
+  - npm.cmd run package:win
+  - authenticated Electron runtime QA with synthetic photos
+  - PDF showBoard ON/OFF preview and generated-output evidence
+  - 20/50/100-photo list accessibility and overflow evidence
+  - board content and board adjust compact layout evidence
+  - hidden/bidi/newline check
+  - no-exposure check
+  - scope check
+- Draft PR:
+  - Keep PR #12 as Draft for user review.
+
+## Task 2026-06-21 - PR E Viewport Overflow / Scroll Containment
+
+- Phase: pr-e-layout-overflow-scroll
+- Branch: fix/layout-overflow-scroll
+- Base: origin/main @ e6b46067a8c0559da1c6a2ca2759a4ad9be67e78
+- Task type:
+  - Layout overflow and scroll containment stabilization.
+- Scope:
+  - Restore page-level vertical scrolling for non-start app screens when content exceeds the viewport.
+  - Keep unintended horizontal overflow clipped at the page container.
+  - Let PRO Workspace v2 shell content grow in normal document flow instead of clipping long lists or action bars.
+  - Preserve access to final photo/list rows, lower-band rows, action bars, and focused controls at short viewport heights.
+  - Add dynamic viewport fallback handling for supported browsers.
+- Excluded:
+  - Feature additions or large UI redesign.
+  - PR #6 changes.
+  - package/package-lock changes.
+  - DB/public/CI changes.
+  - user manual PNG changes.
+  - generated/release output commits.
+  - committed review artifacts.
+- Verification planned:
+  - git diff --check
+  - npm.cmd run build
+  - npm.cmd run verify:ui
+  - npm.cmd run verify:board
+  - node scripts/verify-output-settings.cjs
+  - node scripts/verify-pro-workspace-v2-layout.cjs
+  - node scripts/verify-pro-workspace-v2-board-flow.cjs
+  - node scripts/verify-pro-workspace-v2-pdf-flow.cjs
+  - node scripts/verify-pro-workspace-v2-accessibility.cjs
+  - npm.cmd run package:win
+  - viewport overflow runtime QA at 390x844, 768x1024, 1024x600, 1280x720, and 1440x900
+  - screenshot evidence for 1024x600 and 390x844
+  - hidden/bidi/newline check
+  - no-exposure check
+  - scope check
+- Draft PR:
+  - Keep as Draft until runtime overflow evidence and review confirm no Must Fix blockers.
+
+## Task 2026-06-21 - PR 12 Board Adjust Scale / Clipping Closure
+
+- Phase: pr12-board-adjust-scale-clipping-closure
+- Branch: fix/layout-overflow-scroll
+- Task type:
+  - PRO Workspace v2 board-adjust layout and visual acceptance closure.
+- Scope:
+  - Let the board-adjust canvas use the full PRO workspace width instead of keeping a sparse right context panel.
+  - Scale the board size/position controls and live preview as the window grows from default to fullscreen-like widths.
+  - Keep board-adjust controls and preview visible together at 1024x600, 1280x720, and 1440x900.
+  - Remove clipping from visible preview toolbar, rotation controls, primary CTA, and action bar controls.
+  - Hide redundant compact photo status in the board-adjust step to reduce density and prevent scroll-edge clipping.
+  - Update the static layout verifier to match the new board-adjust full-width workbench contract.
+- Excluded:
+  - PR #6 changes.
+  - IPC, preload, output payload, Electron window policy, or package metadata changes.
+  - package/package-lock changes.
+  - DB/public/CI changes.
+  - user manual PNG changes.
+  - committed review artifacts or generated output.
+- Verification planned:
+  - git diff --check
+  - npm.cmd run build
+  - npm.cmd run verify:ui
+  - npm.cmd run verify:board
+  - node scripts/verify-output-settings.cjs
+  - node scripts/verify-pro-workspace-v2-layout.cjs
+  - node scripts/verify-pro-workspace-v2-board-flow.cjs
+  - node scripts/verify-pro-workspace-v2-pdf-flow.cjs
+  - node scripts/verify-pro-workspace-v2-accessibility.cjs
+  - npm.cmd run package:win
+  - Electron runtime board-adjust broad interactive clipping check at 1024x600, 1280x720, and 1440x900
+  - viewport overflow runtime QA at 390x844, 768x1024, 1024x600, 1280x720, and 1440x900
+  - hidden/bidi/newline check
+  - no-exposure check
+  - scope check
+- PR status:
+  - Keep PR #12 open for normal review after the closure commit.
+
+## Task 2026-06-21 - PR 12 Complete-Row Scroll Refinement
+
+- Phase: pr12-complete-row-scroll-refinement
+- Branch: fix/layout-overflow-scroll
+- Task type:
+  - PRO Workspace v2 runtime layout polish for row-list clipping.
+- Scope:
+  - Replace the photo list scroll height with complete-row units so fullscreen-like views show full photo rows instead of partial trailing rows.
+  - Limit the lower-band item list to one complete row at minimum-width tablet/desktop layouts where the next row would otherwise be clipped by the first viewport.
+  - Compact the LITE default-window preview canvas and combine preview/run action rows so the visible preview actions fit inside the first viewport.
+  - Move transient status feedback into the header band so it does not cover the default-window workbench content.
+  - Preserve horizontal overflow 0 and existing board/PDF/LITE workflow behavior.
+- Excluded:
+  - PR #6 changes.
+  - IPC, preload, output payload, Electron window policy, or package metadata changes.
+  - package/package-lock changes.
+  - DB/public/CI changes.
+  - user manual PNG changes.
+  - committed review artifacts or generated output.
+- Verification planned:
+  - git diff --check
+  - npm.cmd run build
+  - npm.cmd run verify:ui
+  - npm.cmd run verify:board
+  - node scripts/verify-output-settings.cjs
+  - node scripts/verify-pro-workspace-v2-layout.cjs
+  - node scripts/verify-pro-workspace-v2-board-flow.cjs
+  - node scripts/verify-pro-workspace-v2-pdf-flow.cjs
+  - node scripts/verify-pro-workspace-v2-accessibility.cjs
+  - npm.cmd run package:win
+  - Electron runtime full layout audit at default, fullscreen-like, and minimum windows
+  - hidden/bidi/newline check
+  - no-exposure check
+  - scope check
+
 ## Task 2026-06-21 - PR D PRO Workspace v2 Motion and Accessibility
 
 - Phase: pr-d-pro-workspace-v2-motion-accessibility

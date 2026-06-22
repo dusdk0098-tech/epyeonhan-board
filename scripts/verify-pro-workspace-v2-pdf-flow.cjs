@@ -97,6 +97,24 @@ const checks = [
       && /createPdf:\s*Boolean\(options\.createPhotoLedgerPdf\)/.test(source.app)
   },
   {
+    name: 'PDF v2 restores existing board insertion setting without duplicate state',
+    pass: /showBoard:\s*boolean/.test(source.pdfTypes)
+      && /onToggleShowBoard:\s*\(enabled:\s*boolean\)\s*=>\s*void/.test(source.pdfTypes)
+      && /showBoard:\s*settings\.showBoard/.test(source.app)
+      && /onToggleShowBoard:\s*\(enabled\)\s*=>\s*updateSettings\(\{\s*showBoard:\s*enabled\s*\}\)/.test(source.app)
+      && /checked=\{model\.showBoard\}/.test(source.pdfDetails)
+      && /사진에 보드판 삽입/.test(source.pdfDetails)
+  },
+  {
+    name: 'PDF board insertion and board-field metadata options are separate controls',
+    pass: /id=\{showBoardInputId\}/.test(source.pdfDetails)
+      && /id=\{useBoardFieldsInputId\}/.test(source.pdfDetails)
+      && /사진에 보드판 삽입[\s\S]*보드판 입력값 자동 적용/.test(source.pdfDetails)
+      && /사진 합성/.test(source.pdfDetails)
+      && /하단정보 적용/.test(source.pdfDetails)
+      && /사진 합성 여부와는 별도/.test(source.pdfDetails)
+  },
+  {
     name: 'PDF v2 checked UI matches generation readiness',
     pass: /const generateReady = model\.checkedCount > 0/.test(source.pdfFlow)
       && /if \(model\.checkedCount === 0\) blocked\.push/.test(source.pdfGenerate)
