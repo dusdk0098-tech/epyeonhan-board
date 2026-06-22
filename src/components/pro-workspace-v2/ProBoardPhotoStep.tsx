@@ -16,6 +16,7 @@ function formatRotation(rotation?: number) {
 export function ProBoardPhotoStep({ model, actions }: ProBoardPhotoStepProps) {
   const selectedRowRef = useRef<HTMLDivElement | null>(null);
   const selectedOrdinal = model.hasSelectedPhoto && model.selectedPhotoIndex >= 0 ? model.selectedPhotoIndex + 1 : null;
+  const hasPhotos = model.photoCount > 0;
 
   useEffect(() => {
     selectedRowRef.current?.scrollIntoView({ block: 'nearest' });
@@ -49,13 +50,13 @@ export function ProBoardPhotoStep({ model, actions }: ProBoardPhotoStepProps) {
               <p>전체 {model.photoCount}장 / 출력 선택 {model.checkedCount}장</p>
             </div>
             <div className="pro-v2-photo-batch-actions">
-              <button type="button" className="pro-v2-action secondary" data-evidence="board-check-all" onClick={actions.onSelectAllPhotos}>
+              <button type="button" className="pro-v2-action secondary" data-evidence="board-check-all" disabled={!hasPhotos} onClick={actions.onSelectAllPhotos}>
                 전체 체크
               </button>
-              <button type="button" className="pro-v2-action secondary" onClick={actions.onClearPhotoChecks}>
+              <button type="button" className="pro-v2-action secondary" disabled={!hasPhotos} onClick={actions.onClearPhotoChecks}>
                 체크 해제
               </button>
-              <button type="button" className="pro-v2-action secondary" onClick={actions.onInvertPhotoChecks}>
+              <button type="button" className="pro-v2-action secondary" disabled={!hasPhotos} onClick={actions.onInvertPhotoChecks}>
                 체크 반전
               </button>
             </div>
