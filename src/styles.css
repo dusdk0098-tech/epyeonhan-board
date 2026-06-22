@@ -7057,7 +7057,7 @@ body {
 .app:not(.start-active) .common-toggle-card {
   min-height: 62px;
   display: grid;
-  grid-template-columns: 18px minmax(0, 1fr);
+  grid-template-columns: 24px minmax(0, 1fr);
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
@@ -7065,6 +7065,21 @@ body {
   border-radius: 8px;
   background: #ffffff;
   user-select: none;
+  transition: border-color 0.16s ease, background-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
+}
+
+.app:not(.start-active) .common-toggle-card input[type="checkbox"] {
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  accent-color: #005fc9;
+}
+
+.app:not(.start-active) .common-toggle-card:hover {
+  border-color: #8fbdf2;
+  background: #f7fbff;
+  box-shadow: 0 8px 18px rgba(15, 55, 105, 0.08);
+  transform: translateY(-1px);
 }
 
 .common-toggle-card span {
@@ -7089,6 +7104,11 @@ body {
 .app:not(.start-active) .common-toggle-card:has(input:checked) {
   border-color: #7fb0e8;
   background: #edf6ff;
+}
+
+.app:not(.start-active) .common-toggle-card:has(input:focus-visible) {
+  outline: 3px solid rgba(0, 95, 201, 0.24);
+  outline-offset: 2px;
 }
 
 .app:not(.start-active) .basic-save-panel .panel-body {
