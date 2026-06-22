@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowDown, ArrowUp, CheckSquare, FileText, ListChecks } from 'lucide-react';
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, CheckSquare, FileText, ListChecks } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 import type { ProPdfFlowActions, ProPdfFlowModel } from './pdfFlowTypes';
@@ -35,9 +35,11 @@ const detailsPanels: Array<{
 ];
 
 export function ProPdfDetailsStep({ model, actions }: ProPdfDetailsStepProps) {
-  const [activePanel, setActivePanel] = useState<ProPdfDetailsPanel>('document');
+  const [activePanel, setActivePanel] = useState<ProPdfDetailsPanel>('ledger');
   const manualLedgerDisabled = !model.hasSelectedPhoto;
   const dateLedgerDisabled = manualLedgerDisabled || model.usePhotoDate;
+  const hasPreviousPhoto = model.hasSelectedPhoto && model.selectedPhotoIndex > 0;
+  const hasNextPhoto = model.hasSelectedPhoto && model.selectedPhotoIndex >= 0 && model.selectedPhotoIndex < model.photoCount - 1;
   const pdfTitleInputId = 'pro-v2-pdf-title';
   const usePhotoDateInputId = 'pro-v2-pdf-use-photo-date';
   const ledgerLocationInputId = 'pro-v2-pdf-ledger-location';
@@ -111,38 +113,79 @@ export function ProPdfDetailsStep({ model, actions }: ProPdfDetailsStepProps) {
         <div className="pro-v2-board-section-heading">
           <div>
             <h3>사진별 하단정보</h3>
-            <p>선택한 사진의 위치, 내용, 촬영일자를 직접 확인합니다.</p>
+            <p>입력하면 오른쪽 PDF 미리보기에 바로 반영됩니다.</p>
           </div>
         </div>
         {model.hasSelectedPhoto ? (
           <>
-            <div className="settings-form board-pdf-form pro-v2-pdf-form">
-              <label htmlFor={ledgerLocationInputId}>위치</label>
-              <input
-                id={ledgerLocationInputId}
-                value={model.selectedPhotoLedger.location}
-                disabled={manualLedgerDisabled}
-                onChange={(event) => actions.onUpdateSelectedLedger({ location: event.target.value })}
-              />
-              <label htmlFor={ledgerContentInputId}>사진내용</label>
-              <input
-                id={ledgerContentInputId}
-                value={model.selectedPhotoLedger.content}
-                disabled={manualLedgerDisabled}
-                onChange={(event) => actions.onUpdateSelectedLedger({ content: event.target.value })}
-              />
-              <label htmlFor={ledgerDateInputId}>촬영일자</label>
-              <input
-                id={ledgerDateInputId}
-                value={model.usePhotoDate ? model.selectedPhotoDate || '사진정보 없음' : model.selectedPhotoLedger.date}
-                disabled={dateLedgerDisabled}
-                onChange={(event) => actions.onUpdateSelectedLedger({ date: event.target.value })}
-              />
+            <div className="pro-v2-pdf-ledger-focus-card" data-evidence="pdf-ledger-photo-focus">
+              <div className="pro-v2-pdf-ledger-current">
+                <span>현재 입력 사진</span>
+                <strong>{model.selectedPhotoIndex + 1} / {model.photoCount}</strong>
+                <small>{model.selectedPhotoName}</small>
+              </div>
+              <div className="pro-v2-pdf-ledger-photo-nav" aria-label="사진별 하단정보 입력 사진 이동">
+                <button
+                  type="button"
+                  className="pro-v2-action secondary"
+                  disabled={!hasPreviousPhoto}
+                  onClick={() => {
+                    const previousPhoto = model.photos[model.selectedPhotoIndex - 1];
+                    if (previousPhoto) actions.onSelectPhoto(previousPhoto.path);
+                  }}
+                >
+                  <ArrowLeft size={16} aria-hidden /> 이전 사진
+                </button>
+                <button
+                  type="button"
+                  className="pro-v2-action secondary"
+                  disabled={!hasNextPhoto}
+                  onClick={() => {
+                    const nextPhoto = model.photos[model.selectedPhotoIndex + 1];
+                    if (nextPhoto) actions.onSelectPhoto(nextPhoto.path);
+                  }}
+                >
+                  다음 사진 <ArrowRight size={16} aria-hidden />
+                </button>
+              </div>
             </div>
-            <div className="pro-v2-pdf-helper-actions">
-              <button type="button" className="pro-v2-action secondary" onClick={actions.onApplySelectedLedgerToCheckedPhotos}>
-                <CheckSquare size={16} aria-hidden /> 체크 사진에 적용
-              </button>
+            <div className="pro-v2-pdf-ledger-fields">
+              <div className="pro-v2-pdf-ledger-field">
+                <label htmlFor={ledgerLocationInputId}>위치</label>
+                <input
+                  id={ledgerLocationInputId}
+                  value={model.selectedPhotoLedger.location}
+                  disabled={manualLedgerDisabled}
+                  placeholder="예: 현장 입구, 2층 복도"
+                  onChange={(event) => actions.onUpdateSelectedLedger({ location: event.target.value })}
+                />
+              </div>
+              <div className="pro-v2-pdf-ledger-field">
+                <label htmlFor={ledgerDateInputId}>촬영일자</label>
+                <input
+                  id={ledgerDateInputId}
+                  value={model.usePhotoDate ? model.selectedPhotoDate || '사진정보 없음' : model.selectedPhotoLedger.date}
+                  disabled={dateLedgerDisabled}
+                  placeholder="예: 2026-06-22"
+                  onChange={(event) => actions.onUpdateSelectedLedger({ date: event.target.value })}
+                />
+                {model.usePhotoDate ? <small>문서와 순서 탭에서 사진정보 촬영일자 사용이 켜져 있습니다.</small> : null}
+              </div>
+              <div className="pro-v2-pdf-ledger-field">
+                <label htmlFor={ledgerContentInputId}>사진내용</label>
+                <input
+                  id={ledgerContentInputId}
+                  value={model.selectedPhotoLedger.content}
+                  disabled={manualLedgerDisabled}
+                  placeholder="예: 균열 확인, 보수 전 상태"
+                  onChange={(event) => actions.onUpdateSelectedLedger({ content: event.target.value })}
+                />
+              </div>
+              <div className="pro-v2-pdf-ledger-apply-field">
+                <button type="button" className="pro-v2-action secondary" onClick={actions.onApplySelectedLedgerToCheckedPhotos}>
+                  <CheckSquare size={16} aria-hidden /> 체크 사진에도 적용
+                </button>
+              </div>
             </div>
           </>
         ) : (
