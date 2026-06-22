@@ -208,7 +208,7 @@ const defaultSettings: BoardSettings = {
   openFolderAfterProcessing: false,
   createPdf: false,
   pdfTitle: '사진대지',
-  photoLedgerUseBoardFields: true,
+  photoLedgerUseBoardFields: false,
   photoLedgerUsePhotoDate: false,
   photoLedgerLocation: '',
   photoLedgerContent: '',
@@ -446,9 +446,18 @@ export default function App() {
   const selectedPhotoLedger = selectedPhoto?.photoLedger ?? defaultPhotoLedgerInfo;
   const selectedIndex = selectedPhoto ? photos.findIndex((photo) => photo.path === selectedPhoto.path) : -1;
   const isAdmin = authState.status === 'ready' && authState.profile?.role === 'admin';
-  const photoLedgerPreviewPageCount = Math.max(1, Math.ceil(Math.max(photos.length, 1) / 2));
+  const photoLedgerPreviewPhotos = useMemo(
+    () => photos.filter((photo) => photo.selectedForProcessing),
+    [photos]
+  );
+  const photoLedgerPreviewPhotoCount = photoLedgerPreviewPhotos.length;
+  const photoLedgerPreviewPageCount = Math.max(1, Math.ceil(Math.max(photoLedgerPreviewPhotoCount, 1) / 2));
   const photoLedgerRenderSettings = useMemo(
-    () => normalizeSettings(mergeCommonOutputSettings(settings)),
+    () => normalizeSettings({
+      ...mergeCommonOutputSettings(settings),
+      showBoard: false,
+      photoLedgerUseBoardFields: false
+    }),
     [settings, commonOutputSettings]
   );
   const adminStats = useMemo(() => {
@@ -478,7 +487,7 @@ export default function App() {
     [fields, selectedPhoto, selectedIndex, timeOptions, exifMap]
   );
   const photoLedgerPreviewSlots = useMemo(() => {
-    return photos.slice(photoLedgerPreviewPage * 2, photoLedgerPreviewPage * 2 + 2).map((photo) => {
+    return photoLedgerPreviewPhotos.slice(photoLedgerPreviewPage * 2, photoLedgerPreviewPage * 2 + 2).map((photo) => {
       const photoIndex = photos.findIndex((item) => item.path === photo.path);
       const renderFields = applyTimeMode(fields, photo, photoIndex, timeOptions, exifMap);
       const renderKey = buildPhotoLedgerPreviewImageKey(photo, renderFields, photoLedgerRenderSettings);
@@ -488,7 +497,7 @@ export default function App() {
         info: resolveLedgerInfoForPhotoPreview(photo, photoIndex)
       };
     });
-  }, [photos, photoLedgerPreviewPage, fields, timeOptions, exifMap, photoLedgerPreviewImages, photoLedgerRenderSettings]);
+  }, [photoLedgerPreviewPhotos, photos, photoLedgerPreviewPage, fields, timeOptions, exifMap, photoLedgerPreviewImages, photoLedgerRenderSettings]);
   const shouldRenderPhotoLedgerPreview = showPhotoLedgerPreview
     || (activeScreen === 'output' && activeOutputSettingsTab === 'ledger');
   const livePreviewSignature = useMemo(
@@ -724,24 +733,24 @@ export default function App() {
   }, [activeWorkspaceKey, timeOptions.mode, settings.photoLedgerUsePhotoDate, photos]);
 
   useEffect(() => {
-    if (!shouldRenderPhotoLedgerPreview || photos.length === 0) {
+    if (!shouldRenderPhotoLedgerPreview || photoLedgerPreviewPhotoCount === 0) {
       return;
     }
 
-    const pageCount = Math.max(1, Math.ceil(photos.length / 2));
+    const pageCount = Math.max(1, Math.ceil(photoLedgerPreviewPhotoCount / 2));
     if (photoLedgerPreviewPage >= pageCount) {
       setPhotoLedgerPreviewPage(pageCount - 1);
     }
-  }, [shouldRenderPhotoLedgerPreview, photos.length, photoLedgerPreviewPage]);
+  }, [shouldRenderPhotoLedgerPreview, photoLedgerPreviewPhotoCount, photoLedgerPreviewPage]);
 
   useEffect(() => {
-    if (!shouldRenderPhotoLedgerPreview || photos.length === 0 || !window.constructView?.renderPreviewImage) {
+    if (!shouldRenderPhotoLedgerPreview || photoLedgerPreviewPhotoCount === 0 || !window.constructView?.renderPreviewImage) {
       return;
     }
 
     let canceled = false;
     const renderSettings = photoLedgerRenderSettings;
-    const pagePhotos = photos.slice(photoLedgerPreviewPage * 2, photoLedgerPreviewPage * 2 + 2);
+    const pagePhotos = photoLedgerPreviewPhotos.slice(photoLedgerPreviewPage * 2, photoLedgerPreviewPage * 2 + 2);
     pagePhotos.forEach((photo) => {
       const photoIndex = photos.findIndex((item) => item.path === photo.path);
       const renderFields = applyTimeMode(fields, photo, photoIndex, timeOptions, exifMap);
@@ -760,6 +769,8 @@ export default function App() {
   }, [
     shouldRenderPhotoLedgerPreview,
     photoLedgerPreviewPage,
+    photoLedgerPreviewPhotos,
+    photoLedgerPreviewPhotoCount,
     photos,
     fields,
     settings,
@@ -1294,11 +1305,14 @@ export default function App() {
   }
 
   function openPhotoLedgerPreview() {
-    if (photos.length === 0) {
+    if (photoLedgerPreviewPhotoCount === 0) {
       setStatusMessage('info', '사진대지 미리보기를 볼 사진을 먼저 불러오세요.');
       return;
     }
-    setPhotoLedgerPreviewPage(Math.max(0, Math.floor(Math.max(0, selectedIndex) / 2)));
+    const selectedPreviewIndex = selectedPhotoPath
+      ? photoLedgerPreviewPhotos.findIndex((photo) => photo.path === selectedPhotoPath)
+      : -1;
+    setPhotoLedgerPreviewPage(Math.max(0, Math.floor(Math.max(0, selectedPreviewIndex) / 2)));
     setShowPhotoLedgerPreview(true);
   }
 
@@ -1620,10 +1634,6 @@ export default function App() {
     refreshPreview();
   }
 
-  function findFieldValueByLabel(sourceFields: BoardField[], pattern: RegExp) {
-    return sourceFields.find((field) => pattern.test(field.label))?.value ?? '';
-  }
-
   function insertSelectedFileName() {
     if (!selectedPhoto) {
       setStatusMessage('info', '파일명을 삽입할 사진을 먼저 선택하세요.');
@@ -1754,23 +1764,6 @@ export default function App() {
     );
   }
 
-  function resolveLedgerInfoFromBoardFields(sourceFields: BoardField[]): PhotoLedgerInfo {
-    return {
-      location: findFieldValueByLabel(sourceFields, /위치/),
-      content: findFieldValueByLabel(sourceFields, /내용/),
-      date: findFieldValueByLabel(sourceFields, /날짜|일자/)
-    };
-  }
-
-  function applyCurrentBoardFieldsToSelectedLedger() {
-    if (!selectedPhotoPath) {
-      setStatusMessage('info', '사진대지 하단정보를 적용할 사진을 먼저 선택하세요.');
-      return;
-    }
-    updateSelectedPhotoLedgerPatch(resolveLedgerInfoFromBoardFields(previewFields));
-    setStatusMessage('success', '선택 사진의 사진대지 하단정보에 보드판 내용을 적용했습니다.');
-  }
-
   function applySelectedLedgerToCheckedPhotos() {
     if (!selectedPhotoPath) {
       setStatusMessage('info', '복사할 사진대지 하단정보가 있는 사진을 먼저 선택하세요.');
@@ -1801,7 +1794,7 @@ export default function App() {
     const ledger = settings.photoLedgerUsePhotoDate && photoInfoDate
       ? { ...normalizePhotoLedgerInfo(photo.photoLedger ?? defaultPhotoLedgerInfo), date: photoInfoDate }
       : photo.photoLedger;
-    return resolvePhotoLedgerInfo(fieldsForPhoto, settings, ledger);
+    return resolvePhotoLedgerInfo(fieldsForPhoto, photoLedgerRenderSettings, ledger);
   }
 
   async function runProcess(mode: ProcessImagesPayload['mode'], options: { createPhotoLedgerPdf?: boolean } = {}) {
@@ -1826,6 +1819,7 @@ export default function App() {
 
     const processSettings = normalizeSettings({
       ...mergeCommonOutputSettings(settings),
+      ...(options.createPhotoLedgerPdf ? { showBoard: false, photoLedgerUseBoardFields: false } : {}),
       createPdf: Boolean(options.createPhotoLedgerPdf)
     });
     const payload: ProcessImagesPayload = {
@@ -3202,7 +3196,7 @@ export default function App() {
   }
 
   function renderPremiumPhotoLedgerSettings() {
-    const manualLedgerDisabled = settings.photoLedgerUseBoardFields || !selectedPhoto;
+    const manualLedgerDisabled = !selectedPhoto;
     const dateLedgerDisabled = manualLedgerDisabled || settings.photoLedgerUsePhotoDate;
     const selectedPhotoInfoDate = resolvePhotoInfoDateForLedger(selectedPhoto);
     return (
@@ -3212,15 +3206,6 @@ export default function App() {
           <div className="settings-form board-pdf-form premium-ledger-form">
             <label>문서 제목</label>
             <input value={settings.pdfTitle} onChange={(event) => updateSettings({ pdfTitle: event.target.value })} />
-            <label>적용 방식</label>
-            <label className="check-label compact-check">
-              <input
-                type="checkbox"
-                checked={settings.photoLedgerUseBoardFields}
-                onChange={(event) => updateSettings({ photoLedgerUseBoardFields: event.target.checked })}
-              />
-              보드판 입력값 자동 적용
-            </label>
             <label>촬영일자</label>
             <label className="check-label compact-check">
               <input
@@ -3230,6 +3215,11 @@ export default function App() {
               />
               사진정보 촬영일자 사용
             </label>
+          </div>
+
+          <div className="ledger-mode-note">
+            <ListChecks size={16} aria-hidden />
+            <span>사진대지 PDF는 보드판을 삽입하지 않고 사진, 하단정보, 강조 효과만 정리합니다.</span>
           </div>
 
           <div className="ledger-selected-photo">
@@ -3253,60 +3243,44 @@ export default function App() {
             </button>
           </div>
 
-          {settings.photoLedgerUseBoardFields ? (
-            <div className="ledger-auto-note">
-              <ListChecks size={16} aria-hidden />
-              <span>보드 입력값으로 위치와 내용 자동 구성</span>
-            </div>
-          ) : (
+          {selectedPhoto ? (
             <>
-              {selectedPhoto ? (
-                <>
-                  <div className="settings-form board-pdf-form premium-ledger-form">
-                    <label>위치</label>
-                    <input
-                      value={selectedPhotoLedger.location}
-                      disabled={manualLedgerDisabled}
-                      onChange={(event) => updateSelectedPhotoLedgerPatch({ location: event.target.value })}
-                    />
-                    <label>사진내용</label>
-                    <input
-                      value={selectedPhotoLedger.content}
-                      disabled={manualLedgerDisabled}
-                      onChange={(event) => updateSelectedPhotoLedgerPatch({ content: event.target.value })}
-                    />
-                    <label>촬영일자</label>
-                    <input
-                      value={settings.photoLedgerUsePhotoDate ? selectedPhotoInfoDate || '사진정보 없음' : selectedPhotoLedger.date}
-                      disabled={dateLedgerDisabled}
-                      onChange={(event) => updateSelectedPhotoLedgerPatch({ date: event.target.value })}
-                    />
-                  </div>
+              <div className="settings-form board-pdf-form premium-ledger-form">
+                <label>위치</label>
+                <input
+                  value={selectedPhotoLedger.location}
+                  disabled={manualLedgerDisabled}
+                  onChange={(event) => updateSelectedPhotoLedgerPatch({ location: event.target.value })}
+                />
+                <label>사진내용</label>
+                <input
+                  value={selectedPhotoLedger.content}
+                  disabled={manualLedgerDisabled}
+                  onChange={(event) => updateSelectedPhotoLedgerPatch({ content: event.target.value })}
+                />
+                <label>촬영일자</label>
+                <input
+                  value={settings.photoLedgerUsePhotoDate ? selectedPhotoInfoDate || '사진정보 없음' : selectedPhotoLedger.date}
+                  disabled={dateLedgerDisabled}
+                  onChange={(event) => updateSelectedPhotoLedgerPatch({ date: event.target.value })}
+                />
+              </div>
 
-                  <div className="ledger-action-row">
-                    <button
-                      className="small-btn outline"
-                      type="button"
-                      onClick={applyCurrentBoardFieldsToSelectedLedger}
-                    >
-                      <ListChecks size={15} /> 보드 내용 불러오기
-                    </button>
-                    <button
-                      className="small-btn outline"
-                      type="button"
-                      onClick={applySelectedLedgerToCheckedPhotos}
-                    >
-                      <CheckSquare size={15} /> 체크 사진에 적용
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <div className="ledger-manual-empty">
-                  <ListChecks size={16} aria-hidden />
-                  <span>사진을 선택하면 하단정보를 입력할 수 있습니다.</span>
-                </div>
-              )}
+              <div className="ledger-action-row">
+                <button
+                  className="small-btn outline"
+                  type="button"
+                  onClick={applySelectedLedgerToCheckedPhotos}
+                >
+                  <CheckSquare size={15} /> 체크 사진에 적용
+                </button>
+              </div>
             </>
+          ) : (
+            <div className="ledger-manual-empty">
+              <ListChecks size={16} aria-hidden />
+              <span>사진을 선택하면 하단정보를 입력할 수 있습니다.</span>
+            </div>
           )}
 
           <div className="ledger-action-row single">
@@ -3319,14 +3293,19 @@ export default function App() {
               <Eye size={15} /> 문서 미리보기
             </button>
           </div>
+        </div>
 
+        <div className="ledger-highlight-settings">
+          {renderPremiumHighlightSettingsOnly()}
+        </div>
+
+        <div className="output-setting-section premium-ledger-section">
+          <h4>PDF 생성</h4>
           <button className="btn primary wide ledger-create-btn" type="button" disabled={isProcessing} onClick={() => void runProcess('all', { createPhotoLedgerPdf: true })}>
             <FileSpreadsheet size={17} /> 사진대지 만들기
           </button>
           <p className="output-help-text compact">
-            {settings.photoLedgerUseBoardFields
-              ? 'PDF 생성 시 보드 입력값을 문서 하단정보로 사용합니다.'
-              : '사진별 하단정보와 출력 순서를 지정해 PDF에 반영합니다.'}
+            사진별 하단정보, 강조 효과와 출력 순서를 PDF에 반영합니다.
           </p>
         </div>
       </div>
@@ -3935,22 +3914,22 @@ export default function App() {
           <button
             type="button"
             className="pro-v2-action secondary"
-            disabled={photos.length === 0 || photoLedgerPreviewPage <= 0}
+            disabled={photoLedgerPreviewPhotoCount === 0 || photoLedgerPreviewPage <= 0}
             onClick={() => setPhotoLedgerPreviewPage((current) => Math.max(0, current - 1))}
           >
             이전 페이지
           </button>
-          <span>{photos.length === 0 ? '사진 없음' : `${photoLedgerPreviewPage + 1} / ${photoLedgerPreviewPageCount}`}</span>
+          <span>{photoLedgerPreviewPhotoCount === 0 ? '사진 없음' : `${photoLedgerPreviewPage + 1} / ${photoLedgerPreviewPageCount}`}</span>
           <button
             type="button"
             className="pro-v2-action secondary"
-            disabled={photos.length === 0 || photoLedgerPreviewPage >= photoLedgerPreviewPageCount - 1}
+            disabled={photoLedgerPreviewPhotoCount === 0 || photoLedgerPreviewPage >= photoLedgerPreviewPageCount - 1}
             onClick={() => setPhotoLedgerPreviewPage((current) => Math.min(photoLedgerPreviewPageCount - 1, current + 1))}
           >
             다음 페이지
           </button>
         </div>
-        {photos.length === 0 ? (
+        {photoLedgerPreviewPhotoCount === 0 ? (
           <div className="pro-v2-board-empty">사진을 추가하면 사진대지 PDF 미리보기가 표시됩니다.</div>
         ) : (
           <PhotoLedgerPreviewPage slots={photoLedgerPreviewSlots} />
@@ -4064,10 +4043,8 @@ export default function App() {
         checkedCount: photos.filter((photo) => photo.selectedForProcessing).length,
         hasSelectedPhoto: Boolean(selectedPhoto),
         saveFolderReady: Boolean(saveDir),
-        previewReady: photos.length > 0,
+        previewReady: photoLedgerPreviewPhotoCount > 0,
         pdfTitle: settings.pdfTitle,
-        showBoard: settings.showBoard,
-        useBoardFields: settings.photoLedgerUseBoardFields,
         usePhotoDate: settings.photoLedgerUsePhotoDate,
         previewPage: photoLedgerPreviewPage,
         previewPageCount: photoLedgerPreviewPageCount,
@@ -4091,11 +4068,8 @@ export default function App() {
         onSelectSaveFolder: () => void handleSelectSaveFolder(),
         onOpenSaveFolder: () => void handleOpenSaveFolder(),
         onUpdatePdfTitle: (value) => updateSettings({ pdfTitle: value }),
-        onToggleShowBoard: (enabled) => updateSettings({ showBoard: enabled }),
-        onToggleUseBoardFields: (enabled) => updateSettings({ photoLedgerUseBoardFields: enabled }),
         onToggleUsePhotoDate: (enabled) => updateSettings({ photoLedgerUsePhotoDate: enabled }),
         onUpdateSelectedLedger: updateSelectedPhotoLedgerPatch,
-        onApplyBoardFieldsToSelectedLedger: applyCurrentBoardFieldsToSelectedLedger,
         onApplySelectedLedgerToCheckedPhotos: applySelectedLedgerToCheckedPhotos,
         onOpenPreview: openPhotoLedgerPreview,
         onPreviousPreviewPage: () => setPhotoLedgerPreviewPage((current) => Math.max(0, current - 1)),
@@ -4103,7 +4077,8 @@ export default function App() {
         onGeneratePdf: () => runProcess('checked', { createPhotoLedgerPdf: true })
       },
       slots: {
-        previewPanel: renderPhotoLedgerInlinePreview()
+        previewPanel: renderPhotoLedgerInlinePreview(),
+        highlightControls: renderPremiumHighlightSettingsOnly()
       }
     };
 
@@ -4555,7 +4530,7 @@ export default function App() {
             <button
               className="small-btn outline"
               type="button"
-              disabled={photoLedgerPreviewPage <= 0}
+              disabled={photoLedgerPreviewPhotoCount === 0 || photoLedgerPreviewPage <= 0}
               onClick={() => setPhotoLedgerPreviewPage((current) => Math.max(0, current - 1))}
             >
               이전 페이지
@@ -4566,7 +4541,7 @@ export default function App() {
             <button
               className="small-btn outline"
               type="button"
-              disabled={photoLedgerPreviewPage >= photoLedgerPreviewPageCount - 1}
+              disabled={photoLedgerPreviewPhotoCount === 0 || photoLedgerPreviewPage >= photoLedgerPreviewPageCount - 1}
               onClick={() => setPhotoLedgerPreviewPage((current) => Math.min(photoLedgerPreviewPageCount - 1, current + 1))}
             >
               다음 페이지

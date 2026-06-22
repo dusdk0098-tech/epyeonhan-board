@@ -32,10 +32,10 @@ const pdfStepMeta: Record<ProPdfFlowStep, {
   details: {
     stepNumber: 2,
     totalSteps: 4,
-    title: 'PDF 정보와 배치',
+    title: 'PDF 정보와 강조',
     eyebrow: '사진대지 PDF 만들기',
-    description: '문서 제목, 사진별 하단정보, 사진 순서와 PDF 미리보기를 확인합니다.',
-    canvasTitle: '2단계 PDF 정보와 배치'
+    description: '문서 제목, 사진별 하단정보, 강조 효과와 PDF 미리보기를 확인합니다.',
+    canvasTitle: '2단계 PDF 정보와 강조'
   },
   generate: {
     stepNumber: 3,

@@ -138,11 +138,10 @@ const checks = [
       && /aria-label=\{`\$\{photo\.name\} PDF 처리 대상 체크`\}/.test(source.pdfPhoto)
   },
   {
-    name: 'PDF board insertion toggle has native state and descriptive label',
-    pass: /id=\{showBoardInputId\}/.test(source.pdfDetails)
-      && /htmlFor=\{showBoardInputId\}/.test(source.pdfDetails)
-      && /aria-describedby="pro-v2-pdf-show-board-help"/.test(source.pdfDetails)
-      && /checked=\{model\.showBoard\}/.test(source.pdfDetails)
+    name: 'PDF mode removes board insertion and exposes highlight controls',
+    pass: !/showBoardInputId|useBoardFieldsInputId|사진에 보드판 삽입|보드판 입력값 자동 적용/.test(source.pdfDetails)
+      && /data-evidence="pdf-highlight-controls"/.test(source.pdfDetails)
+      && /slots\.highlightControls/.test(source.pdfDetails)
   },
   {
     name: 'Board generate readiness accepts checked-only photo sets',
