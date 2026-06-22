@@ -9720,6 +9720,91 @@ body {
   }
 }
 
+@media (min-width: 861px) and (max-width: 920px) {
+  .app:not(.start-active) .basic-shell {
+    overflow: hidden;
+  }
+
+  .app:not(.start-active) .basic-workbench-grid {
+    height: 100%;
+    min-height: 0;
+    grid-template-columns: minmax(330px, 360px) minmax(0, 1fr);
+    grid-template-rows: minmax(156px, 0.32fr) minmax(0, 1fr);
+    grid-template-areas:
+      "setup board"
+      "setup preview";
+    gap: 10px;
+    align-items: stretch;
+  }
+
+  .app:not(.start-active) .basic-workbench-grid > .panel-column {
+    height: 100%;
+    min-height: 0;
+    gap: 8px;
+  }
+
+  .app:not(.start-active) .basic-load-panel,
+  .app:not(.start-active) .basic-settings-panel,
+  .app:not(.start-active) .basic-save-panel,
+  .app:not(.start-active) .basic-field-panel,
+  .app:not(.start-active) .basic-preview-panel {
+    min-width: 0;
+  }
+
+  .app:not(.start-active) .basic-load-panel .button-row.three {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
+
+  .app:not(.start-active) .basic-settings-panel {
+    flex: 1 1 auto;
+  }
+
+  .app:not(.start-active) .basic-settings-panel .panel-body {
+    grid-template-columns: minmax(0, 1fr);
+    overflow-y: auto;
+  }
+
+  .app:not(.start-active) .basic-save-panel .panel-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .app:not(.start-active) .basic-field-panel,
+  .app:not(.start-active) .basic-preview-panel {
+    height: 100%;
+  }
+
+  .app:not(.start-active) .basic-field-panel .panel-body {
+    overflow: auto;
+  }
+
+  .app:not(.start-active) .basic-preview-panel .preview-stage {
+    flex-basis: 126px;
+    min-height: 116px;
+  }
+
+  .app:not(.start-active) .basic-action-footer {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
+
+  .app:not(.start-active) .basic-preview-tools,
+  .app:not(.start-active) .basic-run-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .app:not(.start-active) .basic-preview-tools .btn:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .app:not(.start-active) .basic-preview-tools .btn,
+  .app:not(.start-active) .basic-run-actions .btn {
+    min-height: 40px;
+    white-space: normal;
+    line-height: 1.2;
+  }
+}
+
 /* PR 12: PRO workflow UX acceptance delta */
 .pro-v2-photo-workbench {
   display: grid;
