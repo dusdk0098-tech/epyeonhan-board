@@ -2230,6 +2230,7 @@ input[type="radio"] {
 }
 
 .photo-ledger-preview-page {
+  container-type: inline-size;
   position: relative;
   width: min(100%, 560px);
   background: #ffffff;
@@ -2245,6 +2246,7 @@ input[type="radio"] {
   color: #111111;
   font-family: Gulim, "Malgun Gothic", sans-serif;
   font-size: clamp(18px, 4vw, 26px);
+  font-size: clamp(12px, 4.7cqw, 26px);
   font-weight: 900;
   text-align: center;
 }
@@ -2273,6 +2275,7 @@ input[type="radio"] {
 .photo-ledger-preview-frame span {
   color: #64748b;
   font-size: 13px;
+  font-size: clamp(8px, 2.4cqw, 13px);
   font-weight: 800;
 }
 
@@ -2284,6 +2287,7 @@ input[type="radio"] {
   color: #111111;
   font-family: Gulim, "Malgun Gothic", sans-serif;
   font-size: clamp(8px, 1.25vw, 12px);
+  font-size: clamp(5.5px, 2.1cqw, 12px);
   font-weight: 700;
 }
 
@@ -2309,7 +2313,7 @@ input[type="radio"] {
 }
 
 .photo-ledger-preview-info-table .ledger-info-value {
-  padding: 0 7px;
+  padding: 0 clamp(2px, 1.25cqw, 7px);
   justify-content: flex-start;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -2325,7 +2329,7 @@ input[type="radio"] {
 
 .photo-ledger-preview-info-table .ledger-info-date {
   border-right: 0;
-  padding: 0 4px;
+  padding: 0 clamp(1px, 0.8cqw, 4px);
 }
 
 .modal.wide .preview-stage {
@@ -7829,6 +7833,10 @@ body {
   min-height: 0;
 }
 
+.pro-v2-body:has(.pro-v2-pdf-flow) {
+  grid-template-columns: minmax(0, 1fr) minmax(360px, clamp(360px, 32vw, 500px));
+}
+
 .pro-v2-body:has(.pro-v2-board-adjust-step) {
   grid-template-columns: minmax(0, 1fr);
 }
@@ -9244,21 +9252,28 @@ body {
 }
 
 .pro-v2-pdf-preview-toolbar {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  justify-content: space-between;
   gap: 8px;
   min-width: 0;
+}
+
+.pro-v2-pdf-preview-toolbar .pro-v2-action {
+  min-width: 0;
+  justify-content: center;
+  white-space: nowrap;
 }
 
 .pro-v2-pdf-preview-toolbar span {
   color: #334155;
   font-weight: 900;
+  text-align: center;
+  white-space: nowrap;
 }
 
 .pro-v2-pdf-inline-preview .photo-ledger-preview-wrap {
-  width: min(100%, 420px);
+  width: min(100%, 460px);
   max-width: 100%;
   margin: 0 auto;
 }
