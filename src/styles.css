@@ -10398,6 +10398,19 @@ body {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .pro-v2-body:has(.pro-v2-board-photo-step) .pro-v2-rotation-actions,
+  .pro-v2-body:has(.pro-v2-pdf-photo-step) .pro-v2-rotation-actions,
+  .pro-v2-body:has(.pro-v2-pdf-photo-step) .pro-v2-photo-order-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pro-v2-body:has(.pro-v2-board-photo-step) .pro-v2-rotation-actions .pro-v2-action,
+  .pro-v2-body:has(.pro-v2-pdf-photo-step) .pro-v2-rotation-actions .pro-v2-action,
+  .pro-v2-body:has(.pro-v2-pdf-photo-step) .pro-v2-photo-order-actions .pro-v2-action {
+    white-space: nowrap;
+    overflow-wrap: normal;
+  }
+
   .pro-v2-photo-summary-card {
     grid-column: 1 / -1;
   }
