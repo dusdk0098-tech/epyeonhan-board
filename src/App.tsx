@@ -1306,7 +1306,10 @@ export default function App() {
     setAuthState({ status: 'unauthenticated' });
   }
 
-  function openLargePreview() {
+  function openLargePreview(photoPath?: string) {
+    if (photoPath) {
+      setSelectedPhotoPath(photoPath);
+    }
     setPreviewRevision((current) => current + 1);
     setShowLargePreview(true);
   }
@@ -2447,7 +2450,7 @@ export default function App() {
               {renderPhotoRotationControls('basic-rotation-controls')}
               <div className="action-footer basic-action-footer">
                 <div className="button-row basic-preview-tools">
-                  <button className="btn ghost" type="button" disabled={!selectedPhoto} onClick={openLargePreview}>
+                  <button className="btn ghost" type="button" disabled={!selectedPhoto} onClick={() => openLargePreview()}>
                     <Eye size={17} /> 크게 보기
                   </button>
                   <button className="btn ghost" type="button" disabled={!selectedPhoto} onClick={() => void handleCopyPreviewImage()}>
@@ -2477,7 +2480,7 @@ export default function App() {
     return (
       <Card title="실행 버튼" icon={<Play size={17} />} className="advanced-action-card">
         <div className="advanced-action-stack">
-          <button className="btn ghost wide" type="button" onClick={openLargePreview}>
+          <button className="btn ghost wide" type="button" onClick={() => openLargePreview()}>
             <RefreshCw size={17} /> 미리보기 갱신
           </button>
           <button className="btn blue wide" type="button" disabled={isProcessing} onClick={() => void runProcess('selected')}>
@@ -3709,7 +3712,7 @@ export default function App() {
             icon={<Eye size={17} />}
             action={
               <div className="preview-card-actions">
-                <button className="small-btn outline" type="button" disabled={!selectedPhoto} onClick={openLargePreview}>
+                <button className="small-btn outline" type="button" disabled={!selectedPhoto} onClick={() => openLargePreview()}>
                   <Eye size={15} /> 크게 보기
                 </button>
                 <button
@@ -3938,7 +3941,7 @@ export default function App() {
         icon={<Eye size={17} />}
         action={
           <div className="preview-card-actions">
-            <button className="small-btn outline" type="button" disabled={!selectedPhoto} onClick={openLargePreview}>
+            <button className="small-btn outline" type="button" disabled={!selectedPhoto} onClick={() => openLargePreview()}>
               <Eye size={15} /> 크게 보기
             </button>
             <button
@@ -4009,7 +4012,11 @@ export default function App() {
         {photoLedgerPreviewPhotoCount === 0 ? (
           <div className="pro-v2-board-empty">사진을 추가하면 사진대지 PDF 미리보기가 표시됩니다.</div>
         ) : (
-          <PhotoLedgerPreviewPage slots={photoLedgerPreviewSlots} />
+          <PhotoLedgerPreviewPage
+            slots={photoLedgerPreviewSlots}
+            selectedPhotoPath={selectedPhotoPath}
+            onPhotoClick={(photoPath) => openLargePreview(photoPath)}
+          />
         )}
       </div>
     );
@@ -4586,19 +4593,35 @@ export default function App() {
               <Printer size={15} /> 미리보기 인쇄
             </button>
           </div>
-          <PreviewStage
-            imageDataUrl={previewDataUrl}
-            fields={previewFields}
-            settings={settings}
-            previewRevision={previewRevision}
-            livePreviewSignature={livePreviewSignature}
-            selectedPhotoName={selectedPhoto?.name}
-            emptyText="왼쪽 목록에서 미리보기할 사진을 선택하세요"
-            highlight={selectedHighlight}
-            outputGrayscale={settings.outputGrayscale}
-            onContextMenu={handlePreviewContextMenu}
-            large
-          />
+          <div className="large-preview-editor" data-evidence="large-preview-highlight-editor">
+            <div className="large-preview-stage-panel">
+              <div className="large-preview-helper">
+                사진 위를 드래그하면 강조 위치를 옮기고, 원 가장자리를 드래그하면 크기를 바꿀 수 있습니다.
+              </div>
+              <PreviewStage
+                imageDataUrl={previewDataUrl}
+                fields={previewFields}
+                settings={settings}
+                previewRevision={previewRevision}
+                livePreviewSignature={livePreviewSignature}
+                selectedPhotoName={selectedPhoto?.name}
+                emptyText="왼쪽 목록에서 미리보기할 사진을 선택하세요"
+                highlight={selectedHighlight}
+                outputGrayscale={settings.outputGrayscale}
+                editableHighlight={Boolean(selectedPhoto)}
+                onHighlightChange={updateSelectedPhotoHighlight}
+                onContextMenu={handlePreviewContextMenu}
+                large
+              />
+            </div>
+            <aside className="large-preview-settings-panel" aria-label="큰 화면 강조 설정">
+              <div className="large-preview-settings-title">
+                <strong>강조 설정</strong>
+                <span>선택한 사진에 바로 반영됩니다.</span>
+              </div>
+              {renderPremiumHighlightSettingsOnly()}
+            </aside>
+          </div>
         </Modal>
       )}
       {showPhotoLedgerPreview && (
@@ -4624,7 +4647,14 @@ export default function App() {
               다음 페이지
             </button>
           </div>
-          <PhotoLedgerPreviewPage slots={photoLedgerPreviewSlots} />
+          <PhotoLedgerPreviewPage
+            slots={photoLedgerPreviewSlots}
+            selectedPhotoPath={selectedPhotoPath}
+            onPhotoClick={(photoPath) => {
+              setShowPhotoLedgerPreview(false);
+              openLargePreview(photoPath);
+            }}
+          />
         </Modal>
       )}
       {previewContextMenu && (
@@ -5310,7 +5340,7 @@ function PreviewStage({
     const point = getHighlightPoint(event);
     const radiusBase = Math.min(containedSize.width, containedSize.height);
     let mode: 'create' | 'move' | 'resize' = 'move';
-    let startHighlight = activeHighlight;
+    let startHighlight: PhotoHighlight = activeHighlight;
 
     if (highlightCircle && activeHighlight) {
       const distance = Math.hypot(point.x - highlightCircle.x, point.y - highlightCircle.y);
@@ -5438,9 +5468,13 @@ function PreviewStage({
 }
 
 function PhotoLedgerPreviewPage({
-  slots
+  slots,
+  selectedPhotoPath,
+  onPhotoClick
 }: {
   slots: Array<{ photo: PhotoItem; imageDataUrl?: string; info: PhotoLedgerResolvedInfo }>;
+  selectedPhotoPath?: string;
+  onPhotoClick?: (photoPath: string) => void;
 }) {
   const pageStyle: React.CSSProperties = {
     aspectRatio: `${PHOTO_LEDGER_PAGE.width} / ${PHOTO_LEDGER_PAGE.height}`
@@ -5453,15 +5487,35 @@ function PhotoLedgerPreviewPage({
         <div className="photo-ledger-preview-outer" style={ledgerRectStyle(PHOTO_LEDGER_LAYOUT.outer)} />
         {[0, 1].map((slotIndex) => {
           const slot = slots[slotIndex];
+          const frameStyle = ledgerRectStyle(PHOTO_LEDGER_LAYOUT.photoFrames[slotIndex]);
+          const frameClassName = [
+            'photo-ledger-preview-frame',
+            slot?.photo && onPhotoClick ? 'photo-ledger-preview-frame-button' : '',
+            slot?.photo?.path === selectedPhotoPath ? 'selected' : ''
+          ].filter(Boolean).join(' ');
+          const frameContent = slot?.imageDataUrl ? (
+            <img src={slot.imageDataUrl} alt={slot.photo.name} />
+          ) : (
+            <span>{slot?.photo ? '이미지 준비 중' : '사진 없음'}</span>
+          );
+
           return (
             <div key={slotIndex}>
-              <div className="photo-ledger-preview-frame" style={ledgerRectStyle(PHOTO_LEDGER_LAYOUT.photoFrames[slotIndex])}>
-                {slot?.imageDataUrl ? (
-                  <img src={slot.imageDataUrl} alt={slot.photo.name} />
-                ) : (
-                  <span>{slot?.photo ? '이미지 준비 중' : '사진 없음'}</span>
+              {slot?.photo && onPhotoClick ? (
+                <button
+                  type="button"
+                  className={frameClassName}
+                  style={frameStyle}
+                  onClick={() => onPhotoClick(slot.photo.path)}
+                  aria-label={`${slot.photo.name} 크게 보기 및 강조 편집`}
+                >
+                  {frameContent}
+                </button>
+              ) : (
+                <div className={frameClassName} style={frameStyle}>
+                  {frameContent}
+                </div>
                 )}
-              </div>
               <PhotoLedgerPreviewInfoTable
                 rect={PHOTO_LEDGER_LAYOUT.infoTables[slotIndex]}
                 info={slot?.info ?? { location: '', content: '', date: '' }}
