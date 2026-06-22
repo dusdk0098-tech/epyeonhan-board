@@ -2436,7 +2436,7 @@ export default function App() {
               {renderPhotoRotationControls('basic-rotation-controls')}
               <div className="action-footer basic-action-footer">
                 <div className="button-row basic-preview-tools">
-                  <button className="btn ghost" type="button" onClick={openLargePreview}>
+                  <button className="btn ghost" type="button" disabled={!selectedPhoto} onClick={openLargePreview}>
                     <Eye size={17} /> 크게 보기
                   </button>
                   <button className="btn ghost" type="button" disabled={!selectedPhoto} onClick={() => void handleCopyPreviewImage()}>
@@ -3690,7 +3690,7 @@ export default function App() {
             icon={<Eye size={17} />}
             action={
               <div className="preview-card-actions">
-                <button className="small-btn outline" type="button" onClick={openLargePreview}>
+                <button className="small-btn outline" type="button" disabled={!selectedPhoto} onClick={openLargePreview}>
                   <Eye size={15} /> 크게 보기
                 </button>
                 <button
@@ -3919,7 +3919,7 @@ export default function App() {
         icon={<Eye size={17} />}
         action={
           <div className="preview-card-actions">
-            <button className="small-btn outline" type="button" onClick={openLargePreview}>
+            <button className="small-btn outline" type="button" disabled={!selectedPhoto} onClick={openLargePreview}>
               <Eye size={15} /> 크게 보기
             </button>
             <button
