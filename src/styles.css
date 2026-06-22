@@ -6834,13 +6834,19 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  min-height: 32px;
-  padding: 0 12px;
+  min-height: 40px;
+  padding: 0 14px;
   border-radius: 999px;
   background: #edf5ff;
   color: #005bbf;
   font-weight: 900;
   text-decoration: none;
+}
+
+.contact-email-link:focus-visible,
+.contact-link-card:focus-visible {
+  outline: 3px solid rgba(0, 95, 201, 0.26);
+  outline-offset: 3px;
 }
 
 .contact-link-grid {
