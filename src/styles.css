@@ -9976,10 +9976,28 @@ body {
   .pro-v2-board-photo-step .pro-v2-photo-import-panel,
   .pro-v2-pdf-photo-step .pro-v2-photo-import-panel {
     grid-template-columns: minmax(0, 1fr);
+    padding: 8px 10px;
+    gap: 6px;
+  }
+
+  .pro-v2-board-photo-step .pro-v2-photo-import-panel p,
+  .pro-v2-pdf-photo-step .pro-v2-photo-import-panel p {
+    display: none;
   }
 
   .pro-v2-photo-side-panel {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pro-v2-board-photo-step .pro-v2-photo-selection-panel,
+  .pro-v2-pdf-photo-step .pro-v2-photo-selection-panel {
+    gap: 8px;
+    padding: 10px 12px;
+  }
+
+  .pro-v2-board-photo-step .pro-v2-board-photo-list,
+  .pro-v2-pdf-photo-step .pro-v2-board-photo-list {
+    gap: 5px;
   }
 
   .pro-v2-lower-band-row label,
@@ -10015,7 +10033,7 @@ body {
   }
 
   .pro-v2-photo-list-scroll {
-    max-block-size: 112px;
+    max-block-size: 168px;
   }
 
   .pro-v2-actionbar {
