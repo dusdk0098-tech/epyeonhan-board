@@ -9875,6 +9875,10 @@ body {
   .pro-v2-shell:has(.pro-v2-choice) .pro-v2-job-bullets span {
     font-size: clamp(0.98rem, 0.88rem + 0.22vw, 1.1rem);
   }
+
+  .pro-v2-shell:has(.pro-v2-photo-workbench) .pro-v2-photo-list-scroll {
+    max-block-size: clamp(300px, 42vh, 430px);
+  }
 }
 
 @media (min-width: 721px) and (max-width: 960px) {
