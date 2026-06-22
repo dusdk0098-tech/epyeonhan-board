@@ -135,6 +135,8 @@ export function ProPdfFlow({ model, actions, slots, onChangeJob }: ProPdfFlowPro
   }
 
   function renderContext() {
+    if (step === 'photo' && model.photoCount === 0) return null;
+
     if (step === 'photo') {
       return (
         <div className="pro-v2-pdf-preview-context" data-evidence="pdf-photo-preview-context">

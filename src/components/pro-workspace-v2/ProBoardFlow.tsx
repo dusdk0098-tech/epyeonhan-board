@@ -151,6 +151,8 @@ export function ProBoardFlow({ model, actions, slots, onChangeJob }: ProBoardFlo
       );
     }
 
+    if (step === 'photo' && model.photoCount === 0) return null;
+
     return (
       <ProBoardPreviewContext
         model={model}

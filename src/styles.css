@@ -7855,6 +7855,16 @@ body {
   grid-column: 1 / -1;
 }
 
+.pro-v2-body:has(.pro-v2-board-photo-step):not(:has(.pro-v2-context)),
+.pro-v2-body:has(.pro-v2-pdf-photo-step):not(:has(.pro-v2-context)) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.pro-v2-body:has(.pro-v2-board-photo-step):not(:has(.pro-v2-context)) .pro-v2-canvas,
+.pro-v2-body:has(.pro-v2-pdf-photo-step):not(:has(.pro-v2-context)) .pro-v2-canvas {
+  grid-column: 1 / -1;
+}
+
 .pro-v2-body:has(.pro-v2-board-adjust-step) .pro-v2-context {
   display: none;
 }

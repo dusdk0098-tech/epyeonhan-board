@@ -121,7 +121,8 @@ export function ProPdfPhotoStep({ model, actions }: ProPdfPhotoStepProps) {
           )}
         </section>
 
-        <aside className="pro-v2-photo-side-panel" data-evidence="pdf-photo-side-controls">
+        {hasPhotos ? (
+          <aside className="pro-v2-photo-side-panel" data-evidence="pdf-photo-side-controls">
           <section className="pro-v2-photo-summary-card">
             <span>선택 사진</span>
             <strong>{model.hasSelectedPhoto ? model.selectedPhotoName : '사진을 선택하세요'}</strong>
@@ -165,7 +166,8 @@ export function ProPdfPhotoStep({ model, actions }: ProPdfPhotoStepProps) {
               </button>
             </div>
           </section>
-        </aside>
+          </aside>
+        ) : null}
       </div>
     </div>
   );
