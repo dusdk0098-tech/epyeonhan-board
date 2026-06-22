@@ -9101,6 +9101,21 @@ body {
 }
 
 @media (max-width: 960px) {
+  .pro-v2-body:has(.pro-v2-board-photo-step),
+  .pro-v2-body:has(.pro-v2-pdf-photo-step) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pro-v2-body:has(.pro-v2-board-photo-step) .pro-v2-canvas,
+  .pro-v2-body:has(.pro-v2-pdf-photo-step) .pro-v2-canvas {
+    grid-column: 1 / -1;
+  }
+
+  .pro-v2-body:has(.pro-v2-board-photo-step) .pro-v2-context,
+  .pro-v2-body:has(.pro-v2-pdf-photo-step) .pro-v2-context {
+    display: none;
+  }
+
   .pro-v2-photo-import-actions,
   .pro-v2-photo-batch-actions,
   .pro-v2-rotation-actions,
@@ -10224,6 +10239,31 @@ body {
     grid-column: 1 / -1;
   }
 
+  .pro-v2-board-photo-step:has(.pro-v2-board-photo-row) .pro-v2-photo-import-panel,
+  .pro-v2-pdf-photo-step:has(.pro-v2-board-photo-row) .pro-v2-photo-import-panel {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+  }
+
+  .pro-v2-board-photo-step:has(.pro-v2-board-photo-row) .pro-v2-photo-import-panel h3,
+  .pro-v2-pdf-photo-step:has(.pro-v2-board-photo-row) .pro-v2-photo-import-panel h3 {
+    font-size: 0.96rem;
+  }
+
+  .pro-v2-board-photo-step:has(.pro-v2-board-photo-row) .pro-v2-photo-import-actions,
+  .pro-v2-pdf-photo-step:has(.pro-v2-board-photo-row) .pro-v2-photo-import-actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .pro-v2-board-photo-step:has(.pro-v2-board-photo-row) .pro-v2-photo-import-actions .pro-v2-action:first-child,
+  .pro-v2-pdf-photo-step:has(.pro-v2-board-photo-row) .pro-v2-photo-import-actions .pro-v2-action:first-child {
+    grid-column: auto;
+  }
+
+  .pro-v2-pdf-photo-step:has(.pro-v2-board-photo-row) .pro-v2-photo-order-card p {
+    display: none;
+  }
+
   .pro-v2-photo-import-actions .pro-v2-action,
   .pro-v2-photo-batch-actions .pro-v2-action,
   .pro-v2-rotation-actions .pro-v2-action,
@@ -10305,6 +10345,12 @@ body {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .pro-v2-body:has(.pro-v2-board-photo-step) .pro-v2-photo-workbench,
+  .pro-v2-body:has(.pro-v2-pdf-photo-step) .pro-v2-photo-workbench {
+    grid-template-columns: minmax(0, 1fr) minmax(220px, 270px);
+    align-items: start;
+  }
+
   .pro-v2-photo-list-scroll {
     max-block-size: 168px;
   }
@@ -10347,8 +10393,18 @@ body {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .pro-v2-body:has(.pro-v2-board-photo-step) .pro-v2-photo-side-panel,
+  .pro-v2-body:has(.pro-v2-pdf-photo-step) .pro-v2-photo-side-panel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .pro-v2-photo-summary-card {
     grid-column: 1 / -1;
+  }
+
+  .pro-v2-body:has(.pro-v2-board-photo-step) .pro-v2-photo-summary-card,
+  .pro-v2-body:has(.pro-v2-pdf-photo-step) .pro-v2-photo-summary-card {
+    display: none;
   }
 
   .pro-v2-board-generate-step {
