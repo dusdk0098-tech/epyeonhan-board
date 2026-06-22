@@ -1,17 +1,14 @@
 import { Eye, FolderOpen, Save } from 'lucide-react';
 
-import type { ProPdfFlowActions, ProPdfFlowModel, ProPdfFlowSlots } from './pdfFlowTypes';
-import { ProPdfCompactPhotoStatus } from './ProPdfCompactPhotoStatus';
+import type { ProPdfFlowActions, ProPdfFlowModel } from './pdfFlowTypes';
 import { ProPdfReadinessSummary } from './ProPdfReadinessSummary';
 
 interface ProPdfGenerateStepProps {
   model: ProPdfFlowModel;
   actions: ProPdfFlowActions;
-  slots: ProPdfFlowSlots;
-  onGoToPhotoStep: () => void;
 }
 
-export function ProPdfGenerateStep({ model, actions, slots, onGoToPhotoStep }: ProPdfGenerateStepProps) {
+export function ProPdfGenerateStep({ model, actions }: ProPdfGenerateStepProps) {
   const blocked = [];
   if (model.checkedCount === 0) blocked.push('PDF에 넣을 사진 체크');
   if (!model.pdfTitle.trim()) blocked.push('문서 제목 입력');
@@ -20,7 +17,6 @@ export function ProPdfGenerateStep({ model, actions, slots, onGoToPhotoStep }: P
 
   return (
     <div className="pro-v2-pdf-step pro-v2-pdf-generate-step" data-evidence="pdf-generate-ready">
-      <ProPdfCompactPhotoStatus model={model} onGoToPhotoStep={onGoToPhotoStep} />
       <ProPdfReadinessSummary model={model} />
 
       <section className="pro-v2-generate-folder-panel">
@@ -39,10 +35,6 @@ export function ProPdfGenerateStep({ model, actions, slots, onGoToPhotoStep }: P
             <Eye size={16} aria-hidden /> PDF 크게 보기
           </button>
         </div>
-      </section>
-
-      <section className="pro-v2-pdf-generate-preview" data-evidence="pdf-generate-preview">
-        {slots.previewPanel}
       </section>
 
       {blocked.length > 0 ? (

@@ -35,7 +35,7 @@ const pdfStepMeta: Record<ProPdfFlowStep, {
     title: 'PDF 정보와 강조',
     eyebrow: '사진대지 PDF 만들기',
     description: '문서 제목, 사진별 하단정보, 강조 효과와 PDF 미리보기를 확인합니다.',
-    canvasTitle: '2단계 PDF 정보와 강조'
+    canvasTitle: '문서 설정'
   },
   generate: {
     stepNumber: 3,
@@ -43,7 +43,7 @@ const pdfStepMeta: Record<ProPdfFlowStep, {
     title: 'PDF 생성 준비',
     eyebrow: '사진대지 PDF 만들기',
     description: '사진, 문서 정보, 저장 폴더, 미리보기가 준비됐는지 마지막으로 확인합니다.',
-    canvasTitle: '3단계 PDF 생성 준비'
+    canvasTitle: '저장 폴더와 PDF 미리보기'
   },
   result: {
     stepNumber: 4,
@@ -112,9 +112,9 @@ export function ProPdfFlow({ model, actions, slots, onChangeJob }: ProPdfFlowPro
       case 'photo':
         return <ProPdfPhotoStep model={model} actions={actions} />;
       case 'details':
-        return <ProPdfDetailsStep model={model} actions={actions} slots={slots} onGoToPhotoStep={goToPhotoStep} />;
+        return <ProPdfDetailsStep model={model} actions={actions} />;
       case 'generate':
-        return <ProPdfGenerateStep model={model} actions={actions} slots={slots} onGoToPhotoStep={goToPhotoStep} />;
+        return <ProPdfGenerateStep model={model} actions={actions} />;
       case 'result':
         const resultModel = resultStatus
           ? { ...model, statusKind: resultStatus.kind, statusText: resultStatus.text }
@@ -154,10 +154,35 @@ export function ProPdfFlow({ model, actions, slots, onChangeJob }: ProPdfFlowPro
       );
     }
 
+    if (step === 'details') {
+      return (
+        <div className="pro-v2-context-stack pro-v2-pdf-details-context" data-evidence="pdf-details-preview-context">
+          {slots.previewPanel}
+          <section className="pro-v2-pdf-highlight-card" data-evidence="pdf-highlight-controls">
+            <div className="pro-v2-board-section-heading">
+              <div>
+                <h3>미리보기에서 강조 조정</h3>
+                <p>원형 강조를 켠 뒤 미리보기에서 클릭하거나 드래그해 위치와 크기를 맞춥니다.</p>
+              </div>
+            </div>
+            {slots.highlightControls}
+          </section>
+        </div>
+      );
+    }
+
+    if (step === 'generate') {
+      return (
+        <div className="pro-v2-context-stack pro-v2-pdf-generate-context" data-evidence="pdf-generate-preview-context">
+          {slots.previewPanel}
+        </div>
+      );
+    }
+
     return (
       <div className="pro-v2-context-stack">
         <ProPdfReadinessSummary model={model} />
-        {step === 'generate' ? null : slots.previewPanel}
+        {slots.previewPanel}
       </div>
     );
   }
@@ -230,7 +255,7 @@ export function ProPdfFlow({ model, actions, slots, onChangeJob }: ProPdfFlowPro
           {renderCanvas()}
         </div>
       )}
-      contextTitle={step === 'photo' ? 'PDF 미리보기' : '준비 상태와 미리보기'}
+      contextTitle={step === 'details' || step === 'generate' || step === 'photo' ? 'PDF 미리보기' : '준비 상태와 미리보기'}
       context={renderContext()}
       primaryAction={renderPrimaryAction()}
       secondaryAction={renderSecondaryAction()}

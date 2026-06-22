@@ -1,18 +1,15 @@
 import { useState } from 'react';
-import { ArrowDown, ArrowUp, CheckSquare, FileText, ListChecks, Palette } from 'lucide-react';
+import { ArrowDown, ArrowUp, CheckSquare, FileText, ListChecks } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
-import type { ProPdfFlowActions, ProPdfFlowModel, ProPdfFlowSlots } from './pdfFlowTypes';
-import { ProPdfCompactPhotoStatus } from './ProPdfCompactPhotoStatus';
+import type { ProPdfFlowActions, ProPdfFlowModel } from './pdfFlowTypes';
 
 interface ProPdfDetailsStepProps {
   model: ProPdfFlowModel;
   actions: ProPdfFlowActions;
-  slots: ProPdfFlowSlots;
-  onGoToPhotoStep: () => void;
 }
 
-type ProPdfDetailsPanel = 'document' | 'ledger' | 'highlight';
+type ProPdfDetailsPanel = 'document' | 'ledger';
 
 const detailsPanels: Array<{
   id: ProPdfDetailsPanel;
@@ -34,17 +31,10 @@ const detailsPanels: Array<{
     description: '위치, 내용, 촬영일자',
     icon: ListChecks,
     evidence: 'pdf-details-tab-ledger'
-  },
-  {
-    id: 'highlight',
-    label: '강조 효과',
-    description: '원형 강조와 바깥 흑백',
-    icon: Palette,
-    evidence: 'pdf-details-tab-highlight'
   }
 ];
 
-export function ProPdfDetailsStep({ model, actions, slots, onGoToPhotoStep }: ProPdfDetailsStepProps) {
+export function ProPdfDetailsStep({ model, actions }: ProPdfDetailsStepProps) {
   const [activePanel, setActivePanel] = useState<ProPdfDetailsPanel>('document');
   const manualLedgerDisabled = !model.hasSelectedPhoto;
   const dateLedgerDisabled = manualLedgerDisabled || model.usePhotoDate;
@@ -60,7 +50,7 @@ export function ProPdfDetailsStep({ model, actions, slots, onGoToPhotoStep }: Pr
         <div className="pro-v2-board-section-heading">
           <div>
             <h3>PDF 문서 정보</h3>
-            <p>문서 제목, 촬영일자 기준, 사진 순서를 한 곳에서 정리합니다.</p>
+            <p>문서 제목과 촬영일자 기준, 사진 순서를 한곳에서 정리합니다.</p>
           </div>
         </div>
         <div className="settings-form board-pdf-form pro-v2-pdf-form">
@@ -84,7 +74,7 @@ export function ProPdfDetailsStep({ model, actions, slots, onGoToPhotoStep }: Pr
           <FileText size={18} aria-hidden />
           <div>
             <strong>A4 세로 사진대지</strong>
-            <span>PDF 모드에서는 보드판을 삽입하지 않고 사진, 하단정보, 강조 효과만 정리합니다.</span>
+            <span>PDF 모드에서는 사진, 하단정보, 강조 효과만 정리합니다.</span>
           </div>
         </div>
         <div className="pro-v2-pdf-inline-tool" data-evidence="pdf-order-controls">
@@ -121,7 +111,7 @@ export function ProPdfDetailsStep({ model, actions, slots, onGoToPhotoStep }: Pr
         <div className="pro-v2-board-section-heading">
           <div>
             <h3>사진별 하단정보</h3>
-            <p>선택한 사진의 위치, 사진내용, 촬영일자를 직접 확인합니다.</p>
+            <p>선택한 사진의 위치, 내용, 촬영일자를 직접 확인합니다.</p>
           </div>
         </div>
         {model.hasSelectedPhoto ? (
@@ -162,37 +152,12 @@ export function ProPdfDetailsStep({ model, actions, slots, onGoToPhotoStep }: Pr
     );
   }
 
-  function renderHighlightPanel() {
-    return (
-      <section className="pro-v2-pdf-control-card pro-v2-pdf-highlight-card" data-evidence="pdf-highlight-controls">
-        <div className="pro-v2-board-section-heading">
-          <div>
-            <h3>선택 사진 강조</h3>
-            <p>원형 강조와 바깥 흑백은 PDF에 들어가는 사진에도 그대로 반영됩니다.</p>
-          </div>
-          <Palette size={20} aria-hidden />
-        </div>
-        {slots.highlightControls}
-      </section>
-    );
-  }
-
   function renderActivePanel() {
-    switch (activePanel) {
-      case 'ledger':
-        return renderLedgerPanel();
-      case 'highlight':
-        return renderHighlightPanel();
-      case 'document':
-      default:
-        return renderDocumentPanel();
-    }
+    return activePanel === 'ledger' ? renderLedgerPanel() : renderDocumentPanel();
   }
 
   return (
     <div className="pro-v2-pdf-step pro-v2-pdf-details-step" data-evidence="pdf-details-step">
-      <ProPdfCompactPhotoStatus model={model} onGoToPhotoStep={onGoToPhotoStep} />
-
       <div className="pro-v2-pdf-workbench" data-evidence="pdf-details-workbench">
         <div className="pro-v2-pdf-workbench-nav" role="tablist" aria-label="PDF 정보 설정">
           {detailsPanels.map((panel) => {

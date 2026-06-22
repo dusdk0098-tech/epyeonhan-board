@@ -1,4 +1,4 @@
-import { CheckCircle2, Plus, X } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 
 import type { ProBoardField } from './boardFlowTypes';
 
@@ -65,17 +65,8 @@ export function ProLowerBandItemManager({
                   onClick={() => onSelectField(field.id)}
                 >
                   {index + 1}
+                  {selected ? <span className="pro-v2-selected-label pro-v2-sr-only">선택됨</span> : null}
                 </button>
-                <span className={selected ? 'pro-v2-selected-label' : 'pro-v2-row-state-label'}>
-                  {selected ? (
-                    <>
-                      <CheckCircle2 size={13} aria-hidden />
-                      선택
-                    </>
-                  ) : (
-                    '항목'
-                  )}
-                </span>
                 <label className="pro-v2-lower-band-label-control">
                   항목명
                   <input

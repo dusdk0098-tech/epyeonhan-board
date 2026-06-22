@@ -112,7 +112,7 @@ export function ProBoardFlow({ model, actions, slots, onChangeJob }: ProBoardFlo
       case 'photo':
         return <ProBoardPhotoStep model={model} actions={actions} />;
       case 'content':
-        return <ProBoardContentStep model={model} actions={actions} onGoToPhotoStep={goToPhotoStep} />;
+        return <ProBoardContentStep model={model} actions={actions} />;
       case 'adjust':
         return <ProBoardAdjustStep model={model} actions={actions} slots={slots} onGoToPhotoStep={goToPhotoStep} />;
       case 'generate':

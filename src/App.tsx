@@ -683,6 +683,17 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    const dispatchLayoutRefresh = () => window.dispatchEvent(new Event('resize'));
+    const frameId = window.requestAnimationFrame(dispatchLayoutRefresh);
+    const timeoutId = window.setTimeout(dispatchLayoutRefresh, 120);
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      window.clearTimeout(timeoutId);
+    };
+  }, [activeScreen, activeWorkspaceKey, selectedPhotoPath, selectedPhotoRotation]);
+
+  useEffect(() => {
     if (!status || (status.kind === 'info' && isProcessing)) {
       return;
     }
@@ -3162,16 +3173,20 @@ export default function App() {
             />
             원 바깥 흑백
           </label>
-          <HighlightColorSelectRow
-            label="원형 색상"
-            value={selectedHighlight?.color ?? defaultHighlight.color}
-            disabled={!selectedHighlight?.enabled}
-            onChange={(value) => updateSelectedHighlightPatch({ color: value })}
-          />
-          {renderHighlightGeometryControls()}
-          <button className="small-btn danger" type="button" disabled={!selectedHighlight?.enabled} onClick={() => updateSelectedPhotoHighlight(undefined)}>
-            <Trash2 size={15} /> 강조 삭제
-          </button>
+          {selectedHighlight?.enabled ? (
+            <>
+              <HighlightColorSelectRow
+                label="원형 색상"
+                value={selectedHighlight?.color ?? defaultHighlight.color}
+                disabled={!selectedHighlight?.enabled}
+                onChange={(value) => updateSelectedHighlightPatch({ color: value })}
+              />
+              {renderHighlightGeometryControls()}
+              <button className="small-btn danger" type="button" disabled={!selectedHighlight?.enabled} onClick={() => updateSelectedPhotoHighlight(undefined)}>
+                <Trash2 size={15} /> 강조 삭제
+              </button>
+            </>
+          ) : null}
         </div>
         <div className="output-setting-section">
           <h4>작업 실행</h4>
@@ -3211,16 +3226,20 @@ export default function App() {
             />
             원 바깥 흑백
           </label>
-          <HighlightColorSelectRow
-            label="원형 색상"
-            value={selectedHighlight?.color ?? defaultHighlight.color}
-            disabled={!selectedHighlight?.enabled}
-            onChange={(value) => updateSelectedHighlightPatch({ color: value })}
-          />
-          {renderHighlightGeometryControls()}
-          <button className="small-btn danger" type="button" disabled={!selectedHighlight?.enabled} onClick={() => updateSelectedPhotoHighlight(undefined)}>
-            <Trash2 size={15} /> 강조 삭제
-          </button>
+          {selectedHighlight?.enabled ? (
+            <>
+              <HighlightColorSelectRow
+                label="원형 색상"
+                value={selectedHighlight?.color ?? defaultHighlight.color}
+                disabled={!selectedHighlight?.enabled}
+                onChange={(value) => updateSelectedHighlightPatch({ color: value })}
+              />
+              {renderHighlightGeometryControls()}
+              <button className="small-btn danger" type="button" disabled={!selectedHighlight?.enabled} onClick={() => updateSelectedPhotoHighlight(undefined)}>
+                <Trash2 size={15} /> 강조 삭제
+              </button>
+            </>
+          ) : null}
         </div>
       </div>
     );

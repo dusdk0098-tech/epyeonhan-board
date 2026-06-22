@@ -25,7 +25,7 @@ export function ProCompactPhotoStatus({ model, onGoToPhotoStep, showManageAction
       </div>
       {showManageAction ? (
         <button type="button" className="pro-v2-inline-action" onClick={onGoToPhotoStep}>
-          ?? ??? ????
+          사진 준비로 이동
         </button>
       ) : null}
     </section>

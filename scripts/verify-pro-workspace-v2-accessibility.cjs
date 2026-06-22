@@ -141,8 +141,8 @@ const checks = [
   {
     name: 'PDF mode removes board insertion and exposes highlight controls',
     pass: !/showBoardInputId|useBoardFieldsInputId|사진에 보드판 삽입|보드판 입력값 자동 적용/.test(source.pdfDetails)
-      && /data-evidence="pdf-highlight-controls"/.test(source.pdfDetails)
-      && /slots\.highlightControls/.test(source.pdfDetails)
+      && /data-evidence="pdf-highlight-controls"/.test(source.pdfDetails + source.pdfFlow)
+      && /slots\.highlightControls/.test(source.pdfDetails + source.pdfFlow)
   },
   {
     name: 'Highlight geometry controls keep labelled range inputs',
