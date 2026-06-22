@@ -9728,7 +9728,7 @@ body {
   .app:not(.start-active) .basic-workbench-grid {
     height: 100%;
     min-height: 0;
-    grid-template-columns: minmax(330px, 360px) minmax(0, 1fr);
+    grid-template-columns: minmax(370px, 390px) minmax(0, 1fr);
     grid-template-rows: minmax(156px, 0.32fr) minmax(0, 1fr);
     grid-template-areas:
       "setup board"
@@ -9761,7 +9761,7 @@ body {
   }
 
   .app:not(.start-active) .basic-settings-panel .panel-body {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     overflow-y: auto;
   }
 
