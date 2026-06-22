@@ -135,7 +135,8 @@ const checks = [
     pass: /aria-current=\{selected \? 'true' : undefined\}/.test(source.pdfPhoto)
       && /pro-v2-selected-label/.test(source.pdfPhoto)
       && /selectedRowRef\.current\?\.scrollIntoView/.test(source.pdfPhoto)
-      && /aria-label=\{`\$\{photo\.name\} PDF 처리 대상 체크`\}/.test(source.pdfPhoto)
+      && /aria-pressed=\{photo\.selectedForProcessing\}/.test(source.pdfPhoto)
+      && /PDF 처리 대상 \$\{photo\.selectedForProcessing \? '해제' : '체크'\}/.test(source.pdfPhoto)
   },
   {
     name: 'PDF mode removes board insertion and exposes highlight controls',
