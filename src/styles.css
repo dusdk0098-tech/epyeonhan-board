@@ -2241,14 +2241,16 @@ input[type="radio"] {
 .photo-ledger-preview-title {
   position: absolute;
   left: 0;
-  top: 2.85%;
+  top: 3.35%;
   width: 100%;
   color: #111111;
   font-family: Gulim, "Malgun Gothic", sans-serif;
   font-size: clamp(18px, 4vw, 26px);
-  font-size: clamp(12px, 4.7cqw, 26px);
+  font-size: clamp(11px, 4.15cqw, 24px);
   font-weight: 900;
+  line-height: 1;
   text-align: center;
+  white-space: nowrap;
 }
 
 .photo-ledger-preview-outer,
@@ -8653,15 +8655,25 @@ body {
 
 .pro-v2-board-photo-row {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: var(--pro-v2-control-height) minmax(0, 1fr) minmax(var(--pro-v2-control-height), auto);
   align-items: center;
   gap: 8px;
   min-width: 0;
-  min-height: 52px;
+  min-height: 58px;
   padding: 8px;
   border: 1px solid #d8e1ef;
   border-radius: 10px;
   background: #ffffff;
+  transition:
+    border-color var(--pro-v2-motion-fast) var(--pro-v2-motion-ease),
+    box-shadow var(--pro-v2-motion-fast) var(--pro-v2-motion-ease),
+    background var(--pro-v2-motion-fast) var(--pro-v2-motion-ease);
+}
+
+.pro-v2-board-photo-row:hover {
+  border-color: #9fc4ef;
+  background: #f8fbff;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
 }
 
 .pro-v2-board-photo-row.selected {
@@ -8671,6 +8683,8 @@ body {
 }
 
 .pro-v2-selected-label {
+  grid-area: selected;
+  justify-self: end;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -8694,19 +8708,32 @@ body {
 
 .pro-v2-photo-name-button {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    "order name selected"
+    "order meta selected";
   align-items: center;
-  gap: 8px;
+  gap: 3px 8px;
   min-width: 0;
   width: 100%;
+  min-height: var(--pro-v2-control-height);
+  padding: 4px 6px;
   border: 0;
   border-radius: 8px;
   background: transparent;
   color: #172033;
   text-align: left;
+  transition:
+    background var(--pro-v2-motion-fast) var(--pro-v2-motion-ease),
+    box-shadow var(--pro-v2-motion-fast) var(--pro-v2-motion-ease);
+}
+
+.pro-v2-photo-name-button:hover {
+  background: rgba(0, 91, 191, 0.06);
 }
 
 .pro-v2-photo-name-button span:nth-child(2) {
+  grid-area: name;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -8714,6 +8741,7 @@ body {
 }
 
 .pro-v2-photo-order {
+  grid-area: order;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -8727,6 +8755,8 @@ body {
 }
 
 .pro-v2-photo-name-button em {
+  grid-area: meta;
+  justify-self: start;
   color: #64748b;
   font-size: 0.78rem;
   font-style: normal;
@@ -8743,11 +8773,26 @@ body {
   align-items: center;
   justify-content: center;
   gap: 6px;
+  min-height: var(--pro-v2-control-height);
+  padding: 8px 10px;
   border: 1px solid #f1b5b5;
   border-radius: 9px;
   background: #fff7f7;
   color: #b42318;
   font-weight: 900;
+  white-space: nowrap;
+  transition:
+    border-color var(--pro-v2-motion-fast) var(--pro-v2-motion-ease),
+    box-shadow var(--pro-v2-motion-fast) var(--pro-v2-motion-ease),
+    transform var(--pro-v2-motion-fast) var(--pro-v2-motion-ease),
+    background var(--pro-v2-motion-fast) var(--pro-v2-motion-ease);
+}
+
+.pro-v2-row-delete:hover:not(:disabled) {
+  border-color: #d92d20;
+  background: #fff1f1;
+  box-shadow: 0 8px 16px rgba(180, 35, 24, 0.12);
+  transform: translateY(-1px);
 }
 
 .pro-v2-row-select {
@@ -9253,7 +9298,7 @@ body {
 
 .pro-v2-pdf-preview-toolbar {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-columns: minmax(78px, 1fr) minmax(44px, auto) minmax(78px, 1fr);
   align-items: center;
   gap: 8px;
   min-width: 0;
@@ -9261,6 +9306,8 @@ body {
 
 .pro-v2-pdf-preview-toolbar .pro-v2-action {
   min-width: 0;
+  min-height: var(--pro-v2-control-height);
+  padding-inline: clamp(8px, 1.4vw, 12px);
   justify-content: center;
   white-space: nowrap;
 }
@@ -9305,13 +9352,13 @@ body {
   }
 
   .pro-v2-pdf-order-panel .pro-v2-action,
-  .pro-v2-pdf-helper-actions .pro-v2-action,
-  .pro-v2-pdf-preview-toolbar .pro-v2-action {
+  .pro-v2-pdf-helper-actions .pro-v2-action {
     width: 100%;
   }
 
   .pro-v2-pdf-preview-toolbar {
-    align-items: stretch;
+    grid-template-columns: minmax(72px, 1fr) minmax(42px, auto) minmax(72px, 1fr);
+    align-items: center;
   }
 }
 
@@ -9966,6 +10013,16 @@ body {
     width: 100%;
   }
 
+  .pro-v2-board-photo-step .pro-v2-photo-import-actions,
+  .pro-v2-pdf-photo-step .pro-v2-photo-import-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pro-v2-board-photo-step .pro-v2-photo-import-actions .pro-v2-action:first-child,
+  .pro-v2-pdf-photo-step .pro-v2-photo-import-actions .pro-v2-action:first-child {
+    grid-column: 1 / -1;
+  }
+
   .pro-v2-photo-import-actions .pro-v2-action,
   .pro-v2-photo-batch-actions .pro-v2-action,
   .pro-v2-rotation-actions .pro-v2-action,
@@ -10069,7 +10126,7 @@ body {
   }
 
   .pro-v2-board-photo-row {
-    grid-template-columns: var(--pro-v2-control-height) minmax(0, 1fr) auto;
+    grid-template-columns: var(--pro-v2-control-height) minmax(0, 1fr) minmax(var(--pro-v2-control-height), auto);
   }
 
   .pro-v2-board-photo-row .pro-v2-row-delete {
@@ -10079,7 +10136,10 @@ body {
   }
 
   .pro-v2-photo-name-button {
-    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      "order name selected"
+      "order meta selected";
   }
 
   .pro-v2-photo-side-panel {
@@ -10200,21 +10260,24 @@ body {
   }
 
   .pro-v2-board-photo-row {
-    grid-template-columns: var(--pro-v2-control-height) minmax(0, 1fr);
+    grid-template-columns: var(--pro-v2-control-height) minmax(0, 1fr) minmax(var(--pro-v2-control-height), auto);
     width: 100%;
     min-width: 0;
   }
 
   .pro-v2-board-photo-row .pro-v2-row-delete {
-    grid-column: 1 / -1;
-    justify-self: stretch;
-    width: 100%;
+    grid-column: auto;
+    justify-self: end;
+    width: auto;
   }
 
   .pro-v2-photo-name-button {
     min-width: 0;
     width: 100%;
     grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      "order name selected"
+      "order meta selected";
   }
 
   .pro-v2-photo-name-button > span:nth-child(2) {
