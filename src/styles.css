@@ -10600,6 +10600,23 @@ body .app:not(.start-active) > main.page-shell.output-shell.pro-v2-page,
   min-height: 0;
 }
 
+@media (min-width: 1121px) and (min-height: 780px) {
+  .pro-v2-body:not(:has(.pro-v2-choice)):not(:has(.pro-v2-board-adjust-step)) {
+    align-items: stretch;
+  }
+
+  .pro-v2-body:not(:has(.pro-v2-choice)):not(:has(.pro-v2-board-adjust-step)) > .pro-v2-canvas,
+  .pro-v2-body:not(:has(.pro-v2-choice)):not(:has(.pro-v2-board-adjust-step)) > .pro-v2-context {
+    align-self: stretch;
+    min-height: 0;
+  }
+
+  .pro-v2-body:not(:has(.pro-v2-choice)):not(:has(.pro-v2-board-adjust-step)) .pro-v2-context-stack {
+    align-content: start;
+    height: 100%;
+  }
+}
+
 .pro-v2-board-photo-row {
   grid-template-columns: var(--pro-v2-control-height) minmax(0, 1fr) var(--pro-v2-control-height);
   gap: 8px;
